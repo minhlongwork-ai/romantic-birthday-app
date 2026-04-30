@@ -7,7 +7,7 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Great+Vibes&family=Montserrat:wght@200;300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Dancing+Script:wght@400;700&family=Great+Vibes&family=Montserrat:wght@200;300;400;600&display=swap" rel="stylesheet">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -23,7 +23,7 @@
             --mid:     #1a0a2e;
             --glow-r:  rgba(249,168,212,0.25);
             --glow-v:  rgba(192,132,252,0.25);
-            --ff:      'Great Vibes', cursive;
+            --ff:      'Dancing Script', cursive;
             --fs:      'Cormorant Garamond', serif;
             --fb:      'Montserrat', sans-serif;
         }
@@ -80,14 +80,15 @@
         .s1-dear { font-family:var(--ff); font-size:3.5rem; color:var(--rose); opacity:.8; }
         .s1-name-wrap { filter:drop-shadow(0 0 30px rgba(253,230,138,.3)); }
         .s1-name { 
-            font-family:var(--ff); font-size:7rem; line-height:1.2; 
+            font-family:var(--ff); font-size:7rem; line-height:1.3; 
             background:linear-gradient(135deg, var(--gold) 0%, var(--rose) 60%, var(--violet) 100%); 
             -webkit-background-clip:text; -webkit-text-fill-color:transparent; 
-            padding: 10px 0; margin: 0;
+            padding: 20px 60px; margin: 0;
             display: inline-block;
             will-change: transform;
             -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
+            overflow: visible;
         }
         .s1-divider { width:120px; height:1px; background:linear-gradient(90deg, transparent, var(--rose), transparent); margin:2rem auto; }
 
@@ -152,21 +153,34 @@
         .letter-card::-webkit-scrollbar { display: none; }
         
         /* Focus Mode when open */
-        .env-wrap.open { transform: translateY(150px) rotateX(20deg) scale(0.8); opacity: 0.6; pointer-events: none; }
+        .env-wrap.open { opacity: 0.4; pointer-events: none; }
         .env-wrap.open .letter-card { 
             position: fixed;
             top: 50%; left: 50%;
             bottom: auto;
-            width: 480px; max-width: 90vw;
-            height: 60vh;
+            width: 580px; max-width: 90vw;
+            height: 70vh;
             transform: translate(-50%, -50%) scale(1);
             z-index: 100;
-            box-shadow: 0 30px 100px rgba(0,0,0,0.5), 0 0 50px rgba(192,132,252,0.3);
+            box-shadow: 0 30px 120px rgba(0,0,0,0.6), 0 0 60px rgba(192,132,252,0.4);
             pointer-events: auto;
+            padding: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        .letter-card h3 { font-family:var(--ff); font-size:2.5rem; color:#7c3aed; margin-bottom:1.5rem; text-align:center; }
-        .letter-card p { font-family:var(--fs); font-size:1.2rem; line-height:1.8; color:#2d1b40; font-weight:400; white-space: pre-wrap; }
+        #btn-next {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 200;
+            transition: all 0.6s cubic-bezier(.19,1,.22,1);
+        }
+
+        .letter-card h3 { font-family:var(--ff); font-size:2.8rem; color:#7c3aed; margin-bottom:1.5rem; text-align:center; width: 100%; }
+        .letter-card p { font-family:var(--fs); font-size:1.3rem; line-height:1.8; color:#2d1b40; font-weight:400; white-space: pre-wrap; text-align: center; }
         .letter-border { position:absolute; left:0; top:0; bottom:0; width:5px; background:linear-gradient(180deg, var(--violet), var(--rose)); border-radius:12px 0 0 12px; }
 
         /* Cleaned up duplicate rule */
@@ -176,9 +190,9 @@
         /* ═══ MÀN 3 — CAKE ═══ */
         #s3 { background:radial-gradient(ellipse at 50% 80%, rgba(249,168,212,.07) 0%, transparent 70%), var(--deep); }
         #s3-canvas { position:absolute; inset:0; z-index:0; }
-        .cake-ui { position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:1.5rem; }
+        .cake-ui { position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:0.5rem; margin-top: 2rem; }
         .cake-label { font-family:var(--fb); font-weight:200; letter-spacing:.5em; font-size:.7rem; color:rgba(255,255,255,.5); text-transform:uppercase; margin-bottom: 0.5rem; }
-        #cake-container { width: 450px; height: 450px; display: flex; justify-content: center; align-items: center; cursor: none; }
+        #cake-container { width: 100%; height: 650px; display: flex; justify-content: center; align-items: center; cursor: none; }
 
         /* ═══ MÀN 4 — GALLERY ═══ */
         #s4 { background:var(--deep); }
@@ -248,7 +262,7 @@
     <p style="font-size:.65rem;letter-spacing:.5em;color:rgba(255,255,255,.3);font-weight:200">PREPARING YOUR GIFT...</p>
 </div>
 
-<audio id="bg-music" src="./audio.mp3" loop preload="auto"></audio>
+<audio id="bg-music" src="./audio.mp3" loop preload="none"></audio>
 <!-- Thay src bằng đường dẫn file mp3 của bạn, ví dụ: src="./audio.mp3" -->
 
 <!-- ═══ MÀN 1 ═══ -->
@@ -281,7 +295,7 @@
             </div>
         </div>
     </div>
-    <button class="btn" id="btn-next" style="margin-top:2.5rem;opacity:0;pointer-events:none" onclick="toCandles(event)">Continue ✨</button>
+    <button class="btn" id="btn-next" style="opacity:0;pointer-events:none" onclick="toCandles(event)">Continue ✨</button>
 </div>
 
 <!-- ═══ MÀN 3 ═══ -->
@@ -290,6 +304,7 @@
     <div class="cake-ui">
         <p class="cake-label">wave your hand to rotate & blow the candles 🕯️</p>
         <div id="cake-container"></div>
+        <button class="btn btn-pulse" id="btn-blow" style="margin-top:0.5rem; background:rgba(255,255,255,0.1)" onclick="blowOne()">Blow Candle 💨</button>
         <button class="btn" id="btn-gallery" style="opacity:0;pointer-events:none;margin-top:1rem" onclick="toGallery()">Our Memories 📸</button>
     </div>
 </div>
@@ -369,6 +384,26 @@ document.addEventListener('mousemove', e => {
         });
     }
 });
+
+function blowOne() {
+    if(appState !== 3 || blownCount >= numCandles) return;
+    const flame = candleFlames[blownCount];
+    if(flame && flame.visible) {
+        flame.visible = false;
+        blownCount++;
+        // Add a tiny shake to the cake for feedback
+        if(cakeGroup) gsap.fromTo(cakeGroup.rotation, {x: 0.05}, {x: 0, duration: 0.3, ease: 'bounce.out'});
+        
+        if(blownCount === numCandles) {
+            document.getElementById('btn-blow').style.display = 'none';
+            setTimeout(triggerCelebration, 200);
+        }
+    }
+}
+
+// UX Fallback: Click to blow candles on Cake Screen
+document.getElementById('s3').addEventListener('click', blowOne);
+
 document.addEventListener('touchstart', () => {
     document.getElementById('cur').style.display = 'none';
     document.getElementById('cur2').style.display = 'none';
@@ -377,7 +412,7 @@ document.addEventListener('touchstart', () => {
 // ════════════════════════════════════════
 //  INIT — LOAD
 // ════════════════════════════════════════
-window.onload = () => {
+function initApp() {
     document.getElementById('s1-name').textContent = config.to;
     document.getElementById('letter-dear').textContent = `Dear ${config.to},`;
     document.getElementById('letter-msg').textContent =
@@ -392,8 +427,10 @@ window.onload = () => {
         gsap.to('#loader', {opacity:0, duration:1.2, onComplete:() => {
             document.getElementById('loader').style.display='none';
         }});
-    }, 2000);
-};
+    }, 100);
+}
+
+// Module scripts are deferred by default, so the DOM is already ready.
 
 // ════════════════════════════════════════
 //  MÀN 1 — 3D STARFIELD & HEARTS
@@ -524,6 +561,7 @@ window.toCandles = (e) => {
 //  MÀN 3 — 3D CAKE (THREE.JS UPGRADE)
 // ════════════════════════════════════════
 let cakeScene, cakeCamera, cakeRenderer, cakeGroup, candleFlames = [], cakeSparkles, cake3DText;
+let giftBox, boxLid, boxBase, necklace, giftAura, cakeComposer;
 
 function initCake3D() {
     appState = 3;
@@ -533,13 +571,29 @@ function initCake3D() {
 
     cakeScene = new THREE.Scene();
     cakeCamera = new THREE.PerspectiveCamera(45, width/height, 0.1, 1000);
-    cakeCamera.position.set(0, 2.5, 6.5);
-    cakeCamera.lookAt(0, 0.8, 0);
+    cakeCamera.position.set(0, 4.0, 11.0); // Back and up
+    cakeCamera.lookAt(0, 2.2, 0); // Looking at the space between cake and text
 
     cakeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     cakeRenderer.setSize(width, height);
     cakeRenderer.setPixelRatio(window.devicePixelRatio);
+    cakeRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+    cakeRenderer.toneMappingExposure = 1.0;
     container.appendChild(cakeRenderer.domElement);
+
+    const pmremGenerator = new THREE.PMREMGenerator(cakeRenderer);
+    pmremGenerator.compileEquirectangularShader();
+    cakeScene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+
+    const renderScene = new RenderPass(cakeScene, cakeCamera);
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(width, height), 1.5, 0.4, 0.85);
+    bloomPass.threshold = 0.2;
+    bloomPass.strength = 1.5;
+    bloomPass.radius = 0.5;
+
+    cakeComposer = new EffectComposer(cakeRenderer);
+    cakeComposer.addPass(renderScene);
+    cakeComposer.addPass(bloomPass);
 
     cakeGroup = new THREE.Group();
     cakeScene.add(cakeGroup);
@@ -550,6 +604,14 @@ function initCake3D() {
     const spot = new THREE.SpotLight(0xf9a8d4, 50);
     spot.position.set(5, 10, 5);
     cakeScene.add(spot);
+
+    // Cake Stand
+    const stand = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.2, 2.4, 0.2, 32),
+        new THREE.MeshStandardMaterial({ color: 0xe5e7eb, metalness: 0.1, roughness: 0.8 })
+    );
+    stand.position.y = -0.1;
+    cakeGroup.add(stand);
 
     // Cake Tiers
     const tier1 = new THREE.Mesh(
@@ -583,6 +645,19 @@ function initCake3D() {
     icing2.position.y = 2.1;
     cakeGroup.add(icing2);
 
+    // Sprinkles on top tier
+    const sprinkleGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.08, 6);
+    const sprinkleColors = [0xfde68a, 0xf9a8d4, 0x6ee7b7, 0x93c5fd, 0xffffff];
+    for(let i=0; i<80; i++) {
+        const smat = new THREE.MeshStandardMaterial({color: sprinkleColors[Math.floor(Math.random()*sprinkleColors.length)], roughness: 0.2});
+        const spr = new THREE.Mesh(sprinkleGeo, smat);
+        const sr = Math.random() * 1.15; // stay within tier2 radius
+        const stheta = Math.random() * Math.PI * 2;
+        spr.position.set(Math.cos(stheta)*sr, 2.11, Math.sin(stheta)*sr);
+        spr.rotation.set(Math.PI/2, Math.random()*Math.PI, 0);
+        cakeGroup.add(spr);
+    }
+
     // Candles
     const spacing = (Math.PI * 2) / numCandles;
     for(let i=0; i<numCandles; i++) {
@@ -591,18 +666,136 @@ function initCake3D() {
         const cz = Math.sin(angle) * 0.9;
         
         const candle = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.06, 0.06, 0.5, 12),
-            new THREE.MeshStandardMaterial({ color: 0xfde68a })
+            new THREE.CylinderGeometry(0.05, 0.05, 0.5, 16),
+            new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1, metalness: 0.1 })
         );
         candle.position.set(cx, 2.3, cz);
         cakeGroup.add(candle);
 
+        // Wick
+        const wick = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.01, 0.01, 0.1, 8),
+            new THREE.MeshBasicMaterial({ color: 0x333333 })
+        );
+        wick.position.set(cx, 2.55, cz);
+        cakeGroup.add(wick);
+
         // Flame Sprite
         const flame = createFlameSprite();
         flame.position.set(cx, 2.7, cz);
-        cakeGroup.add(flame);
+        flame.visible = true;
         candleFlames.push(flame);
+        cakeGroup.add(flame);
     }
+
+    createGiftBox();
+    createNecklace();
+
+function createGiftBox() {
+    const boxGeo = new THREE.BoxGeometry(2, 1.5, 2);
+    const boxMat = new THREE.MeshStandardMaterial({ color: 0x4c1d95, roughness: 0.5, metalness: 0.2 }); // Deep purple velvet
+    boxBase = new THREE.Mesh(boxGeo, boxMat);
+    boxBase.position.y = -5; // Start hidden below
+    
+    const lidGeo = new THREE.BoxGeometry(2.1, 0.4, 2.1);
+    boxLid = new THREE.Mesh(lidGeo, boxMat);
+    boxLid.position.y = 0.85; 
+    boxBase.add(boxLid);
+    
+    // Ribbon
+    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0xf9a8d4, roughness: 0.3, metalness: 0.4 });
+    const rib1 = new THREE.Mesh(new THREE.BoxGeometry(2.12, 0.1, 0.4), ribbonMat);
+    boxLid.add(rib1);
+    const rib2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 2.12), ribbonMat);
+    boxLid.add(rib2);
+    
+    giftBox = boxBase;
+    cakeScene.add(giftBox);
+}
+
+function createNecklace() {
+    necklace = new THREE.Group();
+    
+    // Swan Shape
+    const s = new THREE.Shape();
+    s.moveTo(0, 0);
+    s.bezierCurveTo(0.2, 0.2, 0.4, 0.5, 0.2, 0.8); // neck
+    s.bezierCurveTo(0.1, 1.0, -0.2, 1.0, -0.3, 0.8);
+    s.bezierCurveTo(-0.4, 0.6, -0.2, 0.4, 0, 0.4);
+    s.lineTo(0.5, 0); // body base
+    s.bezierCurveTo(0.8, 0, 1.0, 0.3, 0.8, 0.6);
+    s.bezierCurveTo(0.7, 0.8, 0.4, 0.8, 0.2, 0.6);
+    
+    const swanGeo = new THREE.ExtrudeGeometry(s, { 
+        depth: 0.1, 
+        bevelEnabled: true, 
+        bevelThickness: 0.05, 
+        bevelSize: 0.05, 
+        bevelSegments: 1, 
+        curveSegments: 3 
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    for (let i = 0; i < 4000; i++) {
+        const v = Math.floor(Math.random() * 255);
+        ctx.fillStyle = `rgb(${v},${v},${v})`;
+        ctx.fillRect(Math.random()*256, Math.random()*256, Math.random()*4 + 1, Math.random()*4 + 1);
+    }
+    const facetTexture = new THREE.CanvasTexture(canvas);
+    facetTexture.wrapS = THREE.RepeatWrapping;
+    facetTexture.wrapT = THREE.RepeatWrapping;
+    facetTexture.repeat.set(2, 2);
+
+    const swanMat = new THREE.MeshPhysicalMaterial({ 
+        color: 0xffffff, 
+        metalness: 0.2, 
+        roughness: 0.1,
+        transmission: 1.0,
+        ior: 2.4,
+        thickness: 0.5,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.1,
+        bumpMap: facetTexture,
+        bumpScale: 0.015
+    });
+    const swan = new THREE.Mesh(swanGeo, swanMat);
+    swan.scale.set(0.6, 0.6, 0.6);
+    swan.position.set(-0.15, -0.3, 0);
+    necklace.add(swan);
+    
+    // Chain (stylized as a thin torus loop)
+    const chainGeo = new THREE.TorusGeometry(0.8, 0.015, 8, 48, Math.PI);
+    const chainMat = new THREE.MeshPhysicalMaterial({ 
+        color: 0xffffff, 
+        metalness: 1.0, 
+        roughness: 0.1,
+        clearcoat: 1.0
+    });
+    const chain = new THREE.Mesh(chainGeo, chainMat);
+    chain.position.y = 0.7;
+    necklace.add(chain);
+    
+    // Sparkles on swan
+    const sparkGeo = new THREE.BufferGeometry();
+    const sparkCount = 40;
+    const sparkPos = new Float32Array(sparkCount * 3);
+    for(let i=0; i<sparkCount*3; i++) sparkPos[i] = (Math.random()-0.5) * 0.8;
+    sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3));
+    const sparkMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.05, transparent: true, blending: THREE.AdditiveBlending });
+    const sparks = new THREE.Points(sparkGeo, sparkMat);
+    necklace.add(sparks);
+    
+    necklace.position.y = -5;
+    necklace.visible = false;
+    cakeScene.add(necklace);
+    
+    // Glow aura
+    const auraGeo = new THREE.SphereGeometry(1.5, 32, 32);
+    const auraMat = new THREE.MeshBasicMaterial({ color: 0xfde68a, transparent: true, opacity: 0, side: THREE.BackSide });
+    giftAura = new THREE.Mesh(auraGeo, auraMat);
+    necklace.add(giftAura);
+}
 
     // Sparkles following hand
     const sparkGeo = new THREE.BufferGeometry();
@@ -626,7 +819,7 @@ function initCake3D() {
     fontLoader.load('https://unpkg.com/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json', (font) => {
         const textGeo = new TextGeometry(`Happy Birthday\n${config.to}`, {
             font: font,
-            size: 0.35,
+            size: 0.3, // Slightly smaller
             height: 0.1,
             curveSegments: 12,
             bevelEnabled: true,
@@ -644,8 +837,9 @@ function initCake3D() {
             emissiveIntensity: 0.5
         });
         cake3DText = new THREE.Mesh(textGeo, textMat);
-        cake3DText.position.set(0, 3.2, 0); // Above the cake
-        cakeGroup.add(cake3DText);
+        cake3DText.position.set(0, 4.5, 0); 
+        cake3DText.visible = false; // Hide initially
+        cakeScene.add(cake3DText); 
     });
 
     animateCake3D();
@@ -680,9 +874,16 @@ function animateCake3D() {
 
     // Text float animation
     if(cake3DText) {
-        cake3DText.position.y = 3.2 + Math.sin(t * 1.5) * 0.12;
+        cake3DText.position.y = 5.5 + Math.sin(t * 1.5) * 0.1;
         cake3DText.rotation.z = Math.sin(t * 0.8) * 0.05;
         cake3DText.rotation.y = Math.sin(t * 0.5) * 0.1;
+    }
+
+    // Gift/Necklace animations
+    if(necklace && necklace.visible) {
+        necklace.rotation.y += 0.01;
+        necklace.position.y += Math.sin(t * 2) * 0.005;
+        if(giftAura) giftAura.scale.setScalar(1 + Math.sin(t * 3) * 0.1);
     }
 
     // Flicker flames
@@ -693,7 +894,11 @@ function animateCake3D() {
         }
     });
 
-    cakeRenderer.render(cakeScene, cakeCamera);
+    if(cakeComposer) {
+        cakeComposer.render();
+    } else {
+        cakeRenderer.render(cakeScene, cakeCamera);
+    }
 }
 
 // ════════════════════════════════════════
@@ -734,14 +939,7 @@ function onHandResults(results) {
         }
 
         if(vel > 0.055 && blownCount < numCandles) {
-            const flame = candleFlames[blownCount];
-            if(flame && flame.visible) {
-                flame.visible = false;
-                blownCount++;
-                if(blownCount===numCandles) {
-                    setTimeout(triggerCelebration, 200);
-                }
-            }
+            blowOne();
         }
     }
 
@@ -762,8 +960,60 @@ function triggerCelebration() {
     confetti({particleCount:200, spread:80, origin:{y:.55}, colors:['#c084fc','#f9a8d4','#fde68a','#fff']});
     setTimeout(()=>confetti({particleCount:100, angle:60,  spread:55, origin:{x:0, y:.6}, colors:['#c084fc','#f9a8d4']}), 400);
     setTimeout(()=>confetti({particleCount:100, angle:120, spread:55, origin:{x:1, y:.6}, colors:['#fde68a','#f9a8d4']}), 600);
-    gsap.to('#btn-gallery',{opacity:1, y:-8, duration:.9, delay:.3, ease:'back.out(1.4)'});
-    document.getElementById('btn-gallery').style.pointerEvents='auto';
+    
+    setTimeout(startGiftReveal, 1500); // Wait for confetti to settle
+}
+
+function startGiftReveal() {
+    // Move cake away
+    gsap.to(cakeGroup.position, { y: -10, duration: 1.5, ease: 'power2.inOut' });
+    gsap.to('.cake-label', { opacity: 0, duration: 0.8 });
+    
+    // Bring in the box
+    giftBox.position.y = -5;
+    gsap.to(giftBox.position, { y: 1.5, duration: 1.5, delay: 0.5, ease: 'back.out(1.2)' });
+    
+    // Change label
+    setTimeout(() => {
+        const label = document.querySelector('.cake-label');
+        label.textContent = "Click to open your gift 🎁";
+        gsap.to(label, { opacity: 1, duration: 0.8 });
+        
+        // Add click listener to screen for opening
+        document.getElementById('s3').addEventListener('click', openGift, { once: true });
+    }, 2000);
+}
+
+function openGift() {
+    if(!giftBox || !boxLid) return;
+    
+    // Lid flying off
+    gsap.to(boxLid.position, { y: 10, duration: 1.2, ease: 'power2.in' });
+    gsap.to(boxLid.rotation, { x: Math.random() * 5, z: Math.random() * 5, duration: 1.2 });
+    
+    // Necklace rising
+    necklace.visible = true;
+    necklace.position.y = 1.5;
+    necklace.scale.set(0, 0, 0);
+    gsap.to(necklace.scale, { x: 1, y: 1, z: 1, duration: 1.5, delay: 0.3, ease: 'back.out(1.5)' });
+    gsap.to(necklace.position, { y: 3.5, duration: 2, delay: 0.3, ease: 'power2.out' });
+    
+    // Aura glow
+    gsap.to(giftAura.material, { opacity: 0.3, duration: 1, delay: 0.5 });
+    
+    // Show 3D Title
+    if(cake3DText) {
+        cake3DText.visible = true;
+        cake3DText.scale.set(0,0,0);
+        cake3DText.position.y = 5.5; 
+        gsap.to(cake3DText.scale, { x:1, y:1, z:1, duration:1.5, delay: 1, ease:'back.out(1.7)' });
+    }
+
+    // Finally show gallery button
+    setTimeout(() => {
+        gsap.to('#btn-gallery',{opacity:1, y:-8, duration:.9, ease:'back.out(1.4)'});
+        document.getElementById('btn-gallery').style.pointerEvents='auto';
+    }, 2500);
 }
 
 // ════════════════════════════════════════
@@ -973,8 +1223,13 @@ function g3dAnimate(){
     requestAnimationFrame(g3dAnimate);
     const elapsed = g3dClock.getElapsedTime();
 
-    // auto-rotate slowly when no hand
-    g3dGroup.rotation.y += .0006;
+    // UX Fallback: Mouse control for gallery (with auto-rotate base)
+    if(g3dGroup) {
+        g3dGroup.rotation.y += .0006; // Slow constant rotation
+        // Add subtle mouse tracking influence
+        const targetX = mouseY * 0.3;
+        g3dGroup.rotation.x += (targetX - g3dGroup.rotation.x) * 0.05;
+    }
 
     // float each polaroid
     g3dGroup.children.forEach(m=>{
@@ -1044,6 +1299,7 @@ function switchScreen(from, to){
     }, 900);
 }
 
+initApp();
 </script>
 </body>
 </html>
