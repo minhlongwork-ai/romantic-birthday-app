@@ -214,32 +214,32 @@
             align-items: center;
             justify-content: flex-start;
             overflow: hidden;
+            padding-bottom: 90px; /* space for fixed lyrics */
+            user-select: none;
         }
-        /* Hide custom cursor on gallery screen */
-        #s4 ~ #cur, #s4 ~ #cur2 { pointer-events: none; }
-        body.on-gallery #cur, body.on-gallery #cur2 { opacity: 0 !important; }
+        body.on-gallery #cur, body.on-gallery #cur2 { opacity: 0 !important; pointer-events: none; }
 
         #gallery-header {
-            padding: 28px 0 8px;
+            padding: 18px 0 4px;
             text-align: center;
             z-index: 10;
             flex-shrink: 0;
         }
         #gallery-header h2 {
             font-family: var(--ff);
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 400;
-            letter-spacing: 0.4em;
-            color: rgba(255,255,255,0.5);
+            letter-spacing: 0.45em;
+            color: rgba(255,255,255,0.45);
             text-transform: uppercase;
             margin: 0;
         }
         #gallery-header p {
             font-family: var(--fb);
-            font-size: 0.55rem;
-            letter-spacing: 0.5em;
-            color: rgba(249,168,212,0.5);
-            margin: 6px 0 0;
+            font-size: 0.5rem;
+            letter-spacing: 0.55em;
+            color: rgba(249,168,212,0.45);
+            margin: 5px 0 0;
             text-transform: uppercase;
         }
 
@@ -252,7 +252,7 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            user-select: none;
+            min-height: 0; /* critical for flex shrink */
         }
         #slide-track {
             display: flex;
@@ -270,15 +270,15 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 12px 24px;
+            padding: 8px 20px;
             box-sizing: border-box;
         }
         .polaroid-card {
             background: #fdfbff;
             border-radius: 6px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
-            padding: 12px 12px 48px 12px;
-            max-width: min(300px, 80vw);
+            padding: 10px 10px 44px 10px;
+            max-width: min(280px, 76vw);
             width: 100%;
             text-align: center;
             transform-origin: center;
@@ -299,14 +299,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.5rem;
+            font-size: 2.2rem;
         }
         .polaroid-photo img { width:100%; height:100%; object-fit:cover; display:block; }
         .polaroid-label {
-            margin-top: 10px;
+            margin-top: 8px;
             font-family: var(--fb);
             font-weight: 300;
-            font-size: 0.6rem;
+            font-size: 0.58rem;
             letter-spacing: 0.4em;
             color: #7c3aed;
             text-transform: uppercase;
@@ -317,16 +317,16 @@
             align-items: center;
             gap: 14px;
             z-index: 10;
-            padding: 12px 0 8px;
+            padding: 10px 0 4px;
             flex-shrink: 0;
         }
         #slide-prev, #slide-next {
             background: rgba(255,255,255,0.08);
             border: 1px solid rgba(255,255,255,0.15);
             border-radius: 50%;
-            width: 40px; height: 40px;
+            width: 38px; height: 38px;
             color: #fff;
-            font-size: 1rem;
+            font-size: 0.95rem;
             cursor: pointer;
             backdrop-filter: blur(10px);
             transition: background 0.25s, transform 0.15s;
@@ -346,18 +346,19 @@
         .dot.active { background: var(--rose); width: 20px; border-radius: 3px; }
         #slide-counter {
             font-family: var(--fb);
-            font-size: 0.55rem;
+            font-size: 0.52rem;
             letter-spacing: 0.4em;
-            color: rgba(255,255,255,0.3);
-            padding-bottom: 6px;
+            color: rgba(255,255,255,0.28);
+            padding-bottom: 4px;
             flex-shrink: 0;
         }
         #lyrics-ui {
             position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
-            font-family:var(--ff); font-size:2rem; color:var(--gold);
+            font-family:var(--ff); font-size:1.4rem; color:var(--gold);
             text-shadow:0 0 30px rgba(253,230,138,.5), 0 0 60px rgba(253,230,138,.2);
             pointer-events:none; z-index:200; white-space:nowrap;
             opacity:0; transition:opacity .6s;
+            max-width: 90vw; overflow: hidden; text-overflow: ellipsis; text-align: center;
         }
 
         /* ═══ WEBCAM ═══ */
@@ -1326,8 +1327,8 @@ window.toGallery = () => {
 function initSlideshow() {
     appState = 4;
     document.getElementById('lyrics-ui').style.opacity = '1';
-    document.getElementById('lyrics-ui').style.bottom = '12px';
     document.body.classList.add('on-gallery');
+
 
 
     const track = document.getElementById('slide-track');
