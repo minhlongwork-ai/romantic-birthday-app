@@ -214,13 +214,16 @@
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             overflow: hidden;
+            user-select: none;
         }
         #slide-track {
             display: flex;
             width: 100%; height: 80vh;
-            transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            /* No CSS transition — GSAP handles all motion */
             will-change: transform;
+            cursor: grab;
         }
+        #slide-track.dragging { cursor: grabbing; }
         .slide-item {
             flex: 0 0 100%;
             width: 100%;
@@ -233,21 +236,26 @@
         }
         .polaroid-card {
             background: #fdfbff;
-            border-radius: 6px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+            border-radius: 8px;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06);
             padding: 16px 16px 60px 16px;
-            max-width: min(380px, 90vw);
+            max-width: min(360px, 88vw);
             width: 100%;
             text-align: center;
             transform-origin: center;
-            animation: cardIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            transform: scale(0.88) rotate(0deg);
+            transition: box-shadow 0.4s ease;
+            will-change: transform;
         }
-        @keyframes cardIn { from { opacity:0; transform:scale(0.85) translateY(20px); } to { opacity:1; transform:scale(1) translateY(0); } }
+        .polaroid-card.active-card {
+            transform: scale(1) rotate(0deg);
+            box-shadow: 0 30px 100px rgba(192,132,252,0.4), 0 0 0 1px rgba(255,255,255,0.08);
+        }
         .polaroid-photo {
             width: 100%;
             aspect-ratio: 1 / 1;
             background: linear-gradient(135deg, #e9d5ff 0%, #fce7f3 100%);
-            border-radius: 3px;
+            border-radius: 4px;
             overflow: hidden;
             display: flex;
             align-items: center;
@@ -256,51 +264,52 @@
         }
         .polaroid-photo img { width:100%; height:100%; object-fit:cover; display:block; }
         .polaroid-label {
-            margin-top: 12px;
+            margin-top: 14px;
             font-family: var(--fb);
             font-weight: 300;
-            font-size: 0.7rem;
-            letter-spacing: 0.3em;
+            font-size: 0.65rem;
+            letter-spacing: 0.35em;
             color: #7c3aed;
             text-transform: uppercase;
         }
         #slide-nav {
             position: absolute;
-            bottom: 80px;
+            bottom: 72px;
             display: flex;
             align-items: center;
             gap: 16px;
             z-index: 10;
         }
         #slide-prev, #slide-next {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.18);
             border-radius: 50%;
             width: 44px; height: 44px;
             color: #fff;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             cursor: pointer;
-            backdrop-filter: blur(8px);
-            transition: background 0.2s, transform 0.2s;
+            backdrop-filter: blur(10px);
+            transition: background 0.25s, transform 0.15s;
             display: flex; align-items: center; justify-content: center;
         }
-        #slide-prev:hover, #slide-next:hover { background: rgba(192,132,252,0.3); transform: scale(1.1); }
-        #slide-dots { display: flex; gap: 8px; align-items: center; }
+        #slide-prev:active, #slide-next:active { transform: scale(0.9); }
+        #slide-prev:hover, #slide-next:hover { background: rgba(192,132,252,0.3); }
+        #slide-dots { display: flex; gap: 7px; align-items: center; }
         .dot {
-            width: 8px; height: 8px;
+            width: 6px; height: 6px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.3);
-            transition: background 0.3s, transform 0.3s;
+            background: rgba(255,255,255,0.25);
+            transition: background 0.35s, transform 0.35s, width 0.35s;
             cursor: pointer;
         }
-        .dot.active { background: var(--rose); transform: scale(1.3); }
+        .dot.active { background: var(--rose); transform: scale(1.0); width: 22px; border-radius: 4px; }
         #slide-counter {
             position: absolute;
-            bottom: 52px;
+            bottom: 46px;
             font-family: var(--fb);
-            font-size: 0.6rem;
-            letter-spacing: 0.3em;
-            color: rgba(255,255,255,0.4);
+            font-size: 0.58rem;
+            letter-spacing: 0.35em;
+            color: rgba(255,255,255,0.35);
         }
         #lyrics-ui {
             position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
@@ -499,8 +508,8 @@ import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 // ════════════════════════════════════════
 const params = new URLSearchParams(window.location.search);
 const config = {
-    to   : params.get('to')   || "My Love",
-    age  : parseInt(params.get('age')) || 22,
+    to   : params.get('to')   || "Thuy Hien",
+    age  : parseInt(params.get('age')) || 23,
     from : params.get('from') || "Yours Truly"
 };
 
@@ -1253,11 +1262,16 @@ function openGift() {
 
 // ════════════════════════════════════════
 // ════════════════════════════════════════
-//  MÀN 4 — TOUCH SLIDESHOW
+//  MÀN 4 — SMOOTH TOUCH SLIDESHOW
 // ════════════════════════════════════════
-const TOTAL_SLIDES = 10; // Adjust to how many photos you have
+const TOTAL_SLIDES = 10;
 let slideIndex = 0;
-let touchStartX = 0;
+let slideIsAnimating = false;
+
+// Drag state
+let dragStartX = 0, dragCurrentX = 0, dragStartTime = 0;
+let isDragging = false;
+let baseOffset = 0; // current pixel offset (negative = right)
 
 window.toGallery = () => {
     switchScreen(3, 4);
@@ -1274,12 +1288,11 @@ function initSlideshow() {
     dotsWrap.innerHTML = '';
 
     for (let i = 0; i < TOTAL_SLIDES; i++) {
-        // Build polaroid card
         const item = document.createElement('div');
         item.className = 'slide-item';
 
         const card = document.createElement('div');
-        card.className = 'polaroid-card';
+        card.className = 'polaroid-card' + (i === 0 ? ' active-card' : '');
 
         const photoDiv = document.createElement('div');
         photoDiv.className = 'polaroid-photo';
@@ -1308,25 +1321,73 @@ function initSlideshow() {
 
     goToSlide(0);
 
-    // Touch swipe support
-    track.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
-    track.addEventListener('touchend', e => {
-        const dx = e.changedTouches[0].clientX - touchStartX;
-        if (dx < -50) nextSlide();
-        else if (dx > 50) prevSlide();
-    }, { passive: true });
+    // ─── DRAG / SWIPE (mouse + touch, live tracking) ───
+    const onDragStart = (clientX) => {
+        if (slideIsAnimating) return;
+        isDragging = true;
+        dragStartX = clientX;
+        dragCurrentX = clientX;
+        dragStartTime = Date.now();
+        baseOffset = -slideIndex * track.offsetWidth;
+        track.classList.add('dragging');
+        gsap.killTweensOf(track); // stop any running animation
+    };
 
-    document.getElementById('slide-prev').onclick = prevSlide;
-    document.getElementById('slide-next').onclick = nextSlide;
+    const onDragMove = (clientX) => {
+        if (!isDragging) return;
+        dragCurrentX = clientX;
+        const delta = clientX - dragStartX;
+        // Add resistance at boundaries
+        let offset = baseOffset + delta;
+        const maxOffset = 0;
+        const minOffset = -(TOTAL_SLIDES - 1) * track.offsetWidth;
+        if (offset > maxOffset) offset = maxOffset + (offset - maxOffset) * 0.25;
+        if (offset < minOffset) offset = minOffset + (offset - minOffset) * 0.25;
+        gsap.set(track, { x: offset });
+        // Live card scale preview
+        updateCardScales(offset);
+    };
 
-    // Keyboard support
+    const onDragEnd = (clientX) => {
+        if (!isDragging) return;
+        isDragging = false;
+        track.classList.remove('dragging');
+        const delta = clientX - dragStartX;
+        const dt = Date.now() - dragStartTime;
+        const velocity = delta / dt; // px/ms
+        // Decide direction: flick velocity OR > 30% threshold
+        const threshold = track.offsetWidth * 0.3;
+        if (velocity < -0.3 || (delta < -threshold && velocity > -0.1)) {
+            goToSlide(slideIndex + 1);
+        } else if (velocity > 0.3 || (delta > threshold && velocity < 0.1)) {
+            goToSlide(slideIndex - 1);
+        } else {
+            goToSlide(slideIndex); // snap back
+        }
+    };
+
+    // Touch
+    track.addEventListener('touchstart', e => onDragStart(e.touches[0].clientX), { passive: true });
+    track.addEventListener('touchmove',  e => onDragMove(e.touches[0].clientX),  { passive: true });
+    track.addEventListener('touchend',   e => onDragEnd(e.changedTouches[0].clientX), { passive: true });
+
+    // Mouse
+    track.addEventListener('mousedown', e => { e.preventDefault(); onDragStart(e.clientX); });
+    window.addEventListener('mousemove', e => onDragMove(e.clientX));
+    window.addEventListener('mouseup',   e => { if(isDragging) onDragEnd(e.clientX); });
+
+    // Buttons
+    document.getElementById('slide-prev').onclick = () => goToSlide(slideIndex - 1);
+    document.getElementById('slide-next').onclick = () => goToSlide(slideIndex + 1);
+
+    // Keyboard
     document.addEventListener('keydown', e => {
         if (appState !== 4) return;
-        if (e.key === 'ArrowRight') nextSlide();
-        if (e.key === 'ArrowLeft') prevSlide();
+        if (e.key === 'ArrowRight') goToSlide(slideIndex + 1);
+        if (e.key === 'ArrowLeft')  goToSlide(slideIndex - 1);
     });
 
-    // Start lyrics updater
+    // Lyrics loop
     requestAnimationFrame(function loop() {
         if (appState !== 4) return;
         updateLyrics();
@@ -1334,9 +1395,36 @@ function initSlideshow() {
     });
 }
 
+function updateCardScales(offset) {
+    const W = document.getElementById('slide-track').offsetWidth;
+    document.querySelectorAll('.polaroid-card').forEach((card, i) => {
+        const cardOffset = offset + i * W; // how far this card is from center
+        const dist = Math.abs(cardOffset) / W; // 0 = active, 1 = adjacent
+        const scale = 1 - Math.min(dist, 1) * 0.12;
+        const rotY = Math.sign(-cardOffset) * Math.min(dist, 1) * 5;
+        gsap.set(card, { scale, rotationY: rotY, transformPerspective: 800 });
+        card.classList.toggle('active-card', dist < 0.5);
+    });
+}
+
 function goToSlide(idx) {
-    slideIndex = Math.max(0, Math.min(idx, TOTAL_SLIDES - 1));
-    document.getElementById('slide-track').style.transform = `translateX(-${slideIndex * 100}%)`;
+    idx = Math.max(0, Math.min(idx, TOTAL_SLIDES - 1));
+    slideIndex = idx;
+    const W = document.getElementById('slide-track').offsetWidth;
+    const targetX = -slideIndex * W;
+
+    slideIsAnimating = true;
+    gsap.to('#slide-track', {
+        x: targetX,
+        duration: 0.55,
+        ease: 'power3.out',
+        onUpdate: function() {
+            const cur = gsap.getProperty('#slide-track', 'x');
+            updateCardScales(cur);
+        },
+        onComplete: () => { slideIsAnimating = false; }
+    });
+
     document.getElementById('slide-counter').textContent = `${slideIndex + 1} / ${TOTAL_SLIDES}`;
     document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === slideIndex));
 }
