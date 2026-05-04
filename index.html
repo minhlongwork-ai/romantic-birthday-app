@@ -900,6 +900,18 @@ function animateS1() {
 window.initExperience = () => {
     const audio = document.getElementById('bg-music');
     audio.play().catch(()=>{});
+    
+    // Show lyrics UI
+    const lyricsUI = document.getElementById('lyrics-ui');
+    lyricsUI.style.opacity = '1';
+
+    // Start lyrics sync loop
+    function lyricsLoop() {
+        updateLyrics();
+        requestAnimationFrame(lyricsLoop);
+    }
+    requestAnimationFrame(lyricsLoop);
+
     if(window.triggerS1Exit) window.triggerS1Exit();
     gsap.to('#s1-parallax', {scale:0.4, opacity:0, duration:1, ease:'power4.in'});
     switchScreen(1, 2);
@@ -1623,12 +1635,7 @@ function initSlideshow() {
         if (e.key === 'ArrowLeft')  goToSlide(slideIndex - 1);
     });
 
-    // Lyrics loop
-    requestAnimationFrame(function loop() {
-        if (appState !== 4) return;
-        updateLyrics();
-        requestAnimationFrame(loop);
-    });
+    goToSlide(0);
 }
 
 function updateCardScales(offset) {
