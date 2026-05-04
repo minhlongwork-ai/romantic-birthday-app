@@ -1310,7 +1310,7 @@ function openGift() {
 // ════════════════════════════════════════
 //  MÀN 4 — SMOOTH TOUCH SLIDESHOW
 // ════════════════════════════════════════
-const TOTAL_SLIDES = 10;
+const TOTAL_SLIDES = 21;
 let slideIndex = 0;
 let slideIsAnimating = false;
 
@@ -1348,7 +1348,7 @@ function initSlideshow() {
 
         const img = document.createElement('img');
         img.alt = `Memory ${i + 1}`;
-        img.src = `./images/${i + 1}.png`;
+        img.src = `./images/${i + 1}.jpg`;
         img.onerror = () => { photoDiv.textContent = '💖'; img.remove(); };
         photoDiv.appendChild(img);
 
