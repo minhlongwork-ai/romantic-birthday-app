@@ -306,10 +306,19 @@
             margin-top: 8px;
             font-family: var(--fb);
             font-weight: 300;
-            font-size: 0.58rem;
+            font-size: 0.55rem;
             letter-spacing: 0.4em;
             color: #7c3aed;
             text-transform: uppercase;
+        }
+        .polaroid-note {
+            margin-top: 6px;
+            font-family: 'Dancing Script', 'Segoe Script', cursive;
+            font-size: 0.85rem;
+            color: #4c1d95;
+            font-style: italic;
+            line-height: 1.4;
+            padding: 0 4px;
         }
 
         #slide-nav {
@@ -1311,6 +1320,31 @@ function openGift() {
 //  MÀN 4 — SMOOTH TOUCH SLIDESHOW
 // ════════════════════════════════════════
 const TOTAL_SLIDES = 21;
+
+// ✏️ Edit these notes to personalize each photo!
+const SLIDE_CAPTIONS = [
+    "Every moment with you is a treasure ✨",
+    "The smile that lights up my world 😊",
+    "This day, this memory, forever 💖",
+    "Where we go, magic follows ✨",
+    "My favorite person, always 🤍",
+    "Time flies when we're together ♥️",
+    "You make ordinary days extraordinary 🌟",
+    "The laughter we share is priceless 🤣",
+    "A piece of my heart, always with you 💜",
+    "Captured happiness ✨",
+    "Every photo tells our story 📸",
+    "Your joy is contagious, I love it 🎉",
+    "These memories keep me warm 🧣",
+    "Beautiful soul, beautiful moments 🌸",
+    "Forever grateful for you 🙏",
+    "You are my sunshine ☀️",
+    "Life is better with you in it 💚",
+    "Every smile, a gift 🎁",
+    "Together is my favorite place 🏠",
+    "The best is yet to come 🚀",
+    "Happy Birthday, always & forever 💖"
+];
 let slideIndex = 0;
 let slideIsAnimating = false;
 
@@ -1356,8 +1390,13 @@ function initSlideshow() {
         label.className = 'polaroid-label';
         label.textContent = `Moment #${i + 1}`;
 
+        const note = document.createElement('div');
+        note.className = 'polaroid-note';
+        note.textContent = SLIDE_CAPTIONS[i] || '';
+
         card.appendChild(photoDiv);
         card.appendChild(label);
+        card.appendChild(note);
         item.appendChild(card);
         track.appendChild(item);
 
