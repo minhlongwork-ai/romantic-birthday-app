@@ -631,6 +631,8 @@
     <div id="gallery-header">
         <h2>All About You</h2>
         <p>tap photo to view • swipe to browse ✦</p>
+        <button class="btn" style="padding: 0.4rem 1rem; font-size: 0.8rem; margin-top: 0.5rem; background: rgba(255,255,255,0.15);" onclick="document.getElementById('upload-pics').click()">Add More 📸</button>
+        <input type="file" id="upload-pics" multiple accept="image/*" style="display:none" onchange="handleManualUpload(event)">
     </div>
     <div id="slideshow-wrap">
         <div id="slide-track">
@@ -1525,7 +1527,7 @@ function openGift() {
 // ════════════════════════════════════════
 //  MÀN 4 — SMOOTH TOUCH SLIDESHOW
 // ════════════════════════════════════════
-const TOTAL_SLIDES = 21;
+let TOTAL_SLIDES = 21;
 
 // ✏️ Edit these notes to personalize each photo!
 const SLIDE_CAPTIONS = [
@@ -1562,6 +1564,63 @@ let baseOffset = 0; // current pixel offset (negative = right)
 window.toGallery = () => {
     switchScreen(3, 4);
     setTimeout(initSlideshow, 900);
+};
+
+window.handleManualUpload = (event) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    
+    const track = document.getElementById('slide-track');
+    const dotsWrap = document.getElementById('slide-dots');
+    
+    Array.from(files).forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const newIndex = TOTAL_SLIDES;
+            TOTAL_SLIDES++;
+            SLIDE_CAPTIONS.push("A beautiful new memory ✨");
+            SLIDE_IMAGE_URLS[newIndex] = e.target.result;
+            
+            const item = document.createElement('div');
+            item.className = 'slide-item';
+
+            const card = document.createElement('div');
+            card.className = 'polaroid-card';
+
+            const photoDiv = document.createElement('div');
+            photoDiv.className = 'polaroid-photo';
+            photoDiv.addEventListener('click', () => openLightbox(newIndex));
+
+            const img = document.createElement('img');
+            img.alt = `Memory ${newIndex + 1}`;
+            img.src = e.target.result;
+            photoDiv.appendChild(img);
+
+            const label = document.createElement('div');
+            label.className = 'polaroid-label';
+            label.textContent = `Moment #${newIndex + 1}`;
+
+            const note = document.createElement('div');
+            note.className = 'polaroid-note';
+            note.textContent = SLIDE_CAPTIONS[newIndex];
+
+            card.appendChild(photoDiv);
+            card.appendChild(label);
+            card.appendChild(note);
+            item.appendChild(card);
+            track.appendChild(item);
+
+            // Dot
+            const dot = document.createElement('div');
+            dot.className = 'dot';
+            dot.addEventListener('click', () => goToSlide(newIndex));
+            dotsWrap.appendChild(dot);
+            
+            // Update counter immediately
+            document.getElementById('slide-counter').textContent = `${slideIndex + 1} / ${TOTAL_SLIDES}`;
+        };
+        reader.readAsDataURL(file);
+    });
 };
 
 function initSlideshow() {
