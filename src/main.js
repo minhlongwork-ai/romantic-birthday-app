@@ -208,25 +208,41 @@ function renderCameraStatus(status) {
   const messages = {
     idle: 'Camera đang tắt. Chạm để thổi nến vẫn luôn hoạt động.',
     requesting: 'Đang chờ quyền truy cập camera…',
+    streaming: 'Camera đã mở. Đang khởi động nhận diện cử chỉ…',
     active: 'Camera đã bật. Hãy vẫy tay nhẹ để thổi từng ngọn nến.',
     searching: 'Camera đang tìm bàn tay của em…',
     tracking: 'Đã thấy bàn tay. Vẫy nhẹ để thổi nến.',
-    denied: 'Camera bị từ chối. Em có thể dùng nút chạm để tiếp tục.',
+    denied:
+      'Quyền camera bị từ chối hoặc đang bị chặn. Hãy cho phép camera cạnh thanh địa chỉ rồi bấm “Dùng cử chỉ” lần nữa.',
+    insecure:
+      'Camera chỉ hoạt động trên HTTPS hoặc localhost. Đừng mở thiệp bằng địa chỉ IP bắt đầu với http://.',
     unsupported: 'Thiết bị này không hỗ trợ camera. Nút chạm vẫn hoạt động.',
-    error: 'Không thể mở camera. Nút chạm vẫn hoạt động.',
+    'no-device':
+      'Không tìm thấy camera phù hợp trên thiết bị này. Nút chạm vẫn hoạt động.',
+    busy:
+      'Camera đang được ứng dụng khác sử dụng. Hãy đóng ứng dụng đó rồi thử lại.',
+    timeout:
+      'Camera mở quá lâu nhưng chưa sẵn sàng. Hãy bấm “Dùng cử chỉ” để thử lại.',
+    error:
+      'Không thể mở camera lúc này. Hãy thử lại hoặc dùng nút chạm để tiếp tục.',
     'processing-error': 'Nhận diện cử chỉ bị gián đoạn. Hãy dùng nút chạm.',
+    'processing-timeout':
+      'Nhận diện cử chỉ không phản hồi. Hãy bật lại cử chỉ hoặc dùng nút chạm.',
     paused: 'Camera tạm dừng khi tab bị ẩn và sẽ bật lại khi em quay về.',
     stopped: 'Camera đã dừng.',
   };
 
+  elements.cameraStatus.dataset.state = status;
   elements.cameraStatus.textContent = messages[status] || messages.error;
-  const visible = ['active', 'searching', 'tracking'].includes(status);
+  const visible = ['streaming', 'active', 'searching', 'tracking'].includes(
+    status,
+  );
   elements.cameraPreview.hidden = !visible;
-  elements.cameraToggle.disabled = status === 'requesting';
+  elements.cameraToggle.disabled = false;
   elements.cameraToggle.setAttribute('aria-pressed', String(visible));
   elements.cameraToggle.textContent =
     status === 'requesting'
-      ? 'Đang bật camera…'
+      ? 'Hủy bật camera'
       : visible
         ? 'Dừng camera'
         : ['paused', 'stopped'].includes(status)
@@ -243,8 +259,9 @@ let cameraOptedIn = false;
 let resumeCameraWhenVisible = false;
 
 async function startCamera() {
+  cameraOptedIn = true;
   const started = await cameraController.start();
-  cameraOptedIn = started;
+  if (!started) cameraOptedIn = false;
   return started;
 }
 

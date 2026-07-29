@@ -1210,6 +1210,8 @@ button[aria-disabled="true"] {
 .gift-product {
   --gift-tilt-x: 0deg;
   --gift-tilt-y: 0deg;
+  --gift-shift-x: 0px;
+  --gift-shift-y: 0px;
   position: absolute;
   inset: 0;
   z-index: 4;
@@ -1222,8 +1224,10 @@ button[aria-disabled="true"] {
   border-radius: inherit;
   background: #020610;
   opacity: 0;
+  perspective: 70rem;
   pointer-events: none;
   transform:
+    translate3d(var(--gift-shift-x), var(--gift-shift-y), 0)
     perspective(70rem)
     rotateX(var(--gift-tilt-x))
     rotateY(var(--gift-tilt-y))
@@ -1249,7 +1253,9 @@ button[aria-disabled="true"] {
   min-inline-size: 0;
   min-block-size: 0;
   overflow: hidden;
-  animation: gift-product-float 3.8s ease-in-out infinite alternate;
+  transform-origin: 50% 64%;
+  will-change: transform;
+  animation: gift-product-orbit 5.2s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
 }
 
 .gift-product img {
@@ -1260,11 +1266,23 @@ button[aria-disabled="true"] {
 
 .gift-product.is-visible {
   opacity: 1;
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: pan-y;
   transform:
+    translate3d(var(--gift-shift-x), var(--gift-shift-y), 0)
     perspective(70rem)
     rotateX(var(--gift-tilt-x))
     rotateY(var(--gift-tilt-y))
     scale(1);
+}
+
+.gift-product.is-interacting {
+  cursor: grabbing;
+}
+
+.gift-product.is-interacting picture {
+  animation-play-state: paused;
 }
 
 .gift-product__rim,
@@ -1478,13 +1496,21 @@ button[aria-disabled="true"] {
   }
 }
 
-@keyframes gift-product-float {
+@keyframes gift-product-orbit {
   from {
-    transform: translateY(-2px) scale(1.002);
+    transform:
+      translate3d(-7px, -2px, 0)
+      rotateY(-2.8deg)
+      rotateZ(-0.12deg)
+      scale(1.012);
   }
 
   to {
-    transform: translateY(2px) scale(1.006);
+    transform:
+      translate3d(7px, 2px, 0)
+      rotateY(2.8deg)
+      rotateZ(0.12deg)
+      scale(1.018);
   }
 }
 
@@ -2730,6 +2756,8 @@ body.reduced-motion .scene--cake.is-celebrating .cake-stage {
 
 body.reduced-motion .gift-product,
 body.reduced-motion .gift-product.is-visible {
+  cursor: default;
+  pointer-events: none;
   transform: none !important;
   transition: opacity 180ms linear !important;
 }

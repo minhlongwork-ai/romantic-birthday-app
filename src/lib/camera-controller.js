@@ -1,5 +1,37 @@
 let handsScriptPromise;
 
+function withTimeout(value, timeoutMs) {
+  const promise = Promise.resolve(value);
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return promise;
+
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      const error = new Error('Camera startup timed out.');
+      error.name = 'TimeoutError';
+      reject(error);
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    clearTimeout(timeoutId);
+  });
+}
+
+function errorStatus(error) {
+  if (error?.name === 'TimeoutError') return 'timeout';
+  if (['NotAllowedError', 'SecurityError'].includes(error?.name)) {
+    return 'denied';
+  }
+  if (['NotFoundError', 'OverconstrainedError'].includes(error?.name)) {
+    return 'no-device';
+  }
+  if (['NotReadableError', 'AbortError'].includes(error?.name)) {
+    return 'busy';
+  }
+  return 'error';
+}
+
 function loadHandsScript() {
   if (globalThis.Hands) return Promise.resolve();
   if (handsScriptPromise) return handsScriptPromise;
@@ -41,7 +73,10 @@ export async function createHandsDetector(onResults) {
 export function createCameraController({
   video,
   mediaDevices = globalThis.navigator?.mediaDevices,
+  secureContext = globalThis.isSecureContext !== false,
   createDetector = createHandsDetector,
+  startupTimeoutMs = 15_000,
+  frameTimeoutMs = 20_000,
   onGesture = () => {},
   onStatus = () => {},
   scheduleFrame = callback => requestAnimationFrame(callback),
@@ -120,9 +155,20 @@ export function createCameraController({
     if (!session.processing && session.detector) {
       session.processing = true;
       try {
-        await session.detector.send({ image: video });
-      } catch {
-        if (isCurrent(session)) onStatus('processing-error');
+        await withTimeout(
+          session.detector.send({ image: video }),
+          frameTimeoutMs,
+        );
+      } catch (error) {
+        if (isCurrent(session)) {
+          currentSession = null;
+          cleanupSession(session);
+          onStatus(
+            error?.name === 'TimeoutError'
+              ? 'processing-timeout'
+              : 'processing-error',
+          );
+        }
       } finally {
         session.processing = false;
       }
@@ -152,6 +198,10 @@ export function createCameraController({
     async start() {
       if (currentSession?.active) return true;
       if (startPromise) return startPromise;
+      if (!secureContext) {
+        onStatus('insecure');
+        return false;
+      }
       if (!mediaDevices?.getUserMedia) {
         onStatus('unsupported');
         return false;
@@ -186,14 +236,27 @@ export function createCameraController({
           }
 
           video.srcObject = session.stream;
-          await video.play();
+          onStatus('streaming');
+          await withTimeout(video.play(), startupTimeoutMs);
           if (currentSession !== session || requestGeneration !== generation) {
             cleanupSession(session);
             return false;
           }
 
-          session.detector = await createDetector(results =>
-            handleResults(session, results),
+          const detectorPromise = Promise.resolve(
+            createDetector(results => handleResults(session, results)),
+          ).then(detector => {
+            if (
+              currentSession !== session ||
+              requestGeneration !== generation
+            ) {
+              releaseDetector(detector);
+            }
+            return detector;
+          });
+          session.detector = await withTimeout(
+            detectorPromise,
+            startupTimeoutMs,
           );
           if (currentSession !== session || requestGeneration !== generation) {
             cleanupSession(session);
@@ -208,7 +271,7 @@ export function createCameraController({
           cleanupSession(session);
           if (currentSession === session && requestGeneration === generation) {
             currentSession = null;
-            onStatus(error?.name === 'NotAllowedError' ? 'denied' : 'error');
+            onStatus(errorStatus(error));
           }
           return false;
         }

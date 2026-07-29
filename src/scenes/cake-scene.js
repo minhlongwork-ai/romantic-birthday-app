@@ -44,6 +44,7 @@ export function createCakeScene({
   let giftRevealed = false;
   let giftLoadState = 'idle';
   let giftLoadPromise;
+  let giftPointerId = null;
   let lifecycleGeneration = 0;
 
   function updateCount() {
@@ -65,9 +66,12 @@ export function createCakeScene({
     fallbackElement.setAttribute('aria-hidden', 'true');
     giftElement.hidden = true;
     giftElement.setAttribute('aria-hidden', 'true');
-    giftElement.classList.remove('is-visible');
+    giftElement.classList.remove('is-visible', 'is-interacting');
     giftElement.style.removeProperty('--gift-tilt-x');
     giftElement.style.removeProperty('--gift-tilt-y');
+    giftElement.style.removeProperty('--gift-shift-x');
+    giftElement.style.removeProperty('--gift-shift-y');
+    giftPointerId = null;
     if (cakeGroup) {
       cakeGroup.position.set(0, 0, 0);
       cakeGroup.scale.set(1, 1, 1);
@@ -114,9 +118,11 @@ export function createCakeScene({
   }
 
   function showGiftFallback() {
+    giftPointerId = null;
     giftElement.hidden = true;
     giftElement.setAttribute('aria-hidden', 'true');
-    giftElement.classList.remove('is-visible');
+    giftElement.classList.remove('is-visible', 'is-interacting');
+    resetGiftTilt();
     fallbackElement.hidden = false;
     fallbackElement.setAttribute('aria-hidden', 'false');
     fallbackElement.classList.add('is-blown');
@@ -195,18 +201,58 @@ export function createCakeScene({
 
   function handleGiftPointerMove(event) {
     if (reducedMotion() || !giftRevealed || giftElement.hidden) return;
+    if (
+      event.pointerType === 'touch' &&
+      giftPointerId !== event.pointerId
+    ) {
+      return;
+    }
     const bounds = giftElement.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
     const horizontal = (event.clientX - bounds.left) / bounds.width - 0.5;
     const vertical = (event.clientY - bounds.top) / bounds.height - 0.5;
-    const tiltY = Math.max(-2.5, Math.min(2.5, horizontal * 5));
-    const tiltX = Math.max(-2.5, Math.min(2.5, vertical * -5));
+    const tiltY = Math.max(-6, Math.min(6, horizontal * 12));
+    const tiltX = Math.max(-3.5, Math.min(3.5, vertical * -7));
+    const shiftX = Math.max(-8, Math.min(8, horizontal * 16));
+    const shiftY = Math.max(-3, Math.min(3, vertical * 6));
     giftElement.style.setProperty('--gift-tilt-x', `${tiltX}deg`);
     giftElement.style.setProperty('--gift-tilt-y', `${tiltY}deg`);
+    giftElement.style.setProperty('--gift-shift-x', `${shiftX}px`);
+    giftElement.style.setProperty('--gift-shift-y', `${shiftY}px`);
+  }
+
+  function beginGiftInteraction(event) {
+    if (reducedMotion() || !giftRevealed || giftElement.hidden) return;
+    giftPointerId = event.pointerId;
+    giftElement.classList.add('is-interacting');
+    giftElement.setPointerCapture?.(event.pointerId);
+    handleGiftPointerMove(event);
+  }
+
+  function endGiftInteraction(event) {
+    if (
+      giftPointerId !== null &&
+      event?.pointerId !== undefined &&
+      event.pointerId !== giftPointerId
+    ) {
+      return;
+    }
+    if (
+      giftPointerId !== null &&
+      giftElement.hasPointerCapture?.(giftPointerId)
+    ) {
+      giftElement.releasePointerCapture?.(giftPointerId);
+    }
+    giftPointerId = null;
+    giftElement.classList.remove('is-interacting');
+    resetGiftTilt();
   }
 
   function resetGiftTilt() {
     giftElement.style.setProperty('--gift-tilt-x', '0deg');
     giftElement.style.setProperty('--gift-tilt-y', '0deg');
+    giftElement.style.setProperty('--gift-shift-x', '0px');
+    giftElement.style.setProperty('--gift-shift-y', '0px');
   }
 
 
@@ -484,6 +530,9 @@ export function createCakeScene({
     fallbackMode = true;
     container.addEventListener('pointermove', handleGiftPointerMove);
     container.addEventListener('pointerleave', resetGiftTilt);
+    giftElement.addEventListener('pointerdown', beginGiftInteraction);
+    giftElement.addEventListener('pointerup', endGiftInteraction);
+    giftElement.addEventListener('pointercancel', endGiftInteraction);
     void loadGiftVisual(enterGeneration);
 
     if (!supportsWebGL()) {
@@ -504,7 +553,10 @@ export function createCakeScene({
     modules?.confetti?.reset?.();
     container.removeEventListener('pointermove', handleGiftPointerMove);
     container.removeEventListener('pointerleave', resetGiftTilt);
-    resetGiftTilt();
+    giftElement.removeEventListener('pointerdown', beginGiftInteraction);
+    giftElement.removeEventListener('pointerup', endGiftInteraction);
+    giftElement.removeEventListener('pointercancel', endGiftInteraction);
+    endGiftInteraction();
     if (cakeGroup) {
       modules?.gsap?.killTweensOf?.(cakeGroup.scale);
       modules?.gsap?.killTweensOf?.(cakeGroup.position);

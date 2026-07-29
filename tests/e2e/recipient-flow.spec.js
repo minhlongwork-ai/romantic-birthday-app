@@ -319,12 +319,35 @@ test('the Swarovski product render appears after the final candle', async ({
   );
   await expect
     .poll(() =>
+      page
+        .locator('#gift-product-visual picture')
+        .evaluate(element => getComputedStyle(element).animationName),
+    )
+    .toContain('gift-product-orbit');
+  await expect
+    .poll(() =>
       page.locator('#gift-product-image').evaluate(image => image.naturalWidth),
     )
     .toBeGreaterThan(0);
   await expect(page.locator('#gift-reveal-status')).toContainText(
     /một ánh sáng nhỏ luôn chuyển động cùng em/i,
   );
+
+  const giftBounds = await page
+    .locator('#gift-product-visual')
+    .boundingBox();
+  expect(giftBounds).not.toBeNull();
+  await page.mouse.move(
+    giftBounds.x + giftBounds.width * 0.82,
+    giftBounds.y + giftBounds.height * 0.45,
+  );
+  await expect
+    .poll(() =>
+      page.locator('#gift-product-visual').evaluate(element =>
+        element.style.getPropertyValue('--gift-tilt-y'),
+      ),
+    )
+    .not.toBe('0deg');
 
   const initialStageHeight = await page
     .locator('#cake-stage')
@@ -449,6 +472,97 @@ test('a delayed Swarovski render upgrades the fallback after Back and re-entry',
   } finally {
     releaseProductRequest();
   }
+});
+
+test('the self-hosted MediaPipe bundle starts against a real camera stream', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop-chrome',
+    'The desktop Chromium project provides a deterministic fake camera stream.',
+  );
+
+  const mediaPipeResponses = [];
+  page.on('response', response => {
+    if (response.url().includes('/vendor/mediapipe/hands/')) {
+      mediaPipeResponses.push({
+        status: response.status(),
+        url: response.url(),
+      });
+    }
+  });
+
+  await page.goto('./?age=1');
+  await page.getByRole('button', { name: /Tiếp tục trong yên lặng/i }).click();
+  await page.getByRole('button', { name: /Ước một điều nhé/i }).click();
+  await page.getByRole('button', { name: /Dùng cử chỉ/i }).click();
+
+  await expect(page.locator('#camera-preview')).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect
+    .poll(
+      () => page.locator('#camera-status').getAttribute('data-state'),
+      { timeout: 30_000 },
+    )
+    .toMatch(/active|searching|tracking/);
+  await expect
+    .poll(() =>
+      mediaPipeResponses.some(
+        response =>
+          response.status === 200 &&
+          response.url.endsWith('/hands_solution_simd_wasm_bin.wasm'),
+      ),
+    )
+    .toBe(true);
+  expect(
+    mediaPipeResponses.every(response => response.status === 200),
+  ).toBe(true);
+
+  await page.getByRole('button', { name: /Dừng camera/i }).click();
+  await expect(page.locator('#camera-preview')).toBeHidden();
+  await expect(page.locator('#camera-status')).toHaveAttribute(
+    'data-state',
+    'stopped',
+  );
+});
+
+test('a stalled camera permission request can be cancelled without blocking touch controls', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop-chrome',
+    'One Chromium interaction test covers cancelling a pending permission request.',
+  );
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: () => new Promise(() => {}),
+      },
+    });
+  });
+
+  await page.goto('./?age=1');
+  await page.getByRole('button', { name: /Tiếp tục trong yên lặng/i }).click();
+  await page.getByRole('button', { name: /Ước một điều nhé/i }).click();
+  await page.getByRole('button', { name: /Dùng cử chỉ/i }).click();
+
+  await expect(page.locator('#camera-status')).toHaveAttribute(
+    'data-state',
+    'requesting',
+  );
+  await page.getByRole('button', { name: /Hủy bật camera/i }).click();
+  await expect(page.locator('#camera-status')).toHaveAttribute(
+    'data-state',
+    'stopped',
+  );
+  await expect(
+    page.getByRole('button', { name: /Bật lại cử chỉ/i }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole('button', { name: /Chạm để thổi nến/i }),
+  ).toBeEnabled();
 });
 
 test('camera resumes after a hidden tab and stops when leaving the cake scene', async ({
