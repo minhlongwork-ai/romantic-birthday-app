@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "images": {
+    "1.jpg": {
+      "source": "348e8e13797f759b2218f5c4caae2fda8bb53c417cfde42ce90254f67747a925",
+      "webp": "ff8d9e584b1545be83b43f58464f8c412c7309714ecdb10a433ef7332b13d32a",
+      "avif": "6dc0a18d78278cbf4f4978ceaf465966d2ef6579ee6ab192c09ed1b8e266d9b0"
+    },
+    "2.jpg": {
+      "source": "0a9897491f3cc3f4251626954ef564205160168b6b0c34faac6bb5e778bcbc17",
+      "webp": "271ef61681e4134c900555403550ff18d7f676b62f8c95949e21ab1b4df2d878",
+      "avif": "ed72118e8310a2fe31e22d0158c9f3e018b21e85011097d7f3a9d022ee6ad292"
+    },
+    "3.jpg": {
+      "source": "4c7eb74211d5c1a2e2319bbe24c477d675d02dda2927bfa91e9edf0d8c908fa1",
+      "webp": "b1138175e270d130a10ac4c7e526ecf7df52727cfda5db4c90ae41f769883fff",
+      "avif": "effac9bb37e3f31811e8ebfc4c2bde2ee73adeb8aed3b0970ca85ff2a369da82"
+    },
+    "4.jpg": {
+      "source": "dbc3fe360f713716539d0f42c9e456e24ef223b40bf8d730e0dbc006021e0ea2",
+      "webp": "c0ebc845ca1f58b182eed7a16a5f0995887d1468dcef0bc9073dd37b47c5cb84",
+      "avif": "381186bc295564cf96b377744e5529bcc8e1725a4094b9e81c336ad97ba91267"
+    },
+    "5.jpg": {
+      "source": "307de99e1e19d080bcab57e60e4fe5ca10e6f4abfe92ba72503b85758223cae5",
+      "webp": "ea1736d9379027620860675a43b6a3c2bd41234f1bad269d281555fc73af5abc",
+      "avif": "4d8f4f3e2bd123b5bba93e5f71a0628d2add574de246d7f76c91aded189c20c0"
+    },
+    "6.jpg": {
+      "source": "bba7f22cb12d7f918cf43e42f773ff22390516efe3f362a1399b34ded5aa55f8",
+      "webp": "8e24ea7dcbacb28dd7cc3dab6704da3de305e684d1a2ce309a99a978e0b1016a",
+      "avif": "975358c42bbd4a3c7c1dfab02680758a4e5b252e82711692647baf6d0992da0c"
+    },
+    "7.jpg": {
+      "source": "0c51dfe5a9500f1f7f7a1410d337066113769e6b24e9d4e4f59cd9ff4226d772",
+      "webp": "18b3c36f6ecedad8d283df51882d85f723c8fc0b3a7e421461d0b55e4882ccb2",
+      "avif": "619262983cc5bf24de0551df8ff2ee305122feeb35e56da52ed8d2fb5d2d1c99"
+    },
+    "8.jpg": {
+      "source": "f82216a6ebff2c13c5f8524ab51720f963bbe77229d876b31fa6306c2598d028",
+      "webp": "9b3068a537bea13b13c2f0c3d8430d3f7acc1a707388fca7974c373f6ac0c45c",
+      "avif": "39414027aba636a826637675051f2e49fadb49aee40f5eb4909d20b1e255abca"
+    },
+    "9.jpg": {
+      "source": "5b12fdd80318e6e9b4a4e55567ff21efa36fe534757b721fb2e0e7879ba578e7",
+      "webp": "60021a0df3a61eeccd60e4737fdd44f657dc3713ea4fe7d2104b461d91e9d1e9",
+      "avif": "a1e51491642d0cd3c1aa3eea34b1981fffebf7ded78d8925ee93cec1521bb191"
+    },
+    "10.jpg": {
+      "source": "4e2bd7cb9dc6647df6c237f4240716816d33018493f6e6d196d3be052fc8b5ea",
+      "webp": "6c90cbe84489079370ba3f72edf86e39d809baa053e042386abebf5308349dde",
+      "avif": "24e2d1195189b82c85a5a996af6ecaa5bc91d798c7df2b3c14c9d4c8d914a125"
+    },
+    "11.jpg": {
+      "source": "1b851d501f6bc7b34a3383c3886dc0fe7de5c7b03df77903c7c73e568f7f41d9",
+      "webp": "6c88720d5dbbc1217fa8548d3229cd4758b1e423bebbeb031d490a30caab1f8d",
+      "avif": "d7095e9e75f722357239016f6f6c62a69cbce5f8fae5bbac0b67d219fc32eb25"
+    },
+    "12.jpg": {
+      "source": "00dda76a3127b0848a2a9439f98ae7504c94e51c58336bcb8b450612e79e2579",
+      "webp": "303281680b1b90454e7660887ebdb95159834b611b6defd9f4c738b6af03b898",
+      "avif": "c8ebe94ee78abaa78f3dc2fb15f052934a13998cdab5471ba05d18525c13d7e1"
+    },
+    "13.jpg": {
+      "source": "5bd32305e847913bc5a8aa2b0698ee1f1df5248cdbc59bb4e6a7a965f8fa4987",
+      "webp": "eda3e812f2d77d78a34185382c3ecabe52f947d4bac23382f77e597415fa0899",
+      "avif": "2345385312e2db11c39166a8181bc8b4c3c2b25909d8a35f52a30922031005fe"
+    },
+    "14.jpg": {
+      "source": "195f95fa0b9ae3848232eb59a446735cd4c0f56d11988bc8288c7ed4c9b7cd99",
+      "webp": "a143b8d4083d4f15501f8438924be3b6c24a39acf943336fdb72c948165c891f",
+      "avif": "062fe11da2821e40149d9ca7dd4a914c5153c0196f60eeae190027b73a853a5d"
+    },
+    "15.jpg": {
+      "source": "c67d05a40a33265a8e581734a95f804e09121dd54b9c920df5d2fa03916ef0a4",
+      "webp": "0f320e73d96125ee393b2ffed659ffb3425125c6dbc677a1d7859f9e0ef0fe58",
+      "avif": "4bad2558df206a44b23b800ca6b432099f49f4bbe3fa5ed1ec8fb062077e873c"
+    },
+    "16.jpg": {
+      "source": "416f4b415c02565d5fb82ecfa78cfc4a228f8d26d68fecf432936875188772c7",
+      "webp": "13bc5d21acfb219799b41acdd8fb2d19a5d3de00de89a21fcb457fbc5a0c2aeb",
+      "avif": "c1414e8040d03f7d7e4f89a0df957083e63bcbf34a4a44427b63c0eec4153502"
+    },
+    "17.jpg": {
+      "source": "b3d6edecdde0b4d72d973b90a553ea50b039db766224f57fa884938b103eddf9",
+      "webp": "4cb511bfc40a5a4d9fcf4a15d02a9c09762d05394b90f49653b8dd185986c3a0",
+      "avif": "913a516a365710526f2f516744e709758b830cda0e12b63cc7f11f32bef7aad1"
+    },
+    "18.jpg": {
+      "source": "02f621325a9f7213262ce535426f0c4b58809409014c13708f446c0a5b1bf867",
+      "webp": "8165d3d1eb82f53229419e8b80d7fa896e6d227475f488f0f82c504cf2d8c1f5",
+      "avif": "9c8add5ba37bb90ca08676696fac8e3574f2e1adfe73f365daad0b64ad16abee"
+    },
+    "19.jpg": {
+      "source": "a6d8bee9bf87bcb74e2084cdf08bfa4cf229e2e87b4bb495bd32a9a56db1d24f",
+      "webp": "a2ff0856b3a8bff5483286a79ef26ce53f3e7bb57a6ecde3db78074e9825411f",
+      "avif": "2b11c9b483f2bbadd84e596f941a7818834d7699176f7dbd2a628ea31f45dad0"
+    },
+    "20.jpg": {
+      "source": "e92ef6e32966a368fc2cbe435dde84a4576fd20227bc2f639ece8fca2ae21ab0",
+      "webp": "ca4a624d8b200aa3b23e81d054e1f7bcba5b7ba3a81be47f1bb5b06d2d248868",
+      "avif": "d316015b2ce631b76b816c9a9f9ac770433ccff0d80ebee6dd108e07693c1cc8"
+    },
+    "21.jpg": {
+      "source": "1e91f08b831c14570d9eb4bd3b0eb93f387ee246f46c20ab8bcdca031bf2df16",
+      "webp": "710f5efb5a9ae608bbfec13ee05b0d5eac6c66463dab1972db007cb59a017a41",
+      "avif": "a1857c382c2e06236b01688fc9bfef11ba344e6be7617e8ef7788630b4ab115f"
+    },
+    "swarovski-dancing-swan-5514421.jpg": {
+      "source": "fda07b65c99172053d140a89df6d743bc60a09205638f3f22a473a18e0cca6a6",
+      "webp": "6b06d71f28811bc40d9529abfe5bd3a441a53f3b2ac3f4ee461671172d635fe3",
+      "avif": "c0232333cf248aa64245c37fcb024df271d52e3c5fbe8c99f3420cd08386540d"
+    }
+  }
+}
