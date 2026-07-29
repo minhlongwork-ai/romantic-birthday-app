@@ -15,7 +15,7 @@
     "generate:qr": "node scripts/generate-share-qr.mjs",
     "optimize": "npm run optimize:images",
     "optimize:images": "node scripts/optimize-images.mjs",
-    "test": "node --test \"tests/unit/**/*.test.js\"",
+    "test": "node --test",
     "test:e2e": "npm run build && playwright test",
     "test:e2e:run": "playwright test",
     "test:all": "npm test && npm run test:e2e"
