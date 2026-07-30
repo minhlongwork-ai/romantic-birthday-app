@@ -1,7 +1,4 @@
-node_modules/
+.codegraph/
+.playwright-cli/
+output/
 .DS_Store
-.env
-.env.local
-dist/
-build/
-*.log

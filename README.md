@@ -1,44 +1,74 @@
-# Romantic Birthday Web App ❤️
+# August Herbarium
 
-Ứng dụng thiệp sinh nhật tương tác lãng mạn với hiệu ứng 3D, AI nhận diện cử chỉ và nhạc nền.
+Một thiệp chúc tháng Tám dạng cuốn herbarium kỹ thuật số, được thiết kế để
+kết nối với bó hoa thật ngoài đời. Dự án chạy hoàn toàn tĩnh bằng HTML, CSS
+và JavaScript thuần, độc lập với `romantic-birthday-app`.
 
-## 📁 Cấu trúc thư mục chuẩn
+## Hành trình
 
-Để ứng dụng hoạt động tốt nhất, hãy sắp xếp các file như sau:
+Thiệp có bảy stage toàn màn hình:
 
-```text
-romantic-birthday-app/
-├── index.html
-├── audio.mp3          <-- Nhạc nền của bạn (đổi tên thành audio.mp3)
-└── images/            <-- Thư mục chứa ảnh kỷ niệm
-    ├── 1.png
-    ├── 2.png
-    ...
-    └── 20.png
+1. Kéo con dấu hoặc nhấn `Mở thư`.
+2. Đọc lời chúc đầu tháng.
+3. Chọn một điều muốn mang theo.
+4. Chụp cùng bó hoa, chọn ảnh có sẵn hoặc bỏ qua.
+5. Căn ảnh, zoom, xoay và chọn khung.
+6. Sắp ba cành hoa vào trang rồi ép hoa.
+7. Lưu postcard PNG 1200 x 1500 hoặc chia sẻ bằng Web Share.
+
+Nhánh không có ảnh vẫn hoàn thành đầy đủ. Toàn bộ luồng dùng được bằng bàn
+phím và có chế độ `prefers-reduced-motion`.
+
+## Quyền riêng tư
+
+Ảnh chỉ được xử lý trong bộ nhớ của trình duyệt:
+
+- Không có backend, tài khoản hoặc cloud upload.
+- Không lưu ảnh vào URL, localStorage, IndexedDB hoặc service worker.
+- Blob URL và ImageBitmap được giải phóng khi chọn ảnh khác, replay hoặc
+  đóng trang.
+- Nút chụp dùng camera hệ thống qua file input, không mở WebRTC stream.
+
+Hỗ trợ JPEG, PNG và WebP tối đa 15 MB. HEIC/HEIF được dùng khi chính trình
+duyệt có thể giải mã. Ảnh lớn được giảm xuống tối đa 2048 px ở cạnh dài.
+
+## Chạy local
+
+Yêu cầu Node.js 20 trở lên.
+
+```bash
+npm run dev
 ```
 
-## 🚀 Cách chạy trên máy tính (Local)
+Mở `http://127.0.0.1:5190/`.
 
-1. Bỏ ảnh của bạn vào thư mục `images/` và đặt tên từ `1.png` đến `20.png`.
-2. Bỏ file nhạc vào thư mục gốc và đổi tên thành `audio.mp3`.
-3. **Mở bằng Local Server**: Đừng mở file trực tiếp. Hãy dùng extension **Live Server** trong VS Code hoặc chạy lệnh `npx serve .` trong terminal. Điều này bắt buộc để trình duyệt cho phép truy cập Camera.
+Tên người nhận và người gửi có thể được tùy biến:
 
-## 🔗 Cách cá nhân hóa qua URL
+```text
+http://127.0.0.1:5190/?to=Em&from=Minh%20Long
+```
 
-Bạn có thể thay đổi tên và tuổi bằng cách thêm tham số vào link:
-`index.html?to=Tên_Người_Nhận&age=23&from=Tên_Người_Gửi`
+Giá trị query được chuẩn hóa Unicode, cắt khoảng trắng và giới hạn 32 ký tự.
 
-## 🖐️ Hướng dẫn tương tác
+## Kiểm tra
 
-- **Màn 1**: Bấm "Mở quà" để bắt đầu nhạc.
-- **Màn 2**: Bấm vào phong bì để mở thư.
-- **Màn 3**: Vẫy tay nhanh trước webcam để thổi nến.
-- **Màn 4**:
-  - 🖐️ Di chuyển tay trái/phải để xoay gallery ảnh.
-  - 🤏 Chụm ngón cái và ngón trỏ để phóng to ảnh.
+```bash
+npm run qa
+```
 
-## 🌐 Deploy lên GitHub Pages
+Lệnh này kiểm tra cú pháp, cấu hình bảy stage, asset và font self-hosted,
+external runtime URL, giới hạn dung lượng, photo crop math, flower anchors
+và postcard helpers.
 
-1. Up toàn bộ thư mục lên một Repo mới.
-2. Vào Settings -> Pages -> Chọn branch `main` -> Save.
-3. Chờ 1 phút để nhận link công khai.
+## Cấu trúc
+
+- `index.html`: shell semantic và metadata của thiệp.
+- `src/main.js`: state controller, history và lifecycle `enter/exit`.
+- `src/herbarium/config.js`: copy, lời chúc, frame và asset paths.
+- `src/herbarium/scenes.js`: giao diện và tương tác của bảy stage.
+- `src/herbarium/photo-engine.js`: validation, decode, downscale và cleanup.
+- `src/herbarium/arrangement-engine.js`: sáu anchor và layer của cành hoa.
+- `src/herbarium/postcard-renderer.js`: xuất postcard Canvas 1200 x 1500.
+- `public/images/herbarium/`: botanical PNG và WebP self-hosted.
+- `public/fonts/`: Cormorant Garamond WOFF2 self-hosted.
+- `scripts/validate.mjs`: preflight cho app static.
