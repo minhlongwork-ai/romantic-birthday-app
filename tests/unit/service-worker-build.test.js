@@ -26,7 +26,7 @@ function finalize(distDir) {
   );
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
   const source = readFileSync(join(distDir, 'service-worker.js'), 'utf8');
-  return source.match(/birthday-album-([a-f0-9]+)/)?.[1];
+  return source.match(/birthday-keepsake-([a-f0-9]+)/)?.[1];
 }
 
 test('service-worker cache revision changes when a public media file changes', () => {

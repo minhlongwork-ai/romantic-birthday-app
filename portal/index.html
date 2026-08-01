@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta
+      name="description"
+      content="Chọn một trong hai tấm thiệp được chuẩn bị riêng cho em."
+    />
+    <meta name="theme-color" content="#f2eee7" />
+    <meta property="og:title" content="Chọn tấm thiệp dành cho em" />
+    <meta
+      property="og:description"
+      content="Hai tấm thiệp, hai câu chuyện được chuẩn bị riêng cho em."
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:url"
+      content="https://minhlongwork-ai.github.io/romantic-birthday-app/"
+    />
+    <link rel="icon" href="./birthday/favicon.svg" type="image/svg+xml" />
+    <title>Chọn tấm thiệp dành cho em</title>
+    <link rel="stylesheet" href="./portal.css" />
+    <script src="./portal.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#gift-options">Đi tới danh sách thiệp</a>
+
+    <main class="portal-shell">
+      <header class="portal-header">
+        <p class="portal-kicker">Hai tấm thiệp, hai khoảnh khắc</p>
+        <h1>Hôm nay em muốn mở điều gì?</h1>
+        <p class="portal-intro">
+          Mỗi tấm thiệp là một câu chuyện khác, được viết riêng cho em.
+        </p>
+      </header>
+
+      <nav id="gift-options" class="gift-options" aria-label="Chọn tấm thiệp">
+        <a
+          class="gift-card gift-card-birthday"
+          href="./birthday/"
+          data-project-link
+          aria-describedby="birthday-description"
+        >
+          <figure class="gift-media">
+            <img
+              src="./birthday/images/swarovski-dancing-swan-5514421.webp"
+              alt="Dây chuyền thiên nga trắng lấp lánh trên nền nhung xanh đêm"
+              width="1536"
+              height="1024"
+              fetchpriority="high"
+            />
+            <span class="media-fallback" aria-hidden="true">Kỷ niệm đang chờ em</span>
+          </figure>
+          <span class="gift-copy">
+            <span class="gift-kind">Memory Scrapbook</span>
+            <span class="gift-title" role="heading" aria-level="2">Thiệp sinh nhật</span>
+            <span id="birthday-description" class="gift-description">
+              Mở album kỷ niệm, thổi nến và khám phá món quà nhỏ giữa bầu trời sao.
+            </span>
+            <span class="gift-action">
+              Mở thiệp sinh nhật
+              <span class="gift-arrow" aria-hidden="true">&#8594;</span>
+            </span>
+          </span>
+        </a>
+
+        <a
+          class="gift-card gift-card-august"
+          href="./august/"
+          data-project-link
+          aria-describedby="august-description"
+        >
+          <figure class="gift-media">
+            <img
+              src="./august/public/images/flower-atelier.webp"
+              alt="Bình hoa trắng và hồng bên khung cửa sổ ngày mưa"
+              width="1536"
+              height="1024"
+              loading="eager"
+            />
+            <span class="media-fallback" aria-hidden="true">Tháng Tám đang chờ em</span>
+          </figure>
+          <span class="gift-copy">
+            <span class="gift-kind">August Herbarium</span>
+            <span class="gift-title" role="heading" aria-level="2">Thiệp tháng Tám</span>
+            <span id="august-description" class="gift-description">
+              Chọn một lời chúc, giữ khoảnh khắc cùng bó hoa và làm postcard của riêng em.
+            </span>
+            <span class="gift-action">
+              Mở thiệp tháng Tám
+              <span class="gift-arrow" aria-hidden="true">&#8594;</span>
+            </span>
+          </span>
+        </a>
+      </nav>
+
+      <footer class="portal-footer">
+        <p>Thông tin cá nhân hóa trong đường dẫn sẽ được chuyển tiếp sang thiệp em chọn.</p>
+      </footer>
+    </main>
+  </body>
+</html>

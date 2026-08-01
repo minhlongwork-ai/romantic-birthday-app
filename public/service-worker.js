@@ -90,7 +90,7 @@ self.addEventListener('activate', event => {
     caches.keys()
       .then(keys => Promise.all(
         keys
-          .filter(key => key.startsWith('static-birthday-album-') && key !== CACHE_NAME)
+          .filter(key => key.startsWith('static-birthday-keepsake-') && key !== CACHE_NAME)
           .map(key => caches.delete(key)),
       ))
       .then(() => self.clients.claim()),

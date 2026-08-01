@@ -1,9 +1,14 @@
-# Romantic Birthday App
+# Romantic Gift Collection
 
-Một cuốn album sinh nhật tương tác được xây bằng Vite. Nội dung lời chúc, người
-nhận, nhạc nền và 21 kỷ niệm được quản lý tập trung trong `src/content/gift.json`.
-Ứng dụng có thể cài như PWA, hỗ trợ điều khiển bằng bàn phím/cảm ứng và có cử chỉ
-camera hoàn toàn tự nguyện.
+Một website tĩnh gồm cổng chọn thiệp và hai trải nghiệm độc lập:
+
+- `/birthday/`: Memory Scrapbook sinh nhật được xây bằng Vite.
+- `/august/`: August Herbarium với ảnh tùy chọn và postcard hoa ép.
+
+Trang gốc hiển thị hai bìa thiệp để người nhận chọn. Các query `to`, `from` và
+`age` được giữ lại khi chuyển sang thiệp tương ứng. Nội dung album sinh nhật,
+nhạc nền và 21 kỷ niệm được quản lý trong `src/content/gift.json`; August
+Herbarium nằm riêng trong `apps/august/`.
 
 ## Chạy trên máy
 
@@ -14,9 +19,12 @@ npm ci
 npm run dev
 ```
 
-Mở địa chỉ Vite in ra trong terminal. Không mở trực tiếp `index.html`, vì camera,
-module JavaScript và service worker cần một origin an toàn (`localhost` hoặc
-HTTPS).
+Mở `http://127.0.0.1:4183/` để xem cổng chọn thiệp. `npm run dev` tạo bản
+composite trong `dist/` rồi chạy static server. Khi chỉ phát triển thiệp sinh
+nhật và cần hot reload, dùng `npm run dev:birthday`.
+
+Không mở trực tiếp `index.html`, vì camera, module JavaScript và service worker
+cần một origin an toàn (`localhost` hoặc HTTPS).
 
 Nếu chạy E2E lần đầu, cài Chromium cho Playwright:
 
@@ -103,11 +111,12 @@ dùng xóa dữ liệu trang.
 
 | Lệnh | Công dụng |
 |---|---|
-| `npm run dev` | Chạy Vite development server. |
-| `npm run build` | Kiểm tra dữ liệu rồi build production vào `dist/`. |
+| `npm run dev` | Build và chạy cổng chọn cùng cả hai thiệp tại port 4183. |
+| `npm run dev:birthday` | Chạy riêng Vite development server của thiệp sinh nhật. |
+| `npm run build` | Kiểm tra dữ liệu rồi build chooser, Birthday và August vào `dist/`. |
 | `npm run validate` | Kiểm tra `gift.json` và toàn bộ media được tham chiếu. |
 | `npm run generate:qr` | Sinh `public/share-qr.svg` từ URL chia sẻ an toàn. |
-| `npm test` | Chạy unit test bằng Node test runner. |
+| `npm test` | Chạy unit test của cả Birthday và August. |
 | `npm run test:e2e` | Build production rồi chạy browser matrix Playwright trên `dist/`. |
 | `npm run test:e2e:run` | Chạy Playwright trên `dist/` đã build sẵn (dùng trong CI). |
 | `npm run optimize` | Tạo WebP, AVIF và các asset thương hiệu từ ảnh gốc. |
@@ -138,9 +147,22 @@ service worker đang chờ rồi mở lại phiên bản mới.
 Workflow `.github/workflows/pages.yml` tự động:
 
 1. cài dependency bằng `npm ci`;
-2. chạy unit test, validate dữ liệu và build Vite với base tương đối;
+2. chạy unit test, validate dữ liệu và tạo artifact composite;
 3. cài browser matrix rồi chạy E2E trên bản production preview;
 4. với push lên `main`, upload duy nhất `dist/` và triển khai bằng GitHub Pages.
+
+Artifact sau build có cấu trúc:
+
+```text
+dist/
+  index.html
+  birthday/
+  august/
+```
+
+Service worker tại trang gốc chỉ dùng để gỡ cache của bản Birthday cũ. Thiệp
+sinh nhật đăng ký service worker riêng trong scope `/birthday/`, nên không can
+thiệp vào August Herbarium.
 
 Trong repository GitHub, vào **Settings → Pages → Build and deployment** và chọn
 **GitHub Actions** làm source. Mỗi lần push lên nhánh `main` (hoặc chạy workflow
@@ -151,3 +173,11 @@ trước khi dùng.
 Ảnh social preview là artwork chung, không chứa tên hoặc ảnh cá nhân. Build cũng
 tạo `public/share-qr.svg` từ `sharing.publicUrl`; QR cố ý không dùng các query
 `to`, `age`, `from`. Nếu dùng custom domain, cập nhật URL này trước khi build.
+
+## Vercel
+
+`vercel.json` khai báo `npm run build` và output `dist/`. Vì toàn bộ asset dùng
+đường dẫn tương đối, cùng artifact có thể chạy trên Vercel Preview hoặc Vercel
+Production mà không cần rewrite. URL trong QR và metadata Birthday vẫn trỏ tới
+GitHub Pages để giữ một đường dẫn chia sẻ ổn định; chỉ đổi
+`sharing.publicUrl` nếu Vercel sẽ trở thành domain chính thức.

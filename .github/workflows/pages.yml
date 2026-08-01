@@ -49,6 +49,7 @@ jobs:
         run: npm run test:e2e:run
         env:
           E2E_BASE_PATH: /romantic-birthday-app/
+          E2E_APP_PATH: birthday/
 
       - name: Upload production artifact
         if: github.event_name != 'pull_request'

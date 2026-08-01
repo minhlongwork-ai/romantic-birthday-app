@@ -59,7 +59,7 @@ const buildHash = revisionHash
   .slice(0, 12);
 
 const finalizedSource = serviceWorkerSource
-  .replace('__BUILD_CACHE_VERSION__', `birthday-album-${buildHash}`)
+  .replace('__BUILD_CACHE_VERSION__', `birthday-keepsake-${buildHash}`)
   .replace(
     '/*__BUILD_ASSETS__*/ []',
     JSON.stringify([...entryAssets].sort(), null, 2),

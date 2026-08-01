@@ -1,8 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const basePath = process.env.E2E_BASE_PATH || '/';
+const siteBasePath = process.env.E2E_BASE_PATH || '/';
+const appPath = process.env.E2E_APP_PATH || 'birthday/';
 const e2ePort = Number(process.env.E2E_PORT || 4183);
-const baseURL = new URL(basePath, `http://127.0.0.1:${e2ePort}/`).href;
+const siteURL = new URL(siteBasePath, `http://127.0.0.1:${e2ePort}/`).href;
+const baseURL = new URL(appPath, siteURL).href;
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -58,7 +60,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run preview:e2e',
-    url: baseURL,
+    url: siteURL,
     reuseExistingServer: !process.env.CI,
   },
 });

@@ -1,0 +1,2232 @@
+.herbarium-scene {
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  padding:
+    max(1.1rem, env(safe-area-inset-top))
+    max(1.1rem, env(safe-area-inset-right))
+    max(1.35rem, env(safe-area-inset-bottom))
+    max(1.1rem, env(safe-area-inset-left));
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 16%, rgba(255, 255, 255, 0.9), transparent 25rem),
+    radial-gradient(circle at 78% 86%, rgba(143, 49, 70, 0.08), transparent 28rem),
+    linear-gradient(108deg, #f1e7d7, #f8f2e8 48%, #e8dccb);
+  animation: scene-enter 540ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.herbarium-scene::before,
+.herbarium-scene::after {
+  position: absolute;
+  z-index: -2;
+  content: "";
+  pointer-events: none;
+}
+
+.herbarium-scene::before {
+  inset: 0;
+  opacity: 0.44;
+  background-image:
+    repeating-linear-gradient(
+      95deg,
+      transparent 0,
+      transparent 7px,
+      rgba(79, 64, 45, 0.022) 8px
+    ),
+    repeating-linear-gradient(
+      2deg,
+      transparent 0,
+      transparent 11px,
+      rgba(255, 255, 255, 0.12) 12px
+    );
+  mix-blend-mode: multiply;
+}
+
+.herbarium-scene::after {
+  inset: auto -8rem -12rem auto;
+  width: 34rem;
+  height: 34rem;
+  border: 1px solid rgba(143, 49, 70, 0.12);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 4rem rgba(143, 49, 70, 0.025),
+    0 0 0 9rem rgba(143, 49, 70, 0.018);
+}
+
+.herbarium-scene__grain {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.34;
+  background:
+    radial-gradient(circle at 12% 23%, rgba(78, 96, 75, 0.18) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 77% 61%, rgba(143, 49, 70, 0.13) 0 1px, transparent 1.5px);
+  background-size: 41px 43px, 57px 61px;
+  mask-image: linear-gradient(to bottom, black, transparent 90%);
+}
+
+.scene-chrome {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(100%, 92rem);
+  min-height: 2.75rem;
+  margin: 0 auto;
+}
+
+.scene-back {
+  display: inline-flex;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.35rem 0.15rem;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition:
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.scene-back:hover {
+  color: var(--rose);
+  transform: translateX(-2px);
+}
+
+.scene-back--placeholder {
+  visibility: hidden;
+}
+
+.scene-folio {
+  display: inline-flex;
+  gap: 0.55rem;
+  align-items: center;
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.scene-folio i {
+  display: block;
+  width: 2.75rem;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.4;
+}
+
+.herbarium-scene__content {
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.72fr) minmax(28rem, 1.28fr);
+  gap: clamp(2rem, 7vw, 8rem);
+  align-items: center;
+  width: min(100%, 86rem);
+  min-height: calc(100dvh - 6.3rem);
+  margin: 0 auto;
+  padding: clamp(2.4rem, 6vh, 5.8rem) 0 clamp(2rem, 5vh, 4.5rem);
+}
+
+.scene-copy {
+  position: relative;
+  z-index: 4;
+  max-width: 34rem;
+}
+
+.scene-eyebrow {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  margin: 0 0 1.25rem;
+  color: var(--rose);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.scene-eyebrow::before {
+  width: 2.4rem;
+  height: 1px;
+  content: "";
+  background: currentColor;
+}
+
+.scene-copy h1 {
+  max-width: 12.5ch;
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-title);
+  font-size: clamp(3rem, 5.35vw, 6rem);
+  font-weight: 500;
+  letter-spacing: -0.018em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.scene-body {
+  max-width: 34rem;
+  margin-top: clamp(1.6rem, 3.5vh, 2.8rem);
+  color: var(--ink-soft);
+  font-size: clamp(1rem, 1.4vw, 1.17rem);
+  line-height: 1.75;
+  text-wrap: pretty;
+}
+
+.scene-body p {
+  margin: 0 0 0.9rem;
+}
+
+.scene-body strong {
+  color: var(--rose);
+  font-weight: 700;
+}
+
+.scene-stage {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+}
+
+.button {
+  position: relative;
+  display: inline-flex;
+  gap: 0.7rem;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.2rem;
+  padding: 0.75rem 1.4rem;
+  overflow: hidden;
+  color: #fffaf3;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  background: var(--rose);
+  border: 1px solid var(--rose);
+  border-radius: 0;
+  box-shadow: 0 0.7rem 1.4rem rgba(104, 34, 53, 0.14);
+  cursor: pointer;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--rose-dark);
+  border-color: var(--rose-dark);
+  box-shadow: 0 0.9rem 1.8rem rgba(104, 34, 53, 0.2);
+  transform: translateY(-2px);
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.button--secondary {
+  color: var(--ink);
+  background: rgba(251, 247, 239, 0.72);
+  border-color: rgba(37, 34, 30, 0.22);
+  box-shadow: none;
+}
+
+.button--secondary:hover:not(:disabled) {
+  color: var(--rose);
+  background: var(--paper-light);
+  border-color: var(--rose);
+  box-shadow: none;
+}
+
+.button--text {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.35rem;
+  color: var(--ink-soft);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.button--text:hover:not(:disabled) {
+  color: var(--rose);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.scene-actions {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  margin-top: 1.5rem;
+}
+
+.scene-actions--center {
+  justify-content: center;
+}
+
+.scene-actions--wrap {
+  flex-wrap: wrap;
+}
+
+.inline-status {
+  min-height: 1.4rem;
+  margin: 0.8rem 0 0;
+  color: var(--rose);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+/* Stage 1: envelope */
+
+.herbarium-scene--envelope .herbarium-scene__content {
+  grid-template-columns: minmax(19rem, 0.78fr) minmax(30rem, 1.22fr);
+}
+
+.herbarium-scene--envelope .scene-copy {
+  align-self: end;
+  padding-bottom: clamp(3rem, 10vh, 7.5rem);
+}
+
+.envelope-table {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: min(72vh, 47rem);
+  perspective: 1200px;
+}
+
+.envelope {
+  position: relative;
+  width: min(100%, 42rem);
+  aspect-ratio: 1.52;
+  filter: drop-shadow(0 2.3rem 2rem rgba(88, 64, 43, 0.22));
+  transform: rotate(-2.2deg);
+  transform-style: preserve-3d;
+  transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.envelope.is-dragging {
+  transform: rotate(-1.2deg) scale(1.012);
+}
+
+.envelope__back,
+.envelope__front,
+.envelope__flap {
+  position: absolute;
+  inset: 0;
+}
+
+.envelope__back {
+  background:
+    linear-gradient(105deg, rgba(255, 255, 255, 0.55), transparent 36%),
+    #e8dbc6;
+  border: 1px solid rgba(89, 72, 51, 0.16);
+}
+
+.envelope__front {
+  z-index: 4;
+  background:
+    linear-gradient(28deg, #e9dcc7 0 49%, transparent 49.3%),
+    linear-gradient(-28deg, #f1e6d4 0 49%, transparent 49.3%);
+  clip-path: polygon(0 25%, 50% 71%, 100% 25%, 100% 100%, 0 100%);
+}
+
+.envelope__front::after {
+  position: absolute;
+  inset: auto 10% 8% 10%;
+  height: 1px;
+  content: "";
+  background: rgba(89, 72, 51, 0.14);
+}
+
+.envelope__flap {
+  z-index: 5;
+  height: 62%;
+  background:
+    linear-gradient(140deg, rgba(255, 255, 255, 0.36), transparent 45%),
+    #e4d5bd;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  filter: drop-shadow(0 0.4rem 0.35rem rgba(77, 57, 39, 0.08));
+  transform-origin: top center;
+  transition: transform 680ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.envelope__letter {
+  position: absolute;
+  z-index: 2;
+  inset: 6% 8% 10%;
+  display: grid;
+  place-items: start center;
+  padding-top: 2rem;
+  color: var(--rose);
+  font-family: var(--font-handwriting);
+  font-size: clamp(1.5rem, 3vw, 2.8rem);
+  font-weight: 600;
+  line-height: 1.1;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 2rem,
+      rgba(143, 49, 70, 0.06) 2.05rem
+    ),
+    var(--paper-light);
+  border: 1px solid rgba(80, 62, 44, 0.12);
+  transition: transform 720ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.envelope.is-open .envelope__flap {
+  z-index: 1;
+  transform: rotateX(175deg);
+}
+
+.envelope.is-open .envelope__letter {
+  transform: translateY(-44%);
+}
+
+.wax-seal {
+  position: absolute;
+  z-index: 8;
+  top: 42%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: clamp(4.5rem, 7vw, 5.7rem);
+  min-width: 0;
+  height: clamp(4.5rem, 7vw, 5.7rem);
+  min-height: 0;
+  padding: 0;
+  color: rgba(255, 238, 221, 0.72);
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 600;
+  background:
+    radial-gradient(circle at 38% 32%, #af5265, #8f3146 45%, #682235 88%);
+  border: 0;
+  border-radius: 46% 54% 50% 47%;
+  box-shadow:
+    inset 0.28rem 0.25rem 0.45rem rgba(255, 255, 255, 0.2),
+    inset -0.25rem -0.32rem 0.5rem rgba(53, 13, 25, 0.26),
+    0 0.55rem 0.75rem rgba(77, 25, 41, 0.25);
+  cursor: grab;
+  transform:
+    translate(calc(-50% + var(--seal-progress, 0) * min(34vw, 12rem)), -50%)
+    rotate(calc(-8deg + var(--seal-progress, 0) * 19deg));
+  transition:
+    box-shadow 180ms ease,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  touch-action: none;
+}
+
+.envelope.is-dragging .wax-seal {
+  cursor: grabbing;
+  transition: box-shadow 180ms ease;
+}
+
+.wax-seal::before,
+.wax-seal::after {
+  position: absolute;
+  content: "";
+  border: 1px solid rgba(255, 230, 216, 0.28);
+  border-radius: 50%;
+}
+
+.wax-seal::before {
+  inset: 0.62rem;
+}
+
+.wax-seal::after {
+  inset: 0.88rem;
+  border-style: dotted;
+}
+
+.envelope-sprig {
+  position: absolute;
+  z-index: 0;
+  width: clamp(8rem, 20vw, 16rem);
+  pointer-events: none;
+  filter: sepia(0.12) drop-shadow(0 0.8rem 0.5rem rgba(64, 51, 35, 0.12));
+}
+
+.envelope-sprig img {
+  width: 100%;
+}
+
+.envelope-sprig--olive {
+  top: -3%;
+  right: -4%;
+  transform: rotate(24deg);
+}
+
+.envelope-sprig--poppy {
+  bottom: -8%;
+  left: -7%;
+  width: clamp(7rem, 18vw, 13rem);
+  transform: rotate(-27deg);
+}
+
+.gesture-hint {
+  position: absolute;
+  bottom: 3%;
+  left: 50%;
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: translateX(-50%);
+}
+
+.gesture-hint span {
+  color: var(--rose);
+  font-size: 1.3rem;
+}
+
+.envelope-open-button {
+  position: absolute;
+  right: 0;
+  bottom: 1%;
+}
+
+/* Stage 2: letter */
+
+.herbarium-scene--letter .scene-copy h1 {
+  max-width: 9.5ch;
+}
+
+.letter-sheet {
+  position: relative;
+  width: min(100%, 41rem);
+  min-height: min(72vh, 47rem);
+  margin-left: auto;
+  padding: clamp(3rem, 7vw, 6.2rem) clamp(2.2rem, 6vw, 5.3rem);
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(128, 91, 59, 0.045) 1px, transparent 1px),
+    linear-gradient(rgba(128, 91, 59, 0.035) 1px, transparent 1px),
+    #fbf7ef;
+  background-size: 23px 23px;
+  border: 1px solid rgba(95, 73, 48, 0.12);
+  box-shadow:
+    0 2.8rem 4rem rgba(88, 64, 43, 0.2),
+    inset 0 0 4rem rgba(134, 101, 64, 0.05);
+  transform: rotate(1deg);
+}
+
+.letter-sheet::before {
+  position: absolute;
+  inset: 1.2rem;
+  content: "";
+  pointer-events: none;
+  border: 1px solid rgba(143, 49, 70, 0.14);
+}
+
+.letter-sheet__date {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  color: var(--rose);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.letter-sheet blockquote {
+  position: relative;
+  z-index: 2;
+  max-width: 8.5em;
+  margin: 12% 0 0;
+  color: var(--ink);
+  padding-bottom: 0.1em;
+  font-family: var(--font-editorial);
+  font-size: clamp(2.5rem, 5vw, 4.8rem);
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: -0.018em;
+  line-height: 1.1;
+}
+
+.letter-sheet__signature {
+  position: relative;
+  z-index: 2;
+  margin-top: 2.5rem;
+  color: var(--ink-soft);
+  padding-bottom: 0.1em;
+  font-family: var(--font-handwriting);
+  font-size: 1.55rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.letter-sheet__flower {
+  position: absolute;
+  right: -6%;
+  bottom: -18%;
+  width: min(49%, 18rem);
+  opacity: 0.78;
+  filter: sepia(0.12);
+  transform: rotate(13deg);
+}
+
+.letter-sheet__flower img {
+  width: 100%;
+}
+
+.letter-sheet__continue {
+  position: absolute;
+  z-index: 4;
+  right: 2.3rem;
+  bottom: 2.1rem;
+  display: inline-flex;
+  gap: 0.65rem;
+  align-items: center;
+  color: var(--rose);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.letter-sheet__continue span {
+  font-size: 1.15rem;
+  transition: transform 180ms ease;
+}
+
+.letter-sheet__continue:hover span {
+  transform: translateY(3px);
+}
+
+/* Stage 3: wishes */
+
+.herbarium-scene--wishes .herbarium-scene__content {
+  grid-template-columns: minmax(17rem, 0.58fr) minmax(37rem, 1.42fr);
+  gap: clamp(2rem, 5vw, 5.2rem);
+}
+
+.wish-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.65rem, 1.4vw, 1.2rem);
+  align-items: end;
+}
+
+.wish-specimen {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(16rem, 1fr) auto;
+  min-width: 0;
+  min-height: clamp(29rem, 65vh, 38rem);
+  padding: 1.15rem 1rem 1.35rem;
+  overflow: hidden;
+  color: var(--ink);
+  text-align: left;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.55), transparent 45%),
+    rgba(251, 247, 239, 0.74);
+  border: 1px solid rgba(90, 72, 50, 0.13);
+  box-shadow: 0 1.6rem 2rem rgba(75, 56, 36, 0.1);
+  cursor: pointer;
+  transform: translateY(calc((var(--specimen-index) - 1) * 1.4rem))
+    rotate(calc((var(--specimen-index) - 1) * 1.4deg));
+  transition:
+    background-color 240ms ease,
+    border-color 240ms ease,
+    box-shadow 240ms ease,
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wish-specimen:hover,
+.wish-specimen.is-selected {
+  z-index: 3;
+  border-color: rgba(143, 49, 70, 0.42);
+  box-shadow: 0 2.2rem 3rem rgba(95, 48, 52, 0.18);
+  transform: translateY(-1.1rem) rotate(0deg);
+}
+
+.wish-specimen.is-selected {
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.68), transparent 42%),
+    #f9efe7;
+}
+
+.wish-specimen__number {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  color: var(--rose);
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.wish-specimen__flower {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 0;
+}
+
+.wish-specimen__flower img {
+  width: auto;
+  max-width: 92%;
+  height: clamp(15rem, 37vh, 23rem);
+  object-fit: contain;
+  filter: sepia(0.08) drop-shadow(0 0.6rem 0.35rem rgba(78, 61, 42, 0.11));
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wish-specimen:hover .wish-specimen__flower img,
+.wish-specimen.is-selected .wish-specimen__flower img {
+  transform: scale(1.04) rotate(-1deg);
+}
+
+.wish-specimen__copy {
+  display: grid;
+  gap: 0.4rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(74, 60, 43, 0.16);
+}
+
+.wish-specimen__copy small {
+  color: var(--rose);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.wish-specimen__copy strong {
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 2.2vw, 2.1rem);
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  line-height: 1.08;
+}
+
+.wish-specimen__copy span {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+/* Stage 4: photo prompt */
+
+.photo-invitation {
+  display: grid;
+  grid-template-columns: minmax(16rem, 1.05fr) minmax(13rem, 0.75fr);
+  gap: 1.3rem 2rem;
+  align-items: center;
+}
+
+.photo-invitation__viewfinder {
+  position: relative;
+  grid-row: span 2;
+  width: min(100%, 28rem);
+  aspect-ratio: 4 / 5;
+  margin: 0 auto;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 52% 25%, rgba(255, 255, 255, 0.82), transparent 22%),
+    linear-gradient(145deg, #d8cbb6, #b7a48c);
+  box-shadow: 0 2rem 3rem rgba(78, 57, 37, 0.2);
+}
+
+.photo-invitation__viewfinder::after {
+  position: absolute;
+  inset: 7%;
+  content: "";
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 48% 48% 44% 44%;
+}
+
+.viewfinder-corner {
+  position: absolute;
+  z-index: 4;
+  width: 2.3rem;
+  height: 2.3rem;
+  border-color: rgba(255, 255, 255, 0.9);
+  border-style: solid;
+}
+
+.viewfinder-corner--tl {
+  top: 1.2rem;
+  left: 1.2rem;
+  border-width: 2px 0 0 2px;
+}
+
+.viewfinder-corner--tr {
+  top: 1.2rem;
+  right: 1.2rem;
+  border-width: 2px 2px 0 0;
+}
+
+.viewfinder-corner--bl {
+  bottom: 1.2rem;
+  left: 1.2rem;
+  border-width: 0 0 2px 2px;
+}
+
+.viewfinder-corner--br {
+  right: 1.2rem;
+  bottom: 1.2rem;
+  border-width: 0 2px 2px 0;
+}
+
+.viewfinder-portrait {
+  position: absolute;
+  z-index: 1;
+  inset: 17% 18% 7%;
+}
+
+.viewfinder-portrait i,
+.viewfinder-portrait span {
+  position: absolute;
+  left: 50%;
+  display: block;
+  background: rgba(91, 80, 67, 0.48);
+  transform: translateX(-50%);
+}
+
+.viewfinder-portrait i {
+  top: 0;
+  width: 31%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.viewfinder-portrait span {
+  top: 27%;
+  width: 68%;
+  height: 70%;
+  border-radius: 46% 46% 10% 10%;
+}
+
+.viewfinder-flower {
+  position: absolute;
+  z-index: 3;
+  right: -4%;
+  bottom: -11%;
+  width: 58%;
+  filter: sepia(0.08) drop-shadow(0 0.7rem 0.4rem rgba(45, 35, 24, 0.14));
+  transform: rotate(14deg);
+}
+
+.viewfinder-flower img {
+  width: 100%;
+}
+
+.photo-tips {
+  align-self: end;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(37, 34, 30, 0.18);
+}
+
+.photo-tips > p {
+  margin: 0 0 1rem;
+  color: var(--rose);
+  font-family: var(--font-handwriting);
+  font-size: 1.65rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.photo-tips ol {
+  display: grid;
+  gap: 0.72rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.photo-tips li {
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  gap: 0.6rem;
+  align-items: baseline;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.photo-tips li span {
+  color: var(--rose);
+  font-size: 0.63rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.privacy-note {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.privacy-note span {
+  display: grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--olive);
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.photo-invitation .scene-actions,
+.photo-invitation .inline-status {
+  grid-column: 1 / -1;
+}
+
+.photo-invitation.is-busy,
+.herbarium-scene.is-busy .photo-invitation {
+  cursor: progress;
+}
+
+/* Photo reveal: a short botanical transition between Stage 4 and Stage 5 */
+
+.photo-reveal {
+  position: fixed;
+  z-index: 40;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.photo-reveal__wash {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.96), transparent 24rem),
+    radial-gradient(circle at 7% 10%, rgba(217, 166, 174, 0.22), transparent 29rem),
+    radial-gradient(circle at 92% 91%, rgba(78, 96, 75, 0.17), transparent 30rem),
+    linear-gradient(128deg, #f4ecdf, #fbf7ef 52%, #eadfce);
+  transition: opacity 180ms ease;
+}
+
+.photo-reveal__wash::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  opacity: 0.22;
+  background-image:
+    repeating-linear-gradient(
+      94deg,
+      transparent 0,
+      transparent 8px,
+      rgba(79, 64, 45, 0.028) 9px
+    ),
+    repeating-linear-gradient(
+      3deg,
+      transparent 0,
+      transparent 12px,
+      rgba(255, 255, 255, 0.15) 13px
+    );
+}
+
+.photo-reveal__card {
+  position: relative;
+  z-index: 2;
+  width: min(76vw, 24rem, 58dvh);
+  aspect-ratio: 4 / 5;
+  padding: clamp(0.48rem, 1.5vw, 0.72rem);
+  margin: 0;
+  overflow: hidden;
+  opacity: 0;
+  background: #f8f1e6;
+  box-shadow:
+    0 2.1rem 4.2rem rgba(77, 55, 35, 0.24),
+    0 0 0 1px rgba(84, 65, 44, 0.08);
+  transform: translateY(0.7rem) scale(0.965);
+  will-change: opacity, transform;
+}
+
+.photo-reveal__card::after {
+  position: absolute;
+  inset: clamp(0.48rem, 1.5vw, 0.72rem);
+  content: "";
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
+}
+
+.photo-reveal__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  background: #d8cbb6;
+}
+
+.photo-reveal__card.is-image-missing .photo-reveal__image {
+  opacity: 0;
+}
+
+.photo-reveal__cluster--top-left,
+.photo-reveal__cluster--bottom-right {
+  position: absolute;
+  z-index: 3;
+  width: clamp(13rem, 34vw, 29rem);
+  aspect-ratio: 1;
+  opacity: 0;
+  will-change: opacity, transform;
+}
+
+.photo-reveal__cluster--top-left {
+  top: clamp(-5.5rem, -7vw, -2rem);
+  left: clamp(-6rem, -7vw, -2.2rem);
+  transform: translate(-1.15rem, -1.15rem) scale(0.88) rotate(-2deg);
+}
+
+.photo-reveal__cluster--bottom-right {
+  right: clamp(-6.5rem, -8vw, -2.4rem);
+  bottom: clamp(-6rem, -8vw, -2.3rem);
+  transform: translate(1.15rem, 1.15rem) scale(0.88) rotate(2deg);
+}
+
+.photo-reveal__botanical--lily,
+.photo-reveal__botanical--dahlia,
+.photo-reveal__botanical--olive {
+  position: absolute;
+  display: block;
+  margin: 0;
+  filter: sepia(0.04) drop-shadow(0 0.65rem 0.45rem rgba(55, 43, 29, 0.13));
+}
+
+.photo-reveal__botanical--lily img,
+.photo-reveal__botanical--dahlia img,
+.photo-reveal__botanical--olive img {
+  display: block;
+  width: 100%;
+  transform-origin: 50% 82%;
+  will-change: transform;
+}
+
+.photo-reveal__cluster--top-left .photo-reveal__botanical--olive {
+  top: -2%;
+  left: 16%;
+  width: 66%;
+  transform: rotate(72deg);
+}
+
+.photo-reveal__cluster--top-left .photo-reveal__botanical--lily {
+  top: 12%;
+  left: -4%;
+  width: 60%;
+  transform: rotate(116deg);
+}
+
+.photo-reveal__cluster--top-left .photo-reveal__botanical--dahlia {
+  top: 2%;
+  left: 33%;
+  width: 48%;
+  transform: rotate(38deg);
+}
+
+.photo-reveal__cluster--bottom-right .photo-reveal__botanical--olive {
+  right: 15%;
+  bottom: -1%;
+  width: 68%;
+  transform: rotate(-108deg);
+}
+
+.photo-reveal__cluster--bottom-right .photo-reveal__botanical--lily {
+  right: -4%;
+  bottom: 12%;
+  width: 61%;
+  transform: rotate(-65deg);
+}
+
+.photo-reveal__cluster--bottom-right .photo-reveal__botanical--dahlia {
+  right: 34%;
+  bottom: 2%;
+  width: 48%;
+  transform: rotate(-142deg);
+}
+
+.photo-reveal.is-active .photo-reveal__wash {
+  opacity: 1;
+}
+
+.photo-reveal.is-active .photo-reveal__card {
+  animation: photo-reveal-card 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.photo-reveal.is-active .photo-reveal__cluster--top-left {
+  animation:
+    photo-reveal-top-left
+    var(--photo-reveal-top-duration, 760ms)
+    cubic-bezier(0.22, 1, 0.36, 1)
+    var(--photo-reveal-top-delay, 120ms)
+    both;
+}
+
+.photo-reveal.is-active .photo-reveal__cluster--bottom-right {
+  animation:
+    photo-reveal-bottom-right
+    var(--photo-reveal-bottom-duration, 760ms)
+    cubic-bezier(0.22, 1, 0.36, 1)
+    var(--photo-reveal-bottom-delay, 260ms)
+    both;
+}
+
+.photo-reveal.is-active .photo-reveal__botanical--lily img,
+.photo-reveal.is-active .photo-reveal__botanical--dahlia img,
+.photo-reveal.is-active .photo-reveal__botanical--olive img {
+  animation: photo-reveal-settle 430ms ease-in-out 900ms both;
+}
+
+/* Stage 5: photo editor */
+
+.herbarium-scene--photo-editor .herbarium-scene__content {
+  grid-template-columns: minmax(17rem, 0.56fr) minmax(38rem, 1.44fr);
+}
+
+.photo-editor {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1fr) minmax(14rem, 0.72fr);
+  gap: clamp(1.5rem, 3vw, 3rem);
+  align-items: center;
+}
+
+.photo-editor__preview {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  padding: clamp(1rem, 2.5vw, 2rem);
+  background: rgba(125, 96, 66, 0.08);
+  box-shadow: inset 0 0 3rem rgba(89, 66, 42, 0.08);
+}
+
+.photo-cropper {
+  position: relative;
+  width: min(100%, 27rem);
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: #d8c9b3;
+  box-shadow: 0 2rem 3rem rgba(74, 54, 34, 0.22);
+  cursor: grab;
+  touch-action: none;
+}
+
+.photo-cropper:active {
+  cursor: grabbing;
+}
+
+.photo-cropper img,
+.photo-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform:
+    translate(var(--photo-x, 0), var(--photo-y, 0))
+    scale(var(--photo-zoom, 1))
+    rotate(var(--photo-rotation, 0deg));
+  transform-origin: center;
+  user-select: none;
+}
+
+.photo-cropper__guide {
+  position: absolute;
+  inset: 6%;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow: 0 0 0 200vmax rgba(31, 24, 19, 0.1);
+}
+
+.photo-frame--torn-paper,
+.photo-cropper.photo-frame--torn-paper {
+  clip-path: polygon(
+    1% 2%,
+    18% 1%,
+    31% 2.3%,
+    48% 0.6%,
+    66% 2%,
+    83% 0.8%,
+    99% 2%,
+    98.2% 23%,
+    99.5% 42%,
+    98% 61%,
+    99% 82%,
+    97.5% 99%,
+    78% 98%,
+    61% 99.2%,
+    42% 97.8%,
+    24% 99%,
+    1.5% 97.8%,
+    2.2% 78%,
+    0.8% 58%,
+    2% 38%
+  );
+}
+
+.photo-frame--polaroid,
+.photo-cropper.photo-frame--polaroid {
+  padding: 0.65rem 0.65rem 2.2rem;
+  background: #fbf7ef;
+  clip-path: none;
+}
+
+.photo-frame--oval,
+.photo-cropper.photo-frame--oval {
+  padding: 0.5rem;
+  background: var(--paper-light);
+  border: 1px solid rgba(143, 49, 70, 0.34);
+  border-radius: 50%;
+  clip-path: none;
+}
+
+.photo-frame--oval img,
+.photo-cropper.photo-frame--oval img {
+  border-radius: 50%;
+}
+
+.photo-editor__controls {
+  min-width: 0;
+}
+
+.control-group {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.15rem 0;
+  border-bottom: 1px solid rgba(37, 34, 30, 0.14);
+}
+
+.control-group label,
+.control-group legend {
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.control-group input[type="range"] {
+  width: 100%;
+}
+
+.control-group--inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.control-group--inline legend {
+  flex: 0 0 100%;
+}
+
+.choice-chip {
+  min-height: 2.55rem;
+  padding: 0.45rem 0.75rem;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 1px solid rgba(37, 34, 30, 0.18);
+  cursor: pointer;
+}
+
+.choice-chip:hover,
+.choice-chip.is-selected {
+  color: var(--rose);
+  background: rgba(255, 255, 255, 0.42);
+  border-color: var(--rose);
+}
+
+/* Stage 6: arrangement */
+
+.herbarium-scene--herbarium .herbarium-scene__content {
+  grid-template-columns: minmax(16rem, 0.52fr) minmax(40rem, 1.48fr);
+  gap: clamp(1.5rem, 4vw, 4rem);
+}
+
+.arrangement-workspace {
+  display: grid;
+  grid-template-columns: minmax(20rem, 1fr) minmax(12rem, 0.54fr);
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.herbarium-page {
+  position: relative;
+  width: min(100%, 30rem);
+  aspect-ratio: 4 / 5;
+  margin: 0 auto;
+  overflow: hidden;
+  background:
+    linear-gradient(98deg, rgba(128, 91, 59, 0.04) 1px, transparent 1px),
+    linear-gradient(rgba(128, 91, 59, 0.032) 1px, transparent 1px),
+    #fbf7ef;
+  background-size: 19px 19px;
+  border: 1px solid rgba(95, 73, 48, 0.13);
+  box-shadow: 0 2.3rem 3.2rem rgba(79, 57, 35, 0.2);
+  transform: rotate(-0.6deg);
+  transition:
+    box-shadow 600ms ease,
+    filter 600ms ease,
+    transform 600ms ease;
+}
+
+.herbarium-page::before {
+  position: absolute;
+  z-index: 5;
+  inset: 1.2rem;
+  content: "";
+  pointer-events: none;
+  border: 1px solid rgba(143, 49, 70, 0.13);
+}
+
+.herbarium-page__caption {
+  position: absolute;
+  z-index: 6;
+  top: 1.7rem;
+  left: 1.8rem;
+  color: var(--rose);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.herbarium-page__photo {
+  position: absolute;
+  z-index: 2;
+  top: 15%;
+  left: 15%;
+  width: 70%;
+  height: 67%;
+  margin: 0;
+  box-shadow: 0 1.25rem 1.4rem rgba(62, 45, 28, 0.16);
+  transform: rotate(-1.5deg);
+}
+
+.photo-placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+  font-family: var(--font-display);
+  font-size: clamp(5rem, 12vw, 9rem);
+  font-style: italic;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(217, 166, 174, 0.28), transparent 33%),
+    #eee2d0;
+  border: 1px solid rgba(99, 77, 52, 0.15);
+}
+
+.photo-placeholder span {
+  color: rgba(143, 49, 70, 0.08);
+  font-style: normal;
+  line-height: 1;
+}
+
+.photo-placeholder i {
+  position: absolute;
+  width: 38%;
+  height: 1px;
+  background: var(--rose);
+  opacity: 0.4;
+  transform: rotate(-7deg);
+}
+
+.herbarium-page__quote {
+  position: absolute;
+  z-index: 3;
+  right: 8%;
+  bottom: 8%;
+  max-width: 8em;
+  margin: 0;
+  color: var(--ink);
+  padding-bottom: 0.1em;
+  font-family: var(--font-handwriting);
+  font-size: clamp(1.45rem, 4.5vw, 2.7rem);
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.herbarium-page__quote.is-small {
+  z-index: 7;
+  max-width: 7em;
+  padding: 0.5rem;
+  font-size: clamp(1.1rem, 2.8vw, 1.7rem);
+  background: rgba(251, 247, 239, 0.88);
+}
+
+.herbarium-page__sender {
+  position: absolute;
+  z-index: 7;
+  right: 1.8rem;
+  bottom: 1.45rem;
+  max-width: 52%;
+  padding: 0.12rem 0.42rem 0.2rem;
+  overflow: hidden;
+  color: var(--rose);
+  font-family: var(--font-handwriting);
+  font-size: clamp(1.05rem, 2.8vw, 1.4rem);
+  font-weight: 600;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: rgba(251, 247, 239, 0.84);
+}
+
+.arranged-flowers {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+}
+
+.arranged-flower,
+.final-flower {
+  position: absolute;
+  z-index: var(--flower-layer);
+  top: var(--flower-y);
+  left: var(--flower-x);
+  display: block;
+  width: 34%;
+  min-width: 0;
+  height: 58%;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  filter: drop-shadow(0 0.55rem 0.35rem rgba(65, 47, 29, 0.13));
+  transform: translate(-50%, -50%);
+  transform-origin: 50% 80%;
+}
+
+.arranged-flower {
+  cursor: grab;
+  touch-action: none;
+  transition:
+    filter 180ms ease,
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.arranged-flower:hover,
+.arranged-flower.is-selected {
+  filter:
+    drop-shadow(0 0.65rem 0.45rem rgba(65, 47, 29, 0.17))
+    drop-shadow(0 0 0.4rem rgba(143, 49, 70, 0.32));
+  transform: translate(-50%, -50%) scale(1.035);
+}
+
+.arranged-flower.is-dragging {
+  cursor: grabbing;
+  transition: filter 180ms ease;
+}
+
+.arranged-flower--primary {
+  width: 39%;
+  height: 63%;
+}
+
+.arranged-flower--support {
+  width: 29%;
+  height: 52%;
+}
+
+.arranged-flower--lily {
+  width: 32%;
+  height: 60%;
+}
+
+.arranged-flower--foliage {
+  width: 24%;
+  height: 48%;
+}
+
+.arranged-flower__asset,
+.arranged-flower__asset img,
+.final-flower__asset,
+.final-flower__asset img {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  object-fit: contain;
+}
+
+.pressed-glow {
+  position: absolute;
+  z-index: 8;
+  top: 50%;
+  left: 50%;
+  width: 20%;
+  aspect-ratio: 1;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(182, 148, 90, 0.26), transparent 70%);
+  border-radius: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.4);
+}
+
+.herbarium-page.is-pressed {
+  box-shadow: 0 1.25rem 1.8rem rgba(79, 57, 35, 0.14);
+  filter: saturate(0.82) sepia(0.08);
+  transform: rotate(0deg) scale(0.99);
+}
+
+.herbarium-page.is-pressed .arranged-flower {
+  pointer-events: none;
+  filter: sepia(0.12);
+}
+
+.herbarium-page.is-pressed .pressed-glow {
+  animation: pressed-glow 760ms ease-out both;
+}
+
+.arrangement-controls {
+  align-self: center;
+}
+
+.arrangement-controls > p {
+  margin: 0 0 1rem;
+  color: var(--rose);
+  padding-bottom: 0.1em;
+  font-family: var(--font-handwriting);
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.anchor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.anchor-grid button,
+.layer-toggle {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  min-height: 2.8rem;
+  padding: 0.55rem 0.7rem;
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  text-align: left;
+  background: rgba(251, 247, 239, 0.5);
+  border: 1px solid rgba(37, 34, 30, 0.13);
+  cursor: pointer;
+}
+
+.anchor-grid button:hover,
+.anchor-grid button.is-selected,
+.layer-toggle:hover {
+  color: var(--rose);
+  border-color: var(--rose);
+}
+
+.anchor-grid button span {
+  width: 0.48rem;
+  height: 0.48rem;
+  background: currentColor;
+  border-radius: 50%;
+  opacity: 0.6;
+}
+
+.layer-toggle {
+  width: 100%;
+  margin-top: 0.7rem;
+}
+
+.sender-controls {
+  min-width: 0;
+  padding: 1rem 0 0;
+  margin: 1.15rem 0 0;
+  border: 0;
+  border-top: 1px solid rgba(37, 34, 30, 0.13);
+}
+
+.sender-controls legend {
+  padding: 0 0.45rem 0 0;
+  color: var(--rose);
+  font-family: var(--font-handwriting);
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.sender-toggle {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--ink);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.sender-toggle input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  accent-color: var(--rose);
+}
+
+.sender-name-field {
+  display: grid;
+  gap: 0.38rem;
+  margin-top: 0.55rem;
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  transition: opacity 180ms ease;
+}
+
+.sender-name-field input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.75rem;
+  color: var(--ink);
+  font-family: var(--font-handwriting);
+  font-size: 1.2rem;
+  background: rgba(251, 247, 239, 0.62);
+  border: 1px solid rgba(37, 34, 30, 0.18);
+  border-radius: 0;
+  outline: 0;
+}
+
+.sender-name-field input:focus-visible {
+  border-color: var(--rose);
+  box-shadow: 0 0 0 3px rgba(143, 49, 70, 0.13);
+}
+
+.sender-name-field.is-disabled {
+  opacity: 0.46;
+}
+
+.sender-controls > p {
+  margin: 0.45rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.press-area {
+  display: grid;
+  place-items: center;
+  margin-top: clamp(1.2rem, 4vh, 2.6rem);
+}
+
+.press-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 8.4rem;
+  min-width: 0;
+  aspect-ratio: 1;
+  min-height: 0;
+  padding: 1rem;
+  overflow: hidden;
+  color: #fff8ee;
+  background:
+    radial-gradient(circle at 36% 30%, #aa5062, var(--rose) 50%, var(--rose-dark));
+  border: 0;
+  border-radius: 50%;
+  box-shadow:
+    inset 0.35rem 0.25rem 0.6rem rgba(255, 255, 255, 0.16),
+    0 1.1rem 1.5rem rgba(92, 36, 50, 0.2);
+  cursor: pointer;
+  user-select: none;
+}
+
+.press-button__progress {
+  position: absolute;
+  inset: 0.43rem;
+  border: 2px solid rgba(255, 248, 238, 0.28);
+  border-top-color: #fff8ee;
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.press-button.is-pressing .press-button__progress {
+  opacity: 1;
+  animation: press-progress 900ms linear both;
+}
+
+.press-button__label {
+  position: relative;
+  z-index: 2;
+  max-width: 6rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.press-area p {
+  margin: 0.65rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+}
+
+/* Stage 7: finale */
+
+.herbarium-scene--finale .herbarium-scene__content {
+  grid-template-columns: minmax(18rem, 0.64fr) minmax(38rem, 1.36fr);
+}
+
+.finale-layout {
+  display: grid;
+  grid-template-columns: minmax(20rem, 1fr) minmax(13rem, 0.64fr);
+  gap: clamp(1.4rem, 3vw, 2.8rem);
+  align-items: center;
+}
+
+.final-postcard {
+  position: relative;
+  width: min(100%, 30rem);
+  aspect-ratio: 4 / 5;
+  margin: 0 auto;
+  overflow: hidden;
+  background:
+    linear-gradient(98deg, rgba(128, 91, 59, 0.04) 1px, transparent 1px),
+    linear-gradient(rgba(128, 91, 59, 0.032) 1px, transparent 1px),
+    #fbf7ef;
+  background-size: 19px 19px;
+  border: 1px solid rgba(95, 73, 48, 0.14);
+  box-shadow: 0 2.8rem 4rem rgba(75, 53, 33, 0.22);
+}
+
+.final-postcard::before {
+  position: absolute;
+  z-index: 8;
+  inset: 1.25rem;
+  content: "";
+  pointer-events: none;
+  border: 1px solid rgba(143, 49, 70, 0.16);
+}
+
+.final-postcard__month {
+  position: absolute;
+  z-index: 0;
+  top: -7%;
+  right: -2%;
+  color: rgba(143, 49, 70, 0.06);
+  font-family: var(--font-display);
+  font-size: clamp(9rem, 19vw, 15rem);
+  line-height: 1;
+}
+
+.final-postcard__photo {
+  position: absolute;
+  z-index: 2;
+  top: 10%;
+  left: 12%;
+  width: 68%;
+  height: 64%;
+  margin: 0;
+  box-shadow: 0 1.2rem 1.5rem rgba(60, 43, 27, 0.16);
+  transform: rotate(-1.7deg);
+}
+
+.final-postcard__flowers {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+}
+
+.final-flower--primary {
+  width: 40%;
+  height: 64%;
+}
+
+.final-flower--support {
+  width: 29%;
+  height: 52%;
+}
+
+.final-flower--lily {
+  width: 32%;
+  height: 60%;
+}
+
+.final-flower--foliage {
+  width: 24%;
+  height: 48%;
+}
+
+.final-postcard__copy {
+  position: absolute;
+  z-index: 7;
+  right: 8%;
+  bottom: 7%;
+  display: grid;
+  justify-items: end;
+  max-width: 58%;
+  padding: 0.7rem;
+  text-align: right;
+  background: rgba(251, 247, 239, 0.78);
+}
+
+.final-postcard__copy small {
+  color: var(--rose);
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.final-postcard__copy strong {
+  max-width: 8em;
+  margin-top: 0.28rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3.2vw, 2.25rem);
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  line-height: 1.08;
+}
+
+.final-postcard__copy p {
+  margin: 0.55rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+}
+
+.final-postcard__copy em {
+  margin-top: 0.15rem;
+  padding-bottom: 0.1em;
+  color: var(--rose);
+  font-family: var(--font-handwriting);
+  font-size: 1.25rem;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.finale-actions__note {
+  max-width: 26ch;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.finale-actions .scene-actions {
+  align-items: stretch;
+}
+
+/* Responsive */
+
+@media (max-width: 1100px) {
+  .herbarium-scene__content,
+  .herbarium-scene--envelope .herbarium-scene__content,
+  .herbarium-scene--wishes .herbarium-scene__content,
+  .herbarium-scene--photo-editor .herbarium-scene__content,
+  .herbarium-scene--herbarium .herbarium-scene__content,
+  .herbarium-scene--finale .herbarium-scene__content {
+    grid-template-columns: minmax(15rem, 0.62fr) minmax(29rem, 1.38fr);
+    gap: clamp(1.5rem, 4vw, 3.5rem);
+  }
+
+  .scene-copy h1 {
+    font-size: clamp(2.9rem, 5.5vw, 5.4rem);
+  }
+
+  .photo-editor,
+  .arrangement-workspace,
+  .finale-layout {
+    grid-template-columns: minmax(17rem, 1fr) minmax(12rem, 0.58fr);
+  }
+
+  .wish-specimen__copy span {
+    display: none;
+  }
+}
+
+@media (max-width: 780px) {
+  .herbarium-scene {
+    overflow-y: auto;
+  }
+
+  .scene-chrome {
+    position: sticky;
+    top: max(0.6rem, env(safe-area-inset-top));
+  }
+
+  .herbarium-scene__content,
+  .herbarium-scene--envelope .herbarium-scene__content,
+  .herbarium-scene--wishes .herbarium-scene__content,
+  .herbarium-scene--photo-editor .herbarium-scene__content,
+  .herbarium-scene--herbarium .herbarium-scene__content,
+  .herbarium-scene--finale .herbarium-scene__content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    align-content: start;
+    min-height: calc(100dvh - 5.5rem);
+    padding: 2.3rem 0 3rem;
+  }
+
+  .scene-copy {
+    max-width: 37rem;
+  }
+
+  .herbarium-scene--envelope .scene-copy {
+    align-self: auto;
+    padding-bottom: 0;
+  }
+
+  .scene-copy h1 {
+    max-width: 12.5ch;
+    font-size: clamp(3rem, 12.5vw, 4.4rem);
+    line-height: 1;
+  }
+
+  .scene-body {
+    margin-top: 1.3rem;
+    font-size: 1rem;
+  }
+
+  .envelope-table {
+    min-height: min(53vh, 29rem);
+  }
+
+  .envelope {
+    width: min(88vw, 35rem);
+  }
+
+  .envelope-open-button {
+    right: auto;
+    bottom: -1rem;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .envelope-open-button:hover:not(:disabled) {
+    transform: translateX(-50%) translateY(-2px);
+  }
+
+  .letter-sheet {
+    min-height: min(64vh, 37rem);
+    margin: 0 auto;
+  }
+
+  .wish-gallery {
+    grid-template-columns: repeat(3, minmax(12rem, 1fr));
+    padding: 1.4rem 1rem 2.2rem;
+    margin: 0 -1.1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+  }
+
+  .wish-specimen {
+    min-height: 30rem;
+    scroll-snap-align: center;
+    transform: none;
+  }
+
+  .wish-specimen:hover,
+  .wish-specimen.is-selected {
+    transform: translateY(-0.5rem);
+  }
+
+  .wish-specimen__copy span {
+    display: block;
+  }
+
+  .photo-invitation,
+  .photo-editor,
+  .arrangement-workspace,
+  .finale-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .photo-invitation__viewfinder {
+    grid-row: auto;
+    width: min(82vw, 26rem);
+  }
+
+  .photo-tips {
+    width: min(100%, 28rem);
+    margin: 0 auto;
+  }
+
+  .photo-editor__preview {
+    width: min(100%, 33rem);
+    margin: 0 auto;
+  }
+
+  .photo-editor__controls {
+    width: min(100%, 33rem);
+    margin: 0 auto;
+  }
+
+  .herbarium-page,
+  .final-postcard {
+    width: min(86vw, 29rem);
+  }
+
+  .arrangement-controls {
+    width: min(100%, 30rem);
+    margin: 0 auto;
+  }
+
+  .finale-actions {
+    width: min(100%, 30rem);
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 430px) {
+  .herbarium-scene {
+    padding-inline:
+      max(0.9rem, env(safe-area-inset-left))
+      max(0.9rem, env(safe-area-inset-right));
+  }
+
+  .scene-folio i {
+    width: 1.5rem;
+  }
+
+  .scene-back {
+    font-size: 0.68rem;
+  }
+
+  .scene-copy h1 {
+    font-size: clamp(2.55rem, 11.6vw, 3.15rem);
+  }
+
+  .herbarium-scene--envelope .scene-copy h1 {
+    font-size: clamp(3rem, 13.5vw, 3.65rem);
+  }
+
+  .scene-actions .button {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .scene-actions .button--text {
+    width: auto;
+  }
+
+  .envelope-table {
+    min-height: 23rem;
+  }
+
+  .envelope {
+    width: 94vw;
+    max-width: 22rem;
+  }
+
+  .envelope-sprig--olive {
+    right: -9%;
+  }
+
+  .envelope-sprig--poppy {
+    left: -11%;
+  }
+
+  .gesture-hint {
+    width: max-content;
+    max-width: 76vw;
+  }
+
+  .letter-sheet {
+    width: 94vw;
+    min-height: 31rem;
+    padding: 4rem 2.2rem 5rem;
+  }
+
+  .letter-sheet blockquote {
+    margin-top: 20%;
+    font-size: 2.7rem;
+  }
+
+  .letter-sheet__continue {
+    right: 1.6rem;
+    bottom: 1.5rem;
+  }
+
+  .wish-gallery {
+    grid-template-columns: repeat(3, minmax(78vw, 1fr));
+  }
+
+  .photo-invitation__viewfinder {
+    width: 88vw;
+  }
+
+  .photo-reveal__card {
+    width: min(76vw, 57dvh);
+  }
+
+  .photo-reveal__cluster--top-left,
+  .photo-reveal__cluster--bottom-right {
+    width: clamp(11.5rem, 58vw, 15rem);
+  }
+
+  .photo-editor__preview {
+    padding: 0.75rem;
+  }
+
+  .photo-cropper {
+    width: 82vw;
+  }
+
+  .herbarium-page,
+  .final-postcard {
+    width: 91vw;
+  }
+
+  .anchor-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .press-button {
+    width: 7.4rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .herbarium-scene {
+    animation: none;
+  }
+
+  .envelope,
+  .envelope__flap,
+  .envelope__letter,
+  .wax-seal,
+  .wish-specimen,
+  .wish-specimen__flower img,
+  .arranged-flower,
+  .herbarium-page {
+    transition-duration: 180ms !important;
+  }
+
+  .press-button.is-pressing .press-button__progress,
+  .herbarium-page.is-pressed .pressed-glow {
+    animation: none;
+  }
+
+  .photo-reveal__wash {
+    transition-duration: 180ms;
+  }
+
+  .photo-reveal__card,
+  .photo-reveal__cluster--top-left,
+  .photo-reveal__cluster--bottom-right {
+    animation: none !important;
+    transform: none;
+    transition: opacity 180ms ease;
+  }
+
+  .photo-reveal.is-active .photo-reveal__card,
+  .photo-reveal.is-active .photo-reveal__cluster--top-left,
+  .photo-reveal.is-active .photo-reveal__cluster--bottom-right {
+    opacity: 1;
+  }
+
+  .photo-reveal__botanical--lily img,
+  .photo-reveal__botanical--dahlia img,
+  .photo-reveal__botanical--olive img {
+    animation: none !important;
+    transform: none;
+  }
+}
+
+@keyframes scene-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.7rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes photo-reveal-card {
+  from {
+    opacity: 0;
+    transform: translateY(0.7rem) scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes photo-reveal-top-left {
+  0% {
+    opacity: 0;
+    transform: translate(-1.15rem, -1.15rem) scale(0.88) rotate(-2deg);
+  }
+  76% {
+    opacity: 1;
+    transform: translate(0.12rem, 0.1rem) scale(1.012) rotate(0.35deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0) scale(1) rotate(0);
+  }
+}
+
+@keyframes photo-reveal-bottom-right {
+  0% {
+    opacity: 0;
+    transform: translate(1.15rem, 1.15rem) scale(0.88) rotate(2deg);
+  }
+  76% {
+    opacity: 1;
+    transform: translate(-0.12rem, -0.1rem) scale(1.012) rotate(-0.35deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0) scale(1) rotate(0);
+  }
+}
+
+@keyframes photo-reveal-settle {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  48% {
+    transform: translateY(-1px) rotate(0.7deg);
+  }
+}
+
+@keyframes press-progress {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pressed-glow {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  44% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(7);
+  }
+}

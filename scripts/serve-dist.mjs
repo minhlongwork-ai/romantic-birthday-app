@@ -6,6 +6,7 @@ import { createServer } from 'node:http';
 import {
   extname,
   isAbsolute,
+  join,
   relative,
   resolve,
 } from 'node:path';
@@ -65,6 +66,11 @@ async function findResponseFile(request) {
   try {
     const fileStat = await stat(filePath);
     if (fileStat.isFile()) return { filePath, status: 200 };
+    if (fileStat.isDirectory()) {
+      const indexPath = join(filePath, 'index.html');
+      const indexStat = await stat(indexPath).catch(() => null);
+      if (indexStat?.isFile()) return { filePath: indexPath, status: 200 };
+    }
   } catch (error) {
     if (error.code !== 'ENOENT') throw error;
   }
