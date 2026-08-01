@@ -11,5 +11,6 @@ blob-report/
 .nyc_output/
 .vite/
 .playwright-cli/
+.codegraph/
 output/
 *.log

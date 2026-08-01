@@ -11,6 +11,7 @@ import test from 'node:test';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { runInNewContext } from 'node:vm';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const serviceWorkerTemplate = `
@@ -28,6 +29,84 @@ function finalize(distDir) {
   const source = readFileSync(join(distDir, 'service-worker.js'), 'utf8');
   return source.match(/birthday-keepsake-([a-f0-9]+)/)?.[1];
 }
+
+test('Vercel revalidates the root migration worker on every request', () => {
+  const config = JSON.parse(
+    readFileSync(join(projectRoot, 'vercel.json'), 'utf8'),
+  );
+  const serviceWorkerHeaders = config.headers?.find(
+    entry => entry.source === '/service-worker.js',
+  )?.headers;
+
+  assert.ok(serviceWorkerHeaders, 'Missing /service-worker.js response headers.');
+  assert.deepEqual(
+    serviceWorkerHeaders.find(header => header.key === 'Cache-Control'),
+    {
+      key: 'Cache-Control',
+      value: 'public, max-age=0, must-revalidate',
+    },
+  );
+});
+
+test('root migration still reloads a legacy page when cache cleanup fails', async () => {
+  const source = readFileSync(
+    join(projectRoot, 'portal/service-worker.js'),
+    'utf8',
+  );
+  const legacyPageURL = 'https://gift.example/?to=Em';
+  let activateHandler;
+  let navigatedTo = null;
+  let registrationRetired = false;
+
+  const workerGlobal = {
+    addEventListener(type, handler) {
+      if (type === 'activate') activateHandler = handler;
+    },
+    clients: {
+      async claim() {},
+      async matchAll() {
+        return [
+          {
+            url: legacyPageURL,
+            async navigate(url) {
+              navigatedTo = url;
+            },
+          },
+        ];
+      },
+    },
+    registration: {
+      scope: 'https://gift.example/',
+      async unregister() {
+        registrationRetired = true;
+        return true;
+      },
+    },
+    async skipWaiting() {},
+  };
+
+  runInNewContext(source, {
+    URL,
+    caches: {
+      async keys() {
+        throw new Error('CacheStorage is unavailable');
+      },
+    },
+    self: workerGlobal,
+  });
+
+  assert.equal(typeof activateHandler, 'function');
+  let activation;
+  activateHandler({
+    waitUntil(promise) {
+      activation = promise;
+    },
+  });
+  await activation;
+
+  assert.equal(registrationRetired, true);
+  assert.equal(navigatedTo, legacyPageURL);
+});
 
 test('service-worker cache revision changes when a public media file changes', () => {
   const fixtureRoot = mkdtempSync(join(tmpdir(), 'birthday-sw-'));

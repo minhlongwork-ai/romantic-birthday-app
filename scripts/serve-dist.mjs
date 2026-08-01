@@ -20,6 +20,60 @@ const requestedBase = process.env.E2E_BASE_PATH || '/';
 const basePath = requestedBase === '/'
   ? '/'
   : `/${requestedBase.replace(/^\/+|\/+$/g, '')}/`;
+const legacyPassThroughWorkerPath =
+  `${basePath}__e2e__/legacy-pass-through-service-worker.js`;
+const legacyCacheFirstWorkerPath =
+  `${basePath}__e2e__/legacy-cache-first-service-worker.js`;
+const serviceWorkerFixtureClientPath = `${basePath}__e2e__/client.html`;
+const legacyPassThroughWorker = `
+self.addEventListener('install', event => {
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(self.clients.claim());
+});
+`;
+const legacyCacheFirstWorker = `
+const CACHE_NAME = 'static-birthday-keepsake-e2e-cached-root';
+const INDEX_URL = new URL('index.html', self.registration.scope).href;
+const LEGACY_HTML = '<!doctype html><html><head><title>Legacy Birthday Cache</title></head>' +
+  '<body><h1>Legacy Birthday Cache</h1><script>' +
+  'setTimeout(() => navigator.serviceWorker.register("./service-worker.js", ' +
+  '{ scope: "./", updateViaCache: "none" }), 150);' +
+  '</scr' + 'ipt></body></html>';
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.put(
+        INDEX_URL,
+        new Response(LEGACY_HTML, {
+          headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        }),
+      ))
+      .then(() => self.skipWaiting()),
+  );
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener('fetch', event => {
+  const requestURL = new URL(event.request.url);
+  const scopeURL = new URL(self.registration.scope);
+  if (
+    event.request.mode === 'navigate' &&
+    requestURL.origin === scopeURL.origin &&
+    requestURL.pathname === scopeURL.pathname
+  ) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(cache => cache.match(INDEX_URL)),
+    );
+  }
+});
+`;
 const contentTypes = new Map([
   ['.avif', 'image/avif'],
   ['.css', 'text/css; charset=utf-8'],
@@ -83,6 +137,34 @@ async function findResponseFile(request) {
 
 const server = createServer(async (request, response) => {
   try {
+    const requestURL = new URL(request.url, `http://${host}:${port}`);
+    if (requestURL.pathname === serviceWorkerFixtureClientPath) {
+      response.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store',
+      });
+      response.end('<!doctype html><title>Service worker fixture client</title>');
+      return;
+    }
+    if (requestURL.pathname === legacyPassThroughWorkerPath) {
+      response.writeHead(200, {
+        'Content-Type': 'text/javascript; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'Service-Worker-Allowed': basePath,
+      });
+      response.end(legacyPassThroughWorker);
+      return;
+    }
+    if (requestURL.pathname === legacyCacheFirstWorkerPath) {
+      response.writeHead(200, {
+        'Content-Type': 'text/javascript; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'Service-Worker-Allowed': basePath,
+      });
+      response.end(legacyCacheFirstWorker);
+      return;
+    }
+
     const result = await findResponseFile(request);
     if (!result.filePath) {
       response.writeHead(result.status);
