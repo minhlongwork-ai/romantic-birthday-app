@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev-server.mjs",
-    "check": "node --check src/main.js && node --check src/herbarium/config.js && node --check src/herbarium/scenes.js && node --check src/herbarium/photo-engine.js && node --check src/herbarium/arrangement-engine.js && node --check src/herbarium/postcard-renderer.js && node --check scripts/dev-server.mjs && node --check scripts/validate.mjs",
+    "check": "node --check src/main.js && node --check src/herbarium/config.js && node --check src/herbarium/scenes.js && node --check src/herbarium/photo-engine.js && node --check src/herbarium/photo-reveal.js && node --check src/herbarium/arrangement-engine.js && node --check src/herbarium/postcard-renderer.js && node --check src/herbarium/sender-signature.js && node --check src/herbarium/lyric-timeline.js && node --check src/herbarium/soundtrack-controller.js && node --check scripts/dev-server.mjs && node --check scripts/validate.mjs",
     "validate": "node scripts/validate.mjs",
     "test": "node --test tests/*.test.mjs",
     "qa": "npm run check && npm run validate && npm test"

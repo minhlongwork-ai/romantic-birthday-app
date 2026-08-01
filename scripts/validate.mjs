@@ -2,7 +2,8 @@ import { access, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { SCENES, WISHES } from "../src/herbarium/config.js";
+import { APP_CONFIG, SCENES, WISHES } from "../src/herbarium/config.js";
+import { parseLyricText } from "../src/herbarium/lyric-timeline.js";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const botanicalAssets = [
@@ -10,9 +11,15 @@ const botanicalAssets = [
   "dahlia",
   "gladiolus",
   "babys-breath",
+  "lily",
   "olive",
 ];
+const audioAssets = ["co-em-madihu-low-g.mp3"];
+const lyricAssets = ["co-em-lyrics.txt"];
 const fontAssets = [
+  "dancing-script-vi.woff2",
+  "dancing-script-latin.woff2",
+  "OFL-DancingScript.txt",
   "cormorant-garamond-vi.woff2",
   "cormorant-garamond-latin.woff2",
   "cormorant-garamond-italic-vi.woff2",
@@ -28,13 +35,19 @@ const requiredFiles = [
   "src/herbarium/scenes.js",
   "src/herbarium/herbarium.css",
   "src/herbarium/photo-engine.js",
+  "src/herbarium/photo-reveal.js",
   "src/herbarium/arrangement-engine.js",
   "src/herbarium/postcard-renderer.js",
+  "src/herbarium/sender-signature.js",
+  "src/herbarium/lyric-timeline.js",
+  "src/herbarium/soundtrack-controller.js",
   ...botanicalAssets.flatMap((name) => [
     `public/images/herbarium/${name}.webp`,
     `public/images/herbarium/${name}.png`,
   ]),
   ...fontAssets.map((name) => `public/fonts/${name}`),
+  ...audioAssets.map((name) => `public/audio/${name}`),
+  ...lyricAssets.map((name) => `public/audio/${name}`),
 ];
 const productionTextFiles = requiredFiles.filter((relativePath) =>
   /\.(?:html|css|js|mjs|json)$/u.test(relativePath),
@@ -102,6 +115,40 @@ for (const assetName of botanicalAssets) {
   }
 }
 
+for (const assetName of audioAssets) {
+  const audioPath = `public/audio/${assetName}`;
+  if (!(await fileExists(audioPath))) continue;
+  const fileStats = await stat(path.join(projectRoot, audioPath));
+  if (fileStats.size > 5 * 1024 * 1024) {
+    fail(`${audioPath} exceeds the 5 MiB soundtrack limit.`);
+  }
+}
+
+for (const assetName of lyricAssets) {
+  const lyricPath = `public/audio/${assetName}`;
+  if (!(await fileExists(lyricPath))) continue;
+  const fileStats = await stat(path.join(projectRoot, lyricPath));
+  if (fileStats.size > 64 * 1024) {
+    fail(`${lyricPath} exceeds the 64 KiB lyric asset limit.`);
+    continue;
+  }
+  const cues = parseLyricText(await readFile(path.join(projectRoot, lyricPath), "utf8"));
+  if (
+    cues.length !== 25 ||
+    cues[0]?.start !== 8 ||
+    cues.at(-1)?.start !== 193 ||
+    !cues.every(
+      (cue, index) => index === 0 || cue.start > cues[index - 1].start,
+    )
+  ) {
+    fail(`${lyricPath} must contain 25 chronological cues from 0:08 to 3:13.`);
+  }
+}
+
+if (APP_CONFIG.soundtrack.lyricsSrc !== "/audio/co-em-lyrics.txt") {
+  fail("Soundtrack lyricsSrc must reference the self-hosted lyric asset.");
+}
+
 if (SCENES.length !== 7 || new Set(SCENES).size !== 7) {
   fail("Herbarium flow must declare exactly seven unique scenes.");
 }
@@ -150,8 +197,16 @@ if (failures.length > 0) {
       }),
     )
   ).reduce((sum, size) => sum + size, 0);
+  const totalAudioBytes = (
+    await Promise.all(
+      audioAssets.map(async (name) => {
+        const fileStats = await stat(path.join(projectRoot, `public/audio/${name}`));
+        return fileStats.size;
+      }),
+    )
+  ).reduce((sum, size) => sum + size, 0);
 
   console.log(
-    `Production validation passed: ${SCENES.length} scenes, ${requiredFiles.length} required files, ${totalWebpBytes} botanical WebP bytes.`,
+    `Production validation passed: ${SCENES.length} scenes, ${requiredFiles.length} required files, ${totalWebpBytes} botanical WebP bytes, ${totalAudioBytes} audio bytes.`,
   );
 }

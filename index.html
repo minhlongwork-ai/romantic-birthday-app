@@ -6,19 +6,26 @@
     <meta name="theme-color" content="#f3ebdd" />
     <meta
       name="description"
-      content="Một lá thư tháng Tám, một bó hoa thật và một khoảnh khắc có thể giữ lại."
+      content="Một lá thư tháng tám, một bó hoa thật và một khoảnh khắc có thể được giữ lại."
     />
-    <meta property="og:title" content="Tháng Tám ở lại" />
+    <meta property="og:title" content="Tháng tám ở lại" />
     <meta
       property="og:description"
-      content="Mở thư, chọn một lời chúc và tạo trang herbarium của riêng em."
+      content="Mở thư, chọn một lời chúc và tạo trang hoa ép của riêng em."
     />
     <meta name="color-scheme" content="light" />
     <link rel="icon" href="data:," />
-    <title>Tháng Tám ở lại</title>
+    <title>Tháng tám ở lại</title>
     <link
       rel="preload"
       href="/fonts/cormorant-garamond-vi.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/cormorant-garamond-latin.woff2"
       as="font"
       type="font/woff2"
       crossorigin
@@ -29,9 +36,10 @@
   <body>
     <a class="skip-link" href="#app-root">Đi đến nội dung thiệp</a>
     <main id="app-root" tabindex="-1"></main>
+    <div id="soundtrack-root" class="soundtrack-root" hidden></div>
     <p id="app-status" class="sr-only" aria-live="polite"></p>
     <noscript>
-      <p>Thiệp cần JavaScript để mở thư, chọn ảnh và tạo postcard.</p>
+      <p>Thiệp cần JavaScript để mở thư, chọn ảnh và tạo bưu thiếp.</p>
     </noscript>
     <script type="module" src="/src/main.js"></script>
   </body>

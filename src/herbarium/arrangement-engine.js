@@ -102,6 +102,15 @@ export function createInitialArrangement(wishId) {
     ),
     placeAtAnchor(
       {
+        id: "lily",
+        role: "lily",
+        botanicalId: "lily",
+        layer: "front",
+      },
+      "top-right",
+    ),
+    placeAtAnchor(
+      {
         id: "olive",
         role: "foliage",
         botanicalId: "olive",
@@ -129,7 +138,7 @@ export function toggleFlowerLayer(flowers, flowerId) {
 }
 
 export function validateArrangement(flowers) {
-  if (!Array.isArray(flowers) || flowers.length !== 3) return false;
+  if (!Array.isArray(flowers) || flowers.length !== 4) return false;
   const ids = new Set();
 
   return flowers.every((flower) => {

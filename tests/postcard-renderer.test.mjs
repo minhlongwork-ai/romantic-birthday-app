@@ -28,7 +28,7 @@ test("wrapText produces bounded lines for the postcard message", () => {
 
 test("download filename is portable and strips Vietnamese diacritics", () => {
   assert.equal(
-    safePostcardFilename("Tháng Tám ở lại"),
+    safePostcardFilename("Tháng tám ở lại"),
     "thang-tam-o-lai.png",
   );
   assert.equal(safePostcardFilename(""), "thang-tam-o-lai.png");

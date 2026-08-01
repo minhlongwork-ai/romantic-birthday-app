@@ -1,4 +1,5 @@
 import { calculatePhotoTransform } from "./photo-engine.js";
+import { resolveSenderSignature } from "./sender-signature.js";
 
 export const POSTCARD_SIZE = Object.freeze({ width: 1200, height: 1500 });
 
@@ -272,7 +273,7 @@ function resolveWish(state, config) {
     wishes.find((wish) => wish.id === state.wishId) ||
     wishes[0] || {
       label: "Một tháng bình an",
-      sentence: "một tháng thật bình an",
+      sentence: "luôn bình an",
     }
   );
 }
@@ -280,7 +281,7 @@ function resolveWish(state, config) {
 function drawCopy(context, state, config) {
   const wish = resolveWish(state, config);
   const recipient = String(state.recipient || config?.defaultRecipient || "em");
-  const sender = String(state.sender || config?.defaultSender || "Minh Long");
+  const signature = resolveSenderSignature(state, config);
 
   context.textAlign = "right";
   context.fillStyle = "rgba(143,49,70,0.07)";
@@ -292,7 +293,7 @@ function drawCopy(context, state, config) {
 
   context.fillStyle = config?.colors?.rose || "#8f3146";
   context.font = '700 18px "Avenir Next", sans-serif';
-  context.fillText("AUGUST HERBARIUM", 1060, 1090);
+  context.fillText("HOA ÉP THÁNG TÁM", 1060, 1090);
 
   context.fillStyle = config?.colors?.ink || "#25221e";
   context.font = '600 64px "Cormorant Garamond", Georgia, serif';
@@ -306,9 +307,11 @@ function drawCopy(context, state, config) {
   context.font = '500 22px "Avenir Next", sans-serif';
   context.fillText(`gửi ${recipient},`, 1060, copyY);
 
-  context.fillStyle = config?.colors?.rose || "#8f3146";
-  context.font = 'italic 500 31px "Cormorant Garamond", Georgia, serif';
-  context.fillText(sender, 1060, copyY + 43);
+  if (signature.visible) {
+    context.fillStyle = config?.colors?.rose || "#8f3146";
+    context.font = '600 38px "Dancing Script", "Segoe Print", cursive';
+    context.fillText(signature.name, 1060, copyY + 43);
+  }
 }
 
 function canvasToBlob(canvas) {
@@ -316,7 +319,7 @@ function canvasToBlob(canvas) {
     canvas.toBlob(
       (blob) => {
         if (blob) resolve(blob);
-        else reject(new Error("Trình duyệt chưa thể tạo postcard."));
+        else reject(new Error("Trình duyệt chưa thể tạo bưu thiếp."));
       },
       "image/png",
       1,
@@ -326,8 +329,12 @@ function canvasToBlob(canvas) {
 
 export async function renderPostcard(state, config = {}) {
   if (typeof document === "undefined") {
-    throw new Error("Postcard chỉ có thể được tạo trong trình duyệt.");
+    throw new Error("Bưu thiếp chỉ có thể được tạo trong trình duyệt.");
   }
+  await document.fonts?.load(
+    '600 62px "Dancing Script"',
+    "Một ngày tháng tám gửi riêng cho em",
+  );
   const canvas = document.createElement("canvas");
   canvas.width = POSTCARD_SIZE.width;
   canvas.height = POSTCARD_SIZE.height;
@@ -353,8 +360,8 @@ export async function renderPostcard(state, config = {}) {
     context.fillRect(photoRect.x, photoRect.y, photoRect.width, photoRect.height);
     context.fillStyle = "#675f55";
     context.textAlign = "center";
-    context.font = 'italic 500 55px "Cormorant Garamond", Georgia, serif';
-    context.fillText("Một ngày tháng Tám", 552, 635);
+    context.font = '600 62px "Dancing Script", "Segoe Print", cursive';
+    context.fillText("Một ngày tháng tám", 552, 635);
   }
 
   await drawFlowers(context, state.flowers, config.assets, "front");

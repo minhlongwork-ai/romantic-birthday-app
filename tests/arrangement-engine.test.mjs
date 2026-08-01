@@ -10,7 +10,7 @@ import {
   validateArrangement,
 } from "../src/herbarium/arrangement-engine.js";
 
-test("creates the same three-stem arrangement for the same wish", () => {
+test("creates the same four-stem arrangement with a white lily for every wish", () => {
   const first = createInitialArrangement("peace");
   const second = createInitialArrangement("peace");
 
@@ -21,6 +21,7 @@ test("creates the same three-stem arrangement for the same wish", () => {
     [
       { id: "primary", role: "primary", botanicalId: "poppy" },
       { id: "white", role: "support", botanicalId: "white" },
+      { id: "lily", role: "lily", botanicalId: "lily" },
       { id: "olive", role: "foliage", botanicalId: "olive" },
     ],
   );
@@ -57,6 +58,7 @@ test("resolves initial stems to deterministic anchors for UI and export", () => 
     [
       { id: "primary", anchorId: "bottom-right", layer: "front" },
       { id: "white", anchorId: "top-left", layer: "front" },
+      { id: "lily", anchorId: "top-right", layer: "front" },
       { id: "olive", anchorId: "bottom-left", layer: "back" },
     ],
   );

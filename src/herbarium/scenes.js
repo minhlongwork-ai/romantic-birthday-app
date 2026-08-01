@@ -5,7 +5,13 @@ import {
   disposePhoto,
   validatePhoto,
 } from "./photo-engine.js";
+import { playPhotoReveal } from "./photo-reveal.js";
 import { renderPostcard } from "./postcard-renderer.js";
+import {
+  MAX_SENDER_NAME_LENGTH,
+  normalizeSenderName,
+  resolveSenderSignature,
+} from "./sender-signature.js";
 
 const STAGE_TOTAL = 7;
 const PHOTO_ACCEPT = "image/jpeg,image/png,image/webp,image/heic,image/heif";
@@ -128,8 +134,8 @@ function mountEnvelope(root, context) {
   const view = createScene(root, context, {
     id: "envelope",
     stage: 1,
-    eyebrow: "Một lá thư tháng Tám",
-    title: `Gửi ${escapeHtml(context.state.recipient)},<br>một tháng dịu dàng.`,
+    eyebrow: "Một lá thư tháng tám",
+    title: `Gửi ${escapeHtml(context.state.recipient)},<br>một tháng tám dịu dàng.`,
     showBack: false,
   });
   let startX = 0;
@@ -145,7 +151,7 @@ function mountEnvelope(root, context) {
       <div class="envelope" data-envelope>
         <div class="envelope__back"></div>
         <div class="envelope__letter" aria-hidden="true">
-          <span>Tháng Tám</span>
+          <span>Tháng tám</span>
         </div>
         <div class="envelope__front"></div>
         <div class="envelope__flap"></div>
@@ -180,6 +186,7 @@ function mountEnvelope(root, context) {
   function finish() {
     if (opened) return;
     opened = true;
+    void context.soundtrack?.play();
     setProgress(1);
     envelope.classList.add("is-open");
     context.announce("Phong thư đã mở.");
@@ -242,7 +249,7 @@ function mountLetter(root, context) {
     eyebrow: "Lời chúc đầu tháng",
     title: "Có những điều nhỏ,<br>nhưng đủ làm một tháng trở nên đẹp.",
     body: `
-      <p>Tháng Tám này, mong ${recipient} gặp thật nhiều điều dịu dàng.</p>
+      <p>Tháng tám này, mong ${recipient} gặp thật nhiều điều dịu dàng.</p>
       <p>Và khi bó hoa đến tay, hãy giữ lại một khoảnh khắc cùng nó nhé.</p>
     `,
   });
@@ -250,7 +257,7 @@ function mountLetter(root, context) {
 
   view.stage.innerHTML = `
     <article class="letter-sheet" data-letter-sheet>
-      <span class="letter-sheet__date">tháng 08</span>
+      <span class="letter-sheet__date">tháng 8</span>
       <blockquote>
         “Một lời chúc không cần thật lớn.<br>
         Chỉ cần đến đúng lúc.”
@@ -285,12 +292,12 @@ function mountWishes(root, context) {
     id: "wishes",
     stage: 3,
     eyebrow: "Chọn một điều để mang theo",
-    title: "Tháng Tám này,<br>em muốn giữ điều gì nhất?",
+    title: "Tháng tám này,<br>em muốn giữ điều gì nhất?",
     body: "<p>Mỗi bông hoa giữ một lời chúc. Chọn bông khiến em muốn dừng lại lâu hơn.</p>",
   });
 
   view.stage.innerHTML = `
-    <div class="wish-gallery" role="radiogroup" aria-label="Ba lời chúc tháng Tám">
+    <div class="wish-gallery" role="radiogroup" aria-label="Ba lời chúc tháng tám">
       ${WISHES.map(
         (wish, index) => `
           <button
@@ -356,7 +363,7 @@ function mountPhotoPrompt(root, context) {
     eyebrow: "Một nhiệm vụ nhỏ",
     title: "Bó hoa đã đến rồi chứ?",
     body: `
-      <p>Chụp một tấm cùng hoa nhé. Khoảnh khắc ấy sẽ trở thành trang cuối của thiệp tháng Tám này.</p>
+      <p>Chụp một tấm ảnh cùng hoa nhé. Khoảnh khắc ấy sẽ trở thành trang cuối của thiệp tháng tám này.</p>
     `,
   });
 
@@ -415,6 +422,12 @@ function mountPhotoPrompt(root, context) {
     try {
       validatePhoto(file, { maxBytes: PHOTO_MAX_BYTES });
       const decoded = await decodeAndDownscalePhoto(file, { maxEdge: 2048 });
+
+      if (view.signal.aborted) {
+        disposePhoto(decoded);
+        return;
+      }
+
       disposePhoto(context.state.photo);
       context.state.photo = {
         ...decoded,
@@ -423,13 +436,34 @@ function mountPhotoPrompt(root, context) {
       };
       status.textContent = "Ảnh đã sẵn sàng.";
       context.announce("Ảnh đã sẵn sàng để căn chỉnh.");
-      context.navigate("photo-editor");
+
+      let revealResult = "completed";
+      try {
+        revealResult = await playPhotoReveal(view.scene, {
+          photo: context.state.photo,
+          botanicals: {
+            lily: BOTANICALS.lily,
+            dahlia: BOTANICALS.dahlia,
+            olive: BOTANICALS.olive,
+          },
+          reducedMotion: context.reducedMotion,
+          signal: view.signal,
+        });
+      } catch {
+        // The decorative transition must never block the photo editor.
+        revealResult = view.signal.aborted ? "aborted" : "completed";
+      }
+
+      if (revealResult === "completed" && !view.signal.aborted) {
+        context.navigate("photo-editor");
+      }
     } catch (error) {
+      if (view.signal.aborted) return;
       const friendly =
         error?.code === "file-too-large"
-          ? "Ảnh lớn hơn 15 MB. Hãy chọn một ảnh nhẹ hơn."
+          ? "Ảnh lớn hơn 15 MB. Hãy chọn ảnh có dung lượng nhỏ hơn."
           : error?.code === "unsupported-format"
-            ? "Trình duyệt chưa đọc được ảnh này. Hãy chọn JPG, PNG hoặc WebP."
+            ? "Trình duyệt chưa đọc được ảnh này. Hãy chọn JPEG, PNG hoặc WebP."
             : error?.message || "Không thể đọc ảnh. Hãy chọn ảnh khác hoặc để sau.";
       status.textContent = friendly;
       context.announce(friendly);
@@ -487,7 +521,7 @@ function mountPhotoEditor(root, context) {
           data-photo-cropper
           aria-label="Ảnh đang được căn chỉnh"
         >
-          <img src="${photo.objectUrl}" alt="Ảnh đã chọn để đặt vào postcard" draggable="false">
+          <img src="${photo.objectUrl}" alt="Ảnh đã chọn để đặt vào bưu thiếp" draggable="false">
           <span class="photo-cropper__guide" aria-hidden="true"></span>
         </div>
       </div>
@@ -676,9 +710,12 @@ function mountHerbarium(root, context) {
     stage: 6,
     eyebrow: "Tự tay giữ lại khoảnh khắc",
     title: "Đặt những cành hoa<br>quanh trang giấy.",
-    body: "<p>Kéo hoa đến nơi em thích. Trang giấy sẽ tự giữ chúng ở một vị trí đẹp.</p>",
+    body: "<p>Kéo hoa đến nơi em thích. Trang giấy sẽ tự giữ chúng ở những vị trí đẹp.</p>",
   });
   context.state.pressed = false;
+  const signature = resolveSenderSignature(context.state, APP_CONFIG);
+  context.state.sender = signature.name;
+  context.state.showSender = signature.visible;
   if (!context.state.flowers?.length) {
     context.state.flowers = createInitialArrangement(context.state.wishId);
   }
@@ -690,12 +727,13 @@ function mountHerbarium(root, context) {
   view.stage.innerHTML = `
     <div class="arrangement-workspace">
       <div class="herbarium-page" data-herbarium-page>
-        <span class="herbarium-page__caption">August, pressed gently</span>
+        <span class="herbarium-page__caption">Tháng tám, ép hoa thật khẽ</span>
         ${renderPhotoFrame(context.state.photo, context.state.frameId, "herbarium-page__photo")}
         <blockquote class="herbarium-page__quote ${context.state.photo ? "is-small" : ""}">
-          “Một ngày tháng Tám<br>có em và hoa.”
+          “Một ngày tháng tám<br>có em và hoa.”
         </blockquote>
         <div class="arranged-flowers" data-arranged-flowers></div>
+        <span class="herbarium-page__sender" data-sender-preview>${escapeHtml(signature.name)}</span>
         <div class="pressed-glow" aria-hidden="true"></div>
       </div>
       <aside class="arrangement-controls" aria-labelledby="arrangement-controls-title">
@@ -715,6 +753,25 @@ function mountHerbarium(root, context) {
         <button class="layer-toggle" type="button" data-toggle-layer>
           Đưa ra trước ảnh
         </button>
+        <fieldset class="sender-controls">
+          <legend>Chữ ký trên bưu thiếp</legend>
+          <label class="sender-toggle">
+            <input type="checkbox" data-show-sender ${signature.visible ? "checked" : ""}>
+            <span>Hiện tên người gửi</span>
+          </label>
+          <label class="sender-name-field" data-sender-name-field>
+            <span>Tên người gửi</span>
+            <input
+              type="text"
+              value="${escapeHtml(signature.name)}"
+              maxlength="${MAX_SENDER_NAME_LENGTH}"
+              autocomplete="name"
+              data-sender-name
+              aria-describedby="sender-name-help"
+            >
+          </label>
+          <p id="sender-name-help">Có thể đổi tên hoặc tắt để ẩn chữ ký.</p>
+        </fieldset>
         <div class="press-area">
           <button class="press-button" type="button" data-press-flowers>
             <span class="press-button__progress" aria-hidden="true"></span>
@@ -737,6 +794,28 @@ function mountHerbarium(root, context) {
   const layerToggle = view.scene.querySelector("[data-toggle-layer]");
   const pressButton = view.scene.querySelector("[data-press-flowers]");
   const pressStatus = view.scene.querySelector("[data-press-status]");
+  const senderToggle = view.scene.querySelector("[data-show-sender]");
+  const senderInput = view.scene.querySelector("[data-sender-name]");
+  const senderField = view.scene.querySelector("[data-sender-name-field]");
+  const senderPreview = view.scene.querySelector("[data-sender-preview]");
+
+  function commitSenderName() {
+    const sender = normalizeSenderName(senderInput.value, APP_CONFIG.defaultSender);
+    context.state.sender = sender;
+    senderInput.value = sender;
+    senderPreview.textContent = sender;
+  }
+
+  function updateSenderVisibility({ announce = false } = {}) {
+    const visible = senderToggle.checked;
+    context.state.showSender = visible;
+    senderInput.disabled = !visible;
+    senderField.classList.toggle("is-disabled", !visible);
+    senderPreview.hidden = !visible;
+    if (announce) {
+      context.announce(visible ? "Đã hiện tên người gửi." : "Đã ẩn tên người gửi.");
+    }
+  }
 
   function selectedFlower() {
     return context.state.flowers.find((flower) => flower.id === selectedId);
@@ -830,15 +909,29 @@ function mountHerbarium(root, context) {
     updateControls();
   }, { signal: view.signal });
 
+  senderToggle.addEventListener("change", () => {
+    updateSenderVisibility({ announce: true });
+  }, { signal: view.signal });
+
+  senderInput.addEventListener("input", () => {
+    const sender = normalizeSenderName(senderInput.value, "");
+    context.state.sender = sender;
+    senderPreview.textContent = sender;
+  }, { signal: view.signal });
+
+  senderInput.addEventListener("change", commitSenderName, { signal: view.signal });
+  senderInput.addEventListener("blur", commitSenderName, { signal: view.signal });
+
   function completePress() {
     if (context.state.pressed) return;
+    commitSenderName();
     pressing = false;
     context.state.pressed = true;
     window.clearTimeout(pressTimer);
     page.classList.add("is-pressed");
     pressButton.classList.add("is-complete");
     pressStatus.textContent = "Những cành hoa đã nằm lại trên trang.";
-    context.announce("Trang herbarium đã hoàn thành.");
+    context.announce("Trang hoa ép đã hoàn thành.");
     transitionTimer = window.setTimeout(
       () => context.navigate("finale"),
       context.reducedMotion ? 180 : 880,
@@ -868,12 +961,18 @@ function mountHerbarium(root, context) {
   pressButton.addEventListener("pointerup", cancelPress, { signal: view.signal });
   pressButton.addEventListener("pointercancel", cancelPress, { signal: view.signal });
   pressButton.addEventListener("pointerleave", cancelPress, { signal: view.signal });
+  pressButton.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    completePress();
+  }, { signal: view.signal });
   pressButton.addEventListener("click", (event) => {
     if (event.detail === 0) completePress();
   }, { signal: view.signal });
 
   renderFlowers();
   updateControls();
+  updateSenderVisibility();
 
   return () => {
     window.clearTimeout(pressTimer);
@@ -898,14 +997,14 @@ function finalFlowerMarkup(flower) {
 function mountFinale(root, context) {
   const wish = getWish(context.state.wishId);
   const recipient = escapeHtml(context.state.recipient);
-  const sender = escapeHtml(context.state.sender);
+  const signature = resolveSenderSignature(context.state, APP_CONFIG);
   const view = createScene(root, context, {
     id: "finale",
     stage: 7,
     eyebrow: "Trang cuối",
-    title: "Một ngày tháng Tám<br>có em và hoa.",
+    title: "Một ngày tháng tám<br>có em và hoa.",
     body: `
-      <p>Mong tháng Tám mang đến cho ${recipient} <strong>${escapeHtml(wish.sentence)}</strong>.</p>
+      <p>Tháng tám này, chúc ${recipient} <strong>${escapeHtml(wish.sentence)}</strong>.</p>
       <p>Hoa rồi sẽ khô, nhưng khoảnh khắc này thì có thể ở lại.</p>
     `,
   });
@@ -921,17 +1020,17 @@ function mountFinale(root, context) {
           ${context.state.flowers.map(finalFlowerMarkup).join("")}
         </div>
         <div class="final-postcard__copy">
-          <small>August herbarium</small>
+          <small>Hoa ép tháng tám</small>
           <strong>${escapeHtml(wish.label)}</strong>
           <p>gửi ${recipient},</p>
-          <em>${sender}</em>
+          ${signature.visible ? `<em>${escapeHtml(signature.name)}</em>` : ""}
         </div>
       </article>
       <div class="finale-actions">
-        <p class="finale-actions__note">Ảnh và postcard chỉ tồn tại trên thiết bị này.</p>
+        <p class="finale-actions__note">Ảnh và bưu thiếp chỉ tồn tại trên thiết bị này.</p>
         <p class="inline-status" data-final-status role="status"></p>
         <div class="scene-actions scene-actions--wrap">
-          ${buttonMarkup("Lưu postcard", "data-save-postcard")}
+          ${buttonMarkup("Lưu bưu thiếp", "data-save-postcard")}
           ${buttonMarkup(
             "Chia sẻ",
             "data-share-postcard",
@@ -962,11 +1061,11 @@ function mountFinale(root, context) {
   async function getBlob() {
     if (currentBlob) return currentBlob;
     setBusy(true);
-    status.textContent = "Đang ép trang giấy thành postcard…";
+    status.textContent = "Đang tạo bưu thiếp…";
     try {
       currentBlob = await renderPostcard(context.state, APP_CONFIG);
-      if (!(currentBlob instanceof Blob)) throw new Error("Postcard không thể được tạo.");
-      status.textContent = "Postcard đã sẵn sàng.";
+      if (!(currentBlob instanceof Blob)) throw new Error("Không thể tạo bưu thiếp.");
+      status.textContent = "Bưu thiếp đã sẵn sàng.";
       return currentBlob;
     } finally {
       setBusy(false);
@@ -985,10 +1084,10 @@ function mountFinale(root, context) {
       link.click();
       link.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-      status.textContent = "Postcard tháng Tám đã được lưu.";
+      status.textContent = "Bưu thiếp tháng tám đã được lưu.";
       context.announce(status.textContent);
     } catch (error) {
-      status.textContent = error?.message || "Chưa thể tạo postcard. Hãy thử lại.";
+      status.textContent = error?.message || "Chưa thể tạo bưu thiếp. Hãy thử lại.";
       context.announce(status.textContent);
     }
   }, { signal: view.signal });
@@ -999,17 +1098,17 @@ function mountFinale(root, context) {
       const blob = await getBlob();
       const file = new File([blob], "thang-tam-o-lai.png", { type: "image/png" });
       if (navigator.canShare && !navigator.canShare({ files: [file] })) {
-        throw new Error("Trình duyệt này chưa thể chia sẻ file. Hãy lưu postcard trước.");
+        throw new Error("Trình duyệt này chưa thể chia sẻ tệp. Hãy lưu bưu thiếp trước.");
       }
       await navigator.share({
         files: [file],
         title: APP_CONFIG.postcardTitle,
-        text: "Một trang nhỏ của tháng Tám.",
+        text: "Một trang nhỏ của tháng tám.",
       });
-      status.textContent = "Postcard đã được mở trong bảng chia sẻ.";
+      status.textContent = "Đã mở bảng chia sẻ cho bưu thiếp.";
     } catch (error) {
       if (error?.name === "AbortError") return;
-      status.textContent = error?.message || "Chưa thể chia sẻ. Hãy lưu postcard trước.";
+      status.textContent = error?.message || "Chưa thể chia sẻ. Hãy lưu bưu thiếp trước.";
       context.announce(status.textContent);
     }
   }, { signal: view.signal });

@@ -71,7 +71,7 @@ export function validatePhoto(file, options = {}) {
   if (!Number.isFinite(size) || size <= 0) {
     throw new PhotoValidationError(
       "empty-file",
-      "Ảnh đang trống hoặc không thể đọc.",
+      "Tệp ảnh trống hoặc không thể đọc.",
     );
   }
 
@@ -79,7 +79,7 @@ export function validatePhoto(file, options = {}) {
   if (size > maxBytes) {
     throw new PhotoValidationError(
       "file-too-large",
-      "Ảnh cần nhỏ hơn hoặc bằng 15 MB.",
+      "Dung lượng ảnh không được vượt quá 15 MB.",
     );
   }
 
@@ -296,7 +296,7 @@ export async function decodeAndDownscalePhoto(file, options = {}) {
     if (error instanceof PhotoValidationError) throw error;
     throw new PhotoValidationError(
       "unsupported-format",
-      "Trình duyệt chưa thể giải mã ảnh này. Hãy chọn JPG, PNG hoặc WebP.",
+      "Trình duyệt chưa thể giải mã ảnh này. Hãy chọn JPEG, PNG hoặc WebP.",
     );
   }
 }

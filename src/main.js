@@ -1,12 +1,21 @@
 import { APP_CONFIG, SCENES } from "./herbarium/config.js";
 import { createSceneMap } from "./herbarium/scenes.js";
 import { disposePhoto } from "./herbarium/photo-engine.js";
+import {
+  createSoundtrackPlayer,
+  mountSoundtrackControl,
+} from "./herbarium/soundtrack-controller.js";
 
 const root = document.querySelector("#app-root");
 const appStatus = document.querySelector("#app-status");
+const soundtrackRoot = document.querySelector("#soundtrack-root");
 const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-if (!(root instanceof HTMLElement) || !(appStatus instanceof HTMLElement)) {
+if (
+  !(root instanceof HTMLElement) ||
+  !(appStatus instanceof HTMLElement) ||
+  !(soundtrackRoot instanceof HTMLElement)
+) {
   throw new Error("Không tìm thấy vùng hiển thị thiệp.");
 }
 
@@ -26,11 +35,20 @@ function cleanText(value, fallback, maxLength) {
 }
 
 function createInitialState() {
+  const recipient = cleanText(
+    params.get("to"),
+    APP_CONFIG.defaultRecipient,
+    32,
+  );
   return {
     scene: "envelope",
     history: [],
-    recipient: cleanText(params.get("to"), APP_CONFIG.defaultRecipient, 32),
+    recipient:
+      recipient.toLocaleLowerCase("vi") === APP_CONFIG.defaultRecipient
+        ? APP_CONFIG.defaultRecipient
+        : recipient,
     sender: cleanText(params.get("from"), APP_CONFIG.defaultSender, 32),
+    showSender: true,
     wishId: null,
     photo: null,
     frameId: "torn-paper",
@@ -40,6 +58,10 @@ function createInitialState() {
 }
 
 let state = createInitialState();
+const soundtrack = createSoundtrackPlayer(APP_CONFIG.soundtrack);
+const cleanupSoundtrackControl = mountSoundtrackControl(soundtrackRoot, soundtrack, {
+  announce,
+});
 
 function announce(message) {
   appStatus.textContent = "";
@@ -75,6 +97,7 @@ function renderScene({ announceScene = false } = {}) {
       config: APP_CONFIG,
       reducedMotion: reducedMotionQuery.matches,
       announce,
+      soundtrack,
       navigate,
       back,
       restart,
@@ -111,6 +134,7 @@ function back() {
 
 function restart() {
   disposePhoto(state.photo);
+  soundtrack.reset();
   state = createInitialState();
   renderScene();
   announce("Thiệp đã bắt đầu lại từ phong thư.");
@@ -126,6 +150,8 @@ window.addEventListener(
   "pagehide",
   () => {
     cleanupScene();
+    cleanupSoundtrackControl();
+    soundtrack.destroy();
     disposePhoto(state.photo);
     reducedMotionQuery.removeEventListener?.("change", handleReducedMotionChange);
   },

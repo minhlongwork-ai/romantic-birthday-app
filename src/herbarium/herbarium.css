@@ -160,14 +160,14 @@
 }
 
 .scene-copy h1 {
-  max-width: 11ch;
+  max-width: 12.5ch;
   margin: 0;
   color: var(--ink);
-  font-family: var(--font-display);
-  font-size: clamp(3.3rem, 6.4vw, 7.4rem);
+  font-family: var(--font-title);
+  font-size: clamp(3rem, 5.35vw, 6rem);
   font-weight: 500;
-  letter-spacing: -0.055em;
-  line-height: 0.84;
+  letter-spacing: -0.018em;
+  line-height: 0.98;
   text-wrap: balance;
 }
 
@@ -368,9 +368,10 @@
   place-items: start center;
   padding-top: 2rem;
   color: var(--rose);
-  font-family: var(--font-display);
+  font-family: var(--font-handwriting);
   font-size: clamp(1.5rem, 3vw, 2.8rem);
-  font-style: italic;
+  font-weight: 600;
+  line-height: 1.1;
   background:
     repeating-linear-gradient(
       to bottom,
@@ -548,12 +549,13 @@
   max-width: 8.5em;
   margin: 12% 0 0;
   color: var(--ink);
-  font-family: var(--font-display);
+  padding-bottom: 0.1em;
+  font-family: var(--font-editorial);
   font-size: clamp(2.5rem, 5vw, 4.8rem);
   font-style: italic;
   font-weight: 500;
-  letter-spacing: -0.035em;
-  line-height: 0.98;
+  letter-spacing: -0.018em;
+  line-height: 1.1;
 }
 
 .letter-sheet__signature {
@@ -561,9 +563,11 @@
   z-index: 2;
   margin-top: 2.5rem;
   color: var(--ink-soft);
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-  font-style: italic;
+  padding-bottom: 0.1em;
+  font-family: var(--font-handwriting);
+  font-size: 1.55rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .letter-sheet__flower {
@@ -710,8 +714,9 @@
 .wish-specimen__copy strong {
   font-family: var(--font-display);
   font-size: clamp(1.45rem, 2.2vw, 2.1rem);
-  font-weight: 600;
-  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  line-height: 1.08;
 }
 
 .wish-specimen__copy span {
@@ -835,9 +840,10 @@
 .photo-tips > p {
   margin: 0 0 1rem;
   color: var(--rose);
-  font-family: var(--font-display);
-  font-size: 1.4rem;
-  font-style: italic;
+  font-family: var(--font-handwriting);
+  font-size: 1.65rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .photo-tips ol {
@@ -893,6 +899,202 @@
 .photo-invitation.is-busy,
 .herbarium-scene.is-busy .photo-invitation {
   cursor: progress;
+}
+
+/* Photo reveal: a short botanical transition between Stage 4 and Stage 5 */
+
+.photo-reveal {
+  position: fixed;
+  z-index: 40;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.photo-reveal__wash {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.96), transparent 24rem),
+    radial-gradient(circle at 7% 10%, rgba(217, 166, 174, 0.22), transparent 29rem),
+    radial-gradient(circle at 92% 91%, rgba(78, 96, 75, 0.17), transparent 30rem),
+    linear-gradient(128deg, #f4ecdf, #fbf7ef 52%, #eadfce);
+  transition: opacity 180ms ease;
+}
+
+.photo-reveal__wash::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  opacity: 0.22;
+  background-image:
+    repeating-linear-gradient(
+      94deg,
+      transparent 0,
+      transparent 8px,
+      rgba(79, 64, 45, 0.028) 9px
+    ),
+    repeating-linear-gradient(
+      3deg,
+      transparent 0,
+      transparent 12px,
+      rgba(255, 255, 255, 0.15) 13px
+    );
+}
+
+.photo-reveal__card {
+  position: relative;
+  z-index: 2;
+  width: min(76vw, 24rem, 58dvh);
+  aspect-ratio: 4 / 5;
+  padding: clamp(0.48rem, 1.5vw, 0.72rem);
+  margin: 0;
+  overflow: hidden;
+  opacity: 0;
+  background: #f8f1e6;
+  box-shadow:
+    0 2.1rem 4.2rem rgba(77, 55, 35, 0.24),
+    0 0 0 1px rgba(84, 65, 44, 0.08);
+  transform: translateY(0.7rem) scale(0.965);
+  will-change: opacity, transform;
+}
+
+.photo-reveal__card::after {
+  position: absolute;
+  inset: clamp(0.48rem, 1.5vw, 0.72rem);
+  content: "";
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
+}
+
+.photo-reveal__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  background: #d8cbb6;
+}
+
+.photo-reveal__card.is-image-missing .photo-reveal__image {
+  opacity: 0;
+}
+
+.photo-reveal__cluster--top-left,
+.photo-reveal__cluster--bottom-right {
+  position: absolute;
+  z-index: 3;
+  width: clamp(13rem, 34vw, 29rem);
+  aspect-ratio: 1;
+  opacity: 0;
+  will-change: opacity, transform;
+}
+
+.photo-reveal__cluster--top-left {
+  top: clamp(-5.5rem, -7vw, -2rem);
+  left: clamp(-6rem, -7vw, -2.2rem);
+  transform: translate(-1.15rem, -1.15rem) scale(0.88) rotate(-2deg);
+}
+
+.photo-reveal__cluster--bottom-right {
+  right: clamp(-6.5rem, -8vw, -2.4rem);
+  bottom: clamp(-6rem, -8vw, -2.3rem);
+  transform: translate(1.15rem, 1.15rem) scale(0.88) rotate(2deg);
+}
+
+.photo-reveal__botanical--lily,
+.photo-reveal__botanical--dahlia,
+.photo-reveal__botanical--olive {
+  position: absolute;
+  display: block;
+  margin: 0;
+  filter: sepia(0.04) drop-shadow(0 0.65rem 0.45rem rgba(55, 43, 29, 0.13));
+}
+
+.photo-reveal__botanical--lily img,
+.photo-reveal__botanical--dahlia img,
+.photo-reveal__botanical--olive img {
+  display: block;
+  width: 100%;
+  transform-origin: 50% 82%;
+  will-change: transform;
+}
+
+.photo-reveal__cluster--top-left .photo-reveal__botanical--olive {
+  top: -2%;
+  left: 16%;
+  width: 66%;
+  transform: rotate(72deg);
+}
+
+.photo-reveal__cluster--top-left .photo-reveal__botanical--lily {
+  top: 12%;
+  left: -4%;
+  width: 60%;
+  transform: rotate(116deg);
+}
+
+.photo-reveal__cluster--top-left .photo-reveal__botanical--dahlia {
+  top: 2%;
+  left: 33%;
+  width: 48%;
+  transform: rotate(38deg);
+}
+
+.photo-reveal__cluster--bottom-right .photo-reveal__botanical--olive {
+  right: 15%;
+  bottom: -1%;
+  width: 68%;
+  transform: rotate(-108deg);
+}
+
+.photo-reveal__cluster--bottom-right .photo-reveal__botanical--lily {
+  right: -4%;
+  bottom: 12%;
+  width: 61%;
+  transform: rotate(-65deg);
+}
+
+.photo-reveal__cluster--bottom-right .photo-reveal__botanical--dahlia {
+  right: 34%;
+  bottom: 2%;
+  width: 48%;
+  transform: rotate(-142deg);
+}
+
+.photo-reveal.is-active .photo-reveal__wash {
+  opacity: 1;
+}
+
+.photo-reveal.is-active .photo-reveal__card {
+  animation: photo-reveal-card 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.photo-reveal.is-active .photo-reveal__cluster--top-left {
+  animation:
+    photo-reveal-top-left
+    var(--photo-reveal-top-duration, 760ms)
+    cubic-bezier(0.22, 1, 0.36, 1)
+    var(--photo-reveal-top-delay, 120ms)
+    both;
+}
+
+.photo-reveal.is-active .photo-reveal__cluster--bottom-right {
+  animation:
+    photo-reveal-bottom-right
+    var(--photo-reveal-bottom-duration, 760ms)
+    cubic-bezier(0.22, 1, 0.36, 1)
+    var(--photo-reveal-bottom-delay, 260ms)
+    both;
+}
+
+.photo-reveal.is-active .photo-reveal__botanical--lily img,
+.photo-reveal.is-active .photo-reveal__botanical--dahlia img,
+.photo-reveal.is-active .photo-reveal__botanical--olive img {
+  animation: photo-reveal-settle 430ms ease-in-out 900ms both;
 }
 
 /* Stage 5: photo editor */
@@ -1155,10 +1357,11 @@
   max-width: 8em;
   margin: 0;
   color: var(--ink);
-  font-family: var(--font-display);
+  padding-bottom: 0.1em;
+  font-family: var(--font-handwriting);
   font-size: clamp(1.45rem, 4.5vw, 2.7rem);
-  font-style: italic;
-  line-height: 0.94;
+  font-weight: 600;
+  line-height: 1.2;
   text-align: right;
 }
 
@@ -1168,6 +1371,24 @@
   padding: 0.5rem;
   font-size: clamp(1.1rem, 2.8vw, 1.7rem);
   background: rgba(251, 247, 239, 0.88);
+}
+
+.herbarium-page__sender {
+  position: absolute;
+  z-index: 7;
+  right: 1.8rem;
+  bottom: 1.45rem;
+  max-width: 52%;
+  padding: 0.12rem 0.42rem 0.2rem;
+  overflow: hidden;
+  color: var(--rose);
+  font-family: var(--font-handwriting);
+  font-size: clamp(1.05rem, 2.8vw, 1.4rem);
+  font-weight: 600;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: rgba(251, 247, 239, 0.84);
 }
 
 .arranged-flowers {
@@ -1226,6 +1447,11 @@
   height: 52%;
 }
 
+.arranged-flower--lily {
+  width: 32%;
+  height: 60%;
+}
+
 .arranged-flower--foliage {
   width: 24%;
   height: 48%;
@@ -1277,9 +1503,11 @@
 .arrangement-controls > p {
   margin: 0 0 1rem;
   color: var(--rose);
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-style: italic;
+  padding-bottom: 0.1em;
+  font-family: var(--font-handwriting);
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .anchor-grid {
@@ -1323,6 +1551,78 @@
 .layer-toggle {
   width: 100%;
   margin-top: 0.7rem;
+}
+
+.sender-controls {
+  min-width: 0;
+  padding: 1rem 0 0;
+  margin: 1.15rem 0 0;
+  border: 0;
+  border-top: 1px solid rgba(37, 34, 30, 0.13);
+}
+
+.sender-controls legend {
+  padding: 0 0.45rem 0 0;
+  color: var(--rose);
+  font-family: var(--font-handwriting);
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.sender-toggle {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--ink);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.sender-toggle input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  accent-color: var(--rose);
+}
+
+.sender-name-field {
+  display: grid;
+  gap: 0.38rem;
+  margin-top: 0.55rem;
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  transition: opacity 180ms ease;
+}
+
+.sender-name-field input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.75rem;
+  color: var(--ink);
+  font-family: var(--font-handwriting);
+  font-size: 1.2rem;
+  background: rgba(251, 247, 239, 0.62);
+  border: 1px solid rgba(37, 34, 30, 0.18);
+  border-radius: 0;
+  outline: 0;
+}
+
+.sender-name-field input:focus-visible {
+  border-color: var(--rose);
+  box-shadow: 0 0 0 3px rgba(143, 49, 70, 0.13);
+}
+
+.sender-name-field.is-disabled {
+  opacity: 0.46;
+}
+
+.sender-controls > p {
+  margin: 0.45rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  line-height: 1.45;
 }
 
 .press-area {
@@ -1459,6 +1759,11 @@
   height: 52%;
 }
 
+.final-flower--lily {
+  width: 32%;
+  height: 60%;
+}
+
 .final-flower--foliage {
   width: 24%;
   height: 48%;
@@ -1490,8 +1795,9 @@
   margin-top: 0.28rem;
   font-family: var(--font-display);
   font-size: clamp(1.5rem, 3.2vw, 2.25rem);
-  font-weight: 600;
-  line-height: 0.95;
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  line-height: 1.08;
 }
 
 .final-postcard__copy p {
@@ -1502,9 +1808,13 @@
 
 .final-postcard__copy em {
   margin-top: 0.15rem;
+  padding-bottom: 0.1em;
   color: var(--rose);
-  font-family: var(--font-display);
-  font-size: 1rem;
+  font-family: var(--font-handwriting);
+  font-size: 1.25rem;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .finale-actions__note {
@@ -1533,7 +1843,7 @@
   }
 
   .scene-copy h1 {
-    font-size: clamp(3rem, 6vw, 5.7rem);
+    font-size: clamp(2.9rem, 5.5vw, 5.4rem);
   }
 
   .photo-editor,
@@ -1580,8 +1890,9 @@
   }
 
   .scene-copy h1 {
-    max-width: 10.5ch;
-    font-size: clamp(3.2rem, 15vw, 5.5rem);
+    max-width: 12.5ch;
+    font-size: clamp(3rem, 12.5vw, 4.4rem);
+    line-height: 1;
   }
 
   .scene-body {
@@ -1695,7 +2006,11 @@
   }
 
   .scene-copy h1 {
-    font-size: clamp(3rem, 15vw, 4.3rem);
+    font-size: clamp(2.55rem, 11.6vw, 3.15rem);
+  }
+
+  .herbarium-scene--envelope .scene-copy h1 {
+    font-size: clamp(3rem, 13.5vw, 3.65rem);
   }
 
   .scene-actions .button {
@@ -1753,6 +2068,15 @@
     width: 88vw;
   }
 
+  .photo-reveal__card {
+    width: min(76vw, 57dvh);
+  }
+
+  .photo-reveal__cluster--top-left,
+  .photo-reveal__cluster--bottom-right {
+    width: clamp(11.5rem, 58vw, 15rem);
+  }
+
   .photo-editor__preview {
     padding: 0.75rem;
   }
@@ -1795,6 +2119,31 @@
   .herbarium-page.is-pressed .pressed-glow {
     animation: none;
   }
+
+  .photo-reveal__wash {
+    transition-duration: 180ms;
+  }
+
+  .photo-reveal__card,
+  .photo-reveal__cluster--top-left,
+  .photo-reveal__cluster--bottom-right {
+    animation: none !important;
+    transform: none;
+    transition: opacity 180ms ease;
+  }
+
+  .photo-reveal.is-active .photo-reveal__card,
+  .photo-reveal.is-active .photo-reveal__cluster--top-left,
+  .photo-reveal.is-active .photo-reveal__cluster--bottom-right {
+    opacity: 1;
+  }
+
+  .photo-reveal__botanical--lily img,
+  .photo-reveal__botanical--dahlia img,
+  .photo-reveal__botanical--olive img {
+    animation: none !important;
+    transform: none;
+  }
 }
 
 @keyframes scene-enter {
@@ -1805,6 +2154,57 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes photo-reveal-card {
+  from {
+    opacity: 0;
+    transform: translateY(0.7rem) scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes photo-reveal-top-left {
+  0% {
+    opacity: 0;
+    transform: translate(-1.15rem, -1.15rem) scale(0.88) rotate(-2deg);
+  }
+  76% {
+    opacity: 1;
+    transform: translate(0.12rem, 0.1rem) scale(1.012) rotate(0.35deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0) scale(1) rotate(0);
+  }
+}
+
+@keyframes photo-reveal-bottom-right {
+  0% {
+    opacity: 0;
+    transform: translate(1.15rem, 1.15rem) scale(0.88) rotate(2deg);
+  }
+  76% {
+    opacity: 1;
+    transform: translate(-0.12rem, -0.1rem) scale(1.012) rotate(-0.35deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0) scale(1) rotate(0);
+  }
+}
+
+@keyframes photo-reveal-settle {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  48% {
+    transform: translateY(-1px) rotate(0.7deg);
   }
 }
 
