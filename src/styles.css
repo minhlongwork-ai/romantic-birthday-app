@@ -1641,9 +1641,10 @@ button[aria-disabled="true"] {
   display: flex;
   gap: 0.45rem;
   max-inline-size: 100%;
-  padding: 0.2rem 0.2rem 0.45rem;
+  padding: 0.2rem 0.45rem 0.45rem;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
+  scroll-padding-inline: 0.45rem;
   scrollbar-color: var(--line-strong) transparent;
   scrollbar-width: thin;
   scroll-snap-type: inline proximity;
@@ -2490,12 +2491,46 @@ button.memory-photo {
     text-align: start;
   }
 
+  .cake-layout {
+    grid-template-areas:
+      "copy"
+      "controls"
+      "stage";
+    gap: 1rem;
+  }
+
+  .scene--cake.is-celebrating .cake-layout {
+    grid-template-areas:
+      "copy"
+      "stage"
+      "controls";
+  }
+
+  .cake-copy h2 {
+    margin-block-end: 0.9rem;
+  }
+
+  .cake-copy > p:not(.eyebrow) {
+    margin-block-end: 1rem;
+  }
+
+  .camera-status {
+    margin-block-start: 0.75rem;
+  }
+
   .cake-stage {
     min-block-size: 19rem;
+    scroll-margin-block-start: calc(var(--safe-top) + 5rem);
   }
 
   .cake-controls {
     flex-direction: column;
+    align-self: start;
+    inline-size: 100%;
+    padding: 0.75rem;
+    border: 1px solid rgb(249 240 219 / 0.14);
+    border-radius: var(--radius-paper);
+    background: rgb(249 240 219 / 0.045);
   }
 
   .cake-controls .button {

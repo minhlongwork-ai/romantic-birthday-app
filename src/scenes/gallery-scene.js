@@ -49,6 +49,55 @@ export function createGalleryScene({
   let pointerStart = null;
 
   const chapters = [...new Set(memories.map(memory => memory.chapter).filter(Boolean))];
+  const galleryShell = viewport.closest('.gallery-shell');
+  const galleryHeading = galleryShell?.querySelector('.gallery-heading');
+
+  function prefersReducedMotion() {
+    return (
+      document.body.classList.contains('reduced-motion') ||
+      globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    );
+  }
+
+  function keepActiveChapterVisible(tab) {
+    if (!tab || chapterTabs.clientWidth === 0) return;
+
+    const tabsBounds = chapterTabs.getBoundingClientRect();
+    const tabBounds = tab.getBoundingClientRect();
+    const edgeInset = 6;
+    const fullyVisible =
+      tabBounds.left >= tabsBounds.left + edgeInset &&
+      tabBounds.right <= tabsBounds.right - edgeInset;
+    if (fullyVisible) return;
+
+    const centeredLeft =
+      tab.offsetLeft - (chapterTabs.clientWidth - tab.offsetWidth) / 2;
+    const maxLeft = Math.max(0, chapterTabs.scrollWidth - chapterTabs.clientWidth);
+    const left = Math.max(0, Math.min(centeredLeft, maxLeft));
+    const behavior = prefersReducedMotion() ? 'auto' : 'smooth';
+
+    if (typeof chapterTabs.scrollTo === 'function') {
+      chapterTabs.scrollTo({ left, behavior });
+    } else {
+      chapterTabs.scrollLeft = left;
+    }
+  }
+
+  function bringGalleryChromeBack() {
+    if (!active || !galleryHeading) return;
+
+    const toolbar = document.querySelector('.app-toolbar');
+    const toolbarBottom = toolbar?.getBoundingClientRect().bottom || 0;
+    const desiredTop = toolbarBottom + 12;
+    const headingTop = galleryHeading.getBoundingClientRect().top;
+    if (Math.abs(headingTop - desiredTop) < 8) return;
+
+    globalThis.scrollTo({
+      top: Math.max(0, globalThis.scrollY + headingTop - desiredTop),
+      left: globalThis.scrollX,
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    });
+  }
 
   function update() {
     const pages = [...track.querySelectorAll('.memory-page')];
@@ -67,17 +116,23 @@ export function createGalleryScene({
 
     const memory = memories[currentIndex];
     progress.textContent = `Trang ${currentIndex + 1} / ${memories.length}`;
+    let activeTab = null;
     chapterTabs.querySelectorAll('.chapter-tab').forEach(tab => {
       const selected = tab.dataset.chapter === memory.chapter;
       tab.classList.toggle('is-active', selected);
       tab.setAttribute('aria-current', selected ? 'true' : 'false');
+      if (selected) activeTab = tab;
     });
+    keepActiveChapterVisible(activeTab);
     onProgress(currentIndex);
   }
 
-  function goTo(index) {
-    currentIndex = Math.max(0, Math.min(index, memories.length - 1));
+  function goTo(index, { revealChrome = true } = {}) {
+    const nextIndex = Math.max(0, Math.min(index, memories.length - 1));
+    const changed = nextIndex !== currentIndex;
+    currentIndex = nextIndex;
     update();
+    if (changed && revealChrome) bringGalleryChromeBack();
   }
 
   function renderTabs() {
@@ -97,7 +152,7 @@ export function createGalleryScene({
   }
 
   function openLightbox(index, trigger) {
-    goTo(index);
+    goTo(index, { revealChrome: false });
     const memory = memories[index];
     dialogPicture.replaceChildren(createPicture(memory, { eager: true }));
     dialogCaption.textContent = memory.caption;
@@ -243,7 +298,7 @@ export function createGalleryScene({
       }
       globalThis.addEventListener('resize', update);
       document.addEventListener('keydown', handleKeydown);
-      goTo(startAt);
+      goTo(startAt, { revealChrome: false });
     },
     exit() {
       active = false;
@@ -264,7 +319,7 @@ export function createGalleryScene({
       navigateLightbox(-1);
     },
     reset() {
-      goTo(0);
+      goTo(0, { revealChrome: false });
     },
     get currentIndex() {
       return currentIndex;

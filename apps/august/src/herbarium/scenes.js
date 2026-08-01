@@ -773,16 +773,20 @@ function mountHerbarium(root, context) {
           <p id="sender-name-help">Có thể đổi tên hoặc tắt để ẩn chữ ký.</p>
         </fieldset>
         <div class="press-area">
-          <button class="press-button" type="button" data-press-flowers>
+          <button
+            class="press-button"
+            type="button"
+            data-press-flowers
+            aria-describedby="press-flowers-help"
+            aria-label="Ép hoa: chạm một lần hoặc nhấn giữ"
+          >
             <span class="press-button__progress" aria-hidden="true"></span>
-            <span class="press-button__label">${
-              context.reducedMotion ? "Ép hoa" : "Nhấn giữ để ép hoa"
-            }</span>
+            <span class="press-button__label">Ép hoa</span>
           </button>
-          <p data-press-status>${
+          <p id="press-flowers-help" data-press-status>${
             context.reducedMotion
               ? "Chạm một lần để giữ hoa trên trang."
-              : "Giữ đến khi vòng tròn khép lại."
+              : "Chạm một lần để ép ngay, hoặc nhấn giữ đến khi vòng tròn khép lại."
           }</p>
         </div>
       </aside>
@@ -928,6 +932,7 @@ function mountHerbarium(root, context) {
     pressing = false;
     context.state.pressed = true;
     window.clearTimeout(pressTimer);
+    pressButton.classList.remove("is-pressing");
     page.classList.add("is-pressed");
     pressButton.classList.add("is-complete");
     pressStatus.textContent = "Những cành hoa đã nằm lại trên trang.";
@@ -949,26 +954,31 @@ function mountHerbarium(root, context) {
     pressTimer = window.setTimeout(completePress, 900);
   }
 
-  function cancelPress() {
+  function cancelPress({ showHint = false } = {}) {
     if (!pressing || context.state.pressed) return;
     pressing = false;
     window.clearTimeout(pressTimer);
     pressButton.classList.remove("is-pressing");
-    pressStatus.textContent = "Giữ thêm một chút để ép hoa.";
+    if (showHint) {
+      pressStatus.textContent =
+        "Có thể chạm một lần để ép ngay, hoặc nhấn giữ thêm một chút.";
+    }
   }
 
   pressButton.addEventListener("pointerdown", startPress, { signal: view.signal });
-  pressButton.addEventListener("pointerup", cancelPress, { signal: view.signal });
-  pressButton.addEventListener("pointercancel", cancelPress, { signal: view.signal });
-  pressButton.addEventListener("pointerleave", cancelPress, { signal: view.signal });
+  pressButton.addEventListener("pointerup", () => cancelPress(), { signal: view.signal });
+  pressButton.addEventListener("pointercancel", () => cancelPress({ showHint: true }), {
+    signal: view.signal,
+  });
+  pressButton.addEventListener("pointerleave", () => cancelPress({ showHint: true }), {
+    signal: view.signal,
+  });
   pressButton.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" && event.key !== " ") return;
     event.preventDefault();
     completePress();
   }, { signal: view.signal });
-  pressButton.addEventListener("click", (event) => {
-    if (event.detail === 0) completePress();
-  }, { signal: view.signal });
+  pressButton.addEventListener("click", completePress, { signal: view.signal });
 
   renderFlowers();
   updateControls();

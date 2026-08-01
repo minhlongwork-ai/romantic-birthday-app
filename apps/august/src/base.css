@@ -366,17 +366,30 @@ fieldset {
 
 @media (max-width: 430px) {
   .soundtrack-root {
-    right: max(0.75rem, env(safe-area-inset-right));
-    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    top: max(1.1rem, env(safe-area-inset-top));
+    right: auto;
+    bottom: auto;
+    left: 50%;
     display: grid;
-    width: calc(100vw - 1.5rem);
-    justify-items: end;
+    grid-template-columns: 1fr;
+    width: max-content;
+    min-height: 2.75rem;
+    padding: 0;
+    justify-items: center;
+    transform: translateX(-50%);
+    transition:
+      opacity 160ms ease,
+      visibility 160ms ease;
   }
 
   .soundtrack-lyrics {
-    width: 100%;
+    position: absolute;
+    top: calc(100% + 0.55rem);
+    left: 50%;
+    width: min(calc(100vw - 1.5rem), 24rem);
     padding: 0.62rem 0.78rem 0.68rem;
-    margin-bottom: 0.5rem;
+    margin: 0;
+    transform: translateX(-50%);
   }
 
   .soundtrack-lyrics__eyebrow {
@@ -390,27 +403,39 @@ fieldset {
   }
 
   .soundtrack-lyrics-toggle {
-    min-width: 2.8rem;
-    min-height: 2.8rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
     padding-inline: 0.62rem;
+  }
+
+  .soundtrack-actions {
+    grid-column: 1;
+    min-height: 2.75rem;
   }
 
   .soundtrack-control {
     display: grid;
     grid-template-columns: 1fr;
-    width: 3rem;
-    min-width: 3rem;
-    min-height: 3rem;
-    padding: 0.28rem;
+    width: 2.75rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0.18rem;
   }
 
   .soundtrack-control__disc {
-    width: 2.4rem;
-    height: 2.4rem;
+    width: 2.25rem;
+    height: 2.25rem;
   }
 
   .soundtrack-control__copy {
     display: none;
+  }
+
+  /* The photo reveal is brief and cinematic; keep it visually unobstructed. */
+  body:has(.photo-reveal) .soundtrack-root {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
   }
 }
 

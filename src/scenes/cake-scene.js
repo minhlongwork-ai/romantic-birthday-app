@@ -286,6 +286,20 @@ export function createCakeScene({
     container.closest('.scene')?.classList.add('is-celebrating');
     revealProductGift({ animate: !reducedMotion() });
 
+    globalThis.requestAnimationFrame?.(() => {
+      if (
+        !active ||
+        !giftRevealed ||
+        !globalThis.matchMedia?.('(max-width: 38rem)').matches
+      ) {
+        return;
+      }
+      container.scrollIntoView({
+        block: 'start',
+        behavior: reducedMotion() ? 'auto' : 'smooth',
+      });
+    });
+
     if (!reducedMotion()) {
       const confetti = modules?.confetti;
       confetti?.({
