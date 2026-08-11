@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { validateBuildManifest } from '../../scripts/validate-build.mjs';
+import {
+  contentTypeMatches,
+  validateBuildManifest,
+} from '../../scripts/validate-build.mjs';
 
 const site = {
   origin: 'https://romantic-birthday-app.vercel.app',
@@ -85,4 +88,12 @@ test('build manifest contract rejects external, unhashed, or forbidden runtime a
   assert.match(errors, /hashed filename/i);
   assert.match(errors, /full MediaPipe model/i);
   assert.match(errors, /same-origin path/i);
+});
+
+test('remote MIME validation accepts only the JavaScript compatibility alias', () => {
+  assert.equal(contentTypeMatches('text/javascript', 'text/javascript; charset=utf-8'), true);
+  assert.equal(contentTypeMatches('text/javascript', 'application/javascript; charset=utf-8'), true);
+  assert.equal(contentTypeMatches('application/javascript', 'text/javascript'), true);
+  assert.equal(contentTypeMatches('text/css', 'text/plain'), false);
+  assert.equal(contentTypeMatches('image/webp', 'image/png'), false);
 });

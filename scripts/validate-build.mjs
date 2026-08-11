@@ -7,6 +7,19 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { loadSiteConfig } from './site-config.mjs';
 
+const JAVASCRIPT_CONTENT_TYPES = new Set([
+  'application/javascript',
+  'text/javascript',
+]);
+
+export function contentTypeMatches(expected, actual) {
+  const expectedType = String(expected || '').split(';', 1)[0].trim().toLowerCase();
+  const actualType = String(actual || '').split(';', 1)[0].trim().toLowerCase();
+  if (expectedType === actualType) return true;
+  return JAVASCRIPT_CONTENT_TYPES.has(expectedType)
+    && JAVASCRIPT_CONTENT_TYPES.has(actualType);
+}
+
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const HASHED_APPLICATION_ASSET = /\/assets\/[^/]+-[A-Za-z0-9_-]{8,}\.(?:css|js)$/;
 const SHA256 = /^[a-f0-9]{64}$/;
@@ -152,7 +165,7 @@ export async function validateRemoteBuild(baseUrl, { fetchImpl = fetch } = {}) {
       const response = await fetchImpl(url, { method: 'GET', redirect: 'follow' });
       if (!response.ok) errors.push(`GET ${asset.url} returned ${response.status}.`);
       const actualType = response.headers.get('content-type') || '';
-      if (!actualType.toLowerCase().startsWith(asset.contentType.toLowerCase())) {
+      if (!contentTypeMatches(asset.contentType, actualType)) {
         errors.push(`GET ${asset.url} returned ${actualType || 'no MIME'}; expected ${asset.contentType}.`);
       }
     }

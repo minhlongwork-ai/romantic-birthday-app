@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+import { contentTypeMatches } from '../../scripts/validate-build.mjs';
+
 const productionOrigin = 'https://romantic-birthday-app.vercel.app';
 
 test('canonical routes, metadata, critical assets, and custom 404 are deploy-safe', async ({
@@ -38,7 +40,10 @@ test('canonical routes, metadata, critical assets, and custom 404 are deploy-saf
     expect(head.status(), asset.url).toBe(200);
     const get = await request.get(new URL(asset.url, localOrigin).href);
     expect(get.status(), asset.url).toBe(200);
-    expect(get.headers()['content-type'] || '').toContain(asset.contentType.split(';')[0]);
+    expect(contentTypeMatches(
+      asset.contentType,
+      get.headers()['content-type'] || '',
+    )).toBe(true);
   }
 
   const notFound = await page.goto(new URL('/not-a-real-route', localOrigin).href);
