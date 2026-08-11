@@ -1,21 +1,9 @@
 let handsScriptPromise;
 
-function withTimeout(value, timeoutMs) {
-  const promise = Promise.resolve(value);
-  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return promise;
-
-  let timeoutId;
-  const timeout = new Promise((_, reject) => {
-    timeoutId = setTimeout(() => {
-      const error = new Error('Camera startup timed out.');
-      error.name = 'TimeoutError';
-      reject(error);
-    }, timeoutMs);
-  });
-
-  return Promise.race([promise, timeout]).finally(() => {
-    clearTimeout(timeoutId);
-  });
+function createNamedError(name, message) {
+  const error = new Error(message);
+  error.name = name;
+  return error;
 }
 
 function errorStatus(error) {
@@ -24,7 +12,7 @@ function errorStatus(error) {
     return 'denied';
   }
   if (['NotFoundError', 'OverconstrainedError'].includes(error?.name)) {
-    return 'no-device';
+    return 'unsupported';
   }
   if (['NotReadableError', 'AbortError'].includes(error?.name)) {
     return 'busy';
@@ -81,6 +69,8 @@ export function createCameraController({
   onStatus = () => {},
   scheduleFrame = callback => requestAnimationFrame(callback),
   cancelFrame = id => cancelAnimationFrame(id),
+  scheduleTimeout = (callback, delay) => setTimeout(callback, delay),
+  cancelTimeout = id => clearTimeout(id),
   now = () => performance.now(),
 }) {
   let generation = 0;
@@ -88,6 +78,40 @@ export function createCameraController({
   let currentSession = null;
   const releasedStreams = new WeakSet();
   const releasedDetectors = new WeakSet();
+
+  function waitFor(session, value, timeoutMs) {
+    const promise = Promise.resolve(value);
+    if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return promise;
+
+    let settled = false;
+    let timeoutId = null;
+    let cancelWait;
+    const guarded = new Promise((resolvePromise, reject) => {
+      const settle = (handler, result) => {
+        if (settled) return;
+        settled = true;
+        if (timeoutId !== null) cancelTimeout(timeoutId);
+        handler(result);
+      };
+      cancelWait = () => settle(
+        reject,
+        createNamedError('AbortError', 'Camera operation was stopped.'),
+      );
+      session.pendingWaits.add(cancelWait);
+      timeoutId = scheduleTimeout(
+        () => settle(
+          reject,
+          createNamedError('TimeoutError', 'Camera operation timed out.'),
+        ),
+        timeoutMs,
+      );
+      promise.then(
+        result => settle(resolvePromise, result),
+        error => settle(reject, error),
+      );
+    });
+    return guarded.finally(() => session.pendingWaits.delete(cancelWait));
+  }
 
   function releaseStream(target) {
     if (!target || releasedStreams.has(target)) return;
@@ -104,6 +128,8 @@ export function createCameraController({
   function cleanupSession(session) {
     if (!session) return;
     session.active = false;
+    for (const cancelWait of [...session.pendingWaits]) cancelWait();
+    session.pendingWaits.clear();
     if (session.frameId !== null) {
       cancelFrame(session.frameId);
       session.frameId = null;
@@ -155,7 +181,8 @@ export function createCameraController({
     if (!session.processing && session.detector) {
       session.processing = true;
       try {
-        await withTimeout(
+        await waitFor(
+          session,
           session.detector.send({ image: video }),
           frameTimeoutMs,
         );
@@ -163,11 +190,7 @@ export function createCameraController({
         if (isCurrent(session)) {
           currentSession = null;
           cleanupSession(session);
-          onStatus(
-            error?.name === 'TimeoutError'
-              ? 'processing-timeout'
-              : 'processing-error',
-          );
+          onStatus(error?.name === 'TimeoutError' ? 'timeout' : 'error');
         }
       } finally {
         session.processing = false;
@@ -199,7 +222,7 @@ export function createCameraController({
       if (currentSession?.active) return true;
       if (startPromise) return startPromise;
       if (!secureContext) {
-        onStatus('insecure');
+        onStatus('unsupported');
         return false;
       }
       if (!mediaDevices?.getUserMedia) {
@@ -217,19 +240,32 @@ export function createCameraController({
         active: false,
         previousTip: null,
         lastGestureAt: 0,
+        pendingWaits: new Set(),
       };
       currentSession = session;
       onStatus('requesting');
       const pending = (async () => {
         try {
-          session.stream = await mediaDevices.getUserMedia({
-            video: {
-              facingMode: 'user',
-              width: { ideal: 640 },
-              height: { ideal: 480 },
-            },
-            audio: false,
-          });
+          let streamRequest;
+          try {
+            streamRequest = mediaDevices.getUserMedia({
+              video: {
+                facingMode: 'user',
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+              },
+              audio: false,
+            });
+          } catch (error) {
+            streamRequest = Promise.reject(error);
+          }
+          const streamPromise = Promise.resolve(streamRequest);
+          streamPromise.then(stream => {
+            if (currentSession !== session || requestGeneration !== generation) {
+              releaseStream(stream);
+            }
+          }, () => {});
+          session.stream = await waitFor(session, streamPromise, startupTimeoutMs);
           if (currentSession !== session || requestGeneration !== generation) {
             cleanupSession(session);
             return false;
@@ -237,12 +273,13 @@ export function createCameraController({
 
           video.srcObject = session.stream;
           onStatus('streaming');
-          await withTimeout(video.play(), startupTimeoutMs);
+          await waitFor(session, video.play(), startupTimeoutMs);
           if (currentSession !== session || requestGeneration !== generation) {
             cleanupSession(session);
             return false;
           }
 
+          onStatus('detector-loading');
           const detectorPromise = Promise.resolve(
             createDetector(results => handleResults(session, results)),
           ).then(detector => {
@@ -254,7 +291,8 @@ export function createCameraController({
             }
             return detector;
           });
-          session.detector = await withTimeout(
+          session.detector = await waitFor(
+            session,
             detectorPromise,
             startupTimeoutMs,
           );

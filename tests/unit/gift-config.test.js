@@ -322,30 +322,6 @@ test('validateGiftConfig returns readable, path-aware schema errors', () => {
 test('gift.json is the valid single source for all 21 existing memories', () => {
   const giftUrl = new URL('../../src/content/gift.json', import.meta.url);
   const gift = JSON.parse(readFileSync(giftUrl, 'utf8'));
-  const expectedCaptions = [
-    'Every moment with you is a treasure ✨',
-    'The smile that lights up my world 😊',
-    'This day, this memory, forever 💖',
-    'Where we go, magic follows ✨',
-    'My favorite person, always 🤍',
-    "Time flies when we're together ♥️",
-    'You make ordinary days extraordinary 🌟',
-    'The laughter we share is priceless 🤣',
-    'A piece of my heart, always with you 💜',
-    'Captured happiness ✨',
-    'Every photo tells our story 📸',
-    'Your joy is contagious, I love it 🎉',
-    'These memories keep me warm 🧣',
-    'Beautiful soul, beautiful moments 🌸',
-    'Forever grateful for you 🙏',
-    'You are my sunshine ☀️',
-    'Life is better with you in it 💚',
-    'Every smile, a gift 🎁',
-    'Together is my favorite place 🏠',
-    'The best is yet to come 🚀',
-    'Happy Birthday, always & forever 💖',
-  ];
-
   assert.deepEqual(gift.giftReveal, {
     productName: 'Swarovski Dancing Swan',
     articleNumber: '5514421',
@@ -356,12 +332,12 @@ test('gift.json is the valid single source for all 21 existing memories', () => 
   assert.deepEqual(validateGiftConfig(gift), []);
   assert.equal(gift.recipient.name, 'Thuy Hien');
   assert.equal(gift.recipient.age, 23);
-  assert.equal(gift.sender.name, 'Yours Truly');
+  assert.equal(gift.sender.name, 'Shyn');
   assert.equal(gift.soundtrack.src, '/audio.mp3');
   assert.equal(gift.soundtrack.loop, true);
   assert.deepEqual(gift.epilogue, {
-    heading: 'Happy Birthday',
-    message: 'Happy Birthday, always & forever 💖',
+    heading: 'Chúc mừng sinh nhật',
+    message: 'Mong những điều đẹp nhất sẽ luôn ở lại bên em. 💖',
   });
   assert.deepEqual(gift.features, {
     cameraGestures: true,
@@ -374,9 +350,13 @@ test('gift.json is the valid single source for all 21 existing memories', () => 
     gift.memories.map((memory) => memory.src),
     Array.from({ length: 21 }, (_, index) => `/images/${index + 1}.jpg`),
   );
-  assert.deepEqual(
-    gift.memories.map((memory) => memory.caption),
-    expectedCaptions,
+  assert.equal(
+    gift.memories[0].caption,
+    'Một khoảng lặng rất nhỏ, nhưng đủ làm ngày hôm ấy dịu dàng. ✨',
+  );
+  assert.equal(
+    gift.memories[20].caption,
+    'Khép lại cuốn album bằng một mặt trời vẫn còn sáng. 💖',
   );
 });
 

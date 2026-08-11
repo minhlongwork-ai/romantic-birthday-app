@@ -131,7 +131,7 @@ async function findResponseFile(request) {
 
   const acceptsHtml = request.headers.accept?.includes('text/html');
   return acceptsHtml
-    ? { filePath: resolve(distDirectory, 'index.html'), status: 200 }
+    ? { filePath: resolve(distDirectory, '404.html'), status: 404 }
     : { status: 404 };
 }
 
@@ -176,6 +176,10 @@ const server = createServer(async (request, response) => {
       'Content-Type': contentTypes.get(extname(result.filePath)) || 'application/octet-stream',
       'Cache-Control': 'no-store',
     });
+    if (request.method === 'HEAD') {
+      response.end();
+      return;
+    }
     createReadStream(result.filePath).pipe(response);
   } catch (error) {
     console.error(error);

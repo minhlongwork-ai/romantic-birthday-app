@@ -16,8 +16,8 @@ test.describe('iPhone X layout regressions', () => {
 
   test.beforeEach(async ({ baseURL, page }, testInfo) => {
     test.skip(
-      testInfo.project.name !== 'ios-safari',
-      'The iPhone X regressions run once in the WebKit-backed iOS project.',
+      testInfo.project.name !== 'iphone-x',
+      'The iPhone X regressions run once in their dedicated WebKit project.',
     );
 
     const appOrigin = new URL(baseURL).origin;

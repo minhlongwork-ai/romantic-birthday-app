@@ -30,15 +30,18 @@ function finalize(distDir) {
   return source.match(/birthday-keepsake-([a-f0-9]+)/)?.[1];
 }
 
-test('Vercel revalidates the root migration worker on every request', () => {
+test('Vercel revalidates the Birthday service worker on every request', () => {
   const config = JSON.parse(
     readFileSync(join(projectRoot, 'vercel.json'), 'utf8'),
   );
   const serviceWorkerHeaders = config.headers?.find(
-    entry => entry.source === '/service-worker.js',
+    entry => entry.source === '/birthday/service-worker.js',
   )?.headers;
 
-  assert.ok(serviceWorkerHeaders, 'Missing /service-worker.js response headers.');
+  assert.ok(
+    serviceWorkerHeaders,
+    'Missing /birthday/service-worker.js response headers.',
+  );
   assert.deepEqual(
     serviceWorkerHeaders.find(header => header.key === 'Cache-Control'),
     {
@@ -46,6 +49,19 @@ test('Vercel revalidates the root migration worker on every request', () => {
       value: 'public, max-age=0, must-revalidate',
     },
   );
+});
+
+test('Vercel also revalidates the one-release root migration worker', () => {
+  const config = JSON.parse(
+    readFileSync(join(projectRoot, 'vercel.json'), 'utf8'),
+  );
+  const headers = config.headers?.find(
+    entry => entry.source === '/service-worker.js',
+  )?.headers;
+  assert.deepEqual(headers?.find(header => header.key === 'Cache-Control'), {
+    key: 'Cache-Control',
+    value: 'public, max-age=0, must-revalidate',
+  });
 });
 
 test('root migration still reloads a legacy page when cache cleanup fails', async () => {

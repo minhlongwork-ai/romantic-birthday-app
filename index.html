@@ -6,20 +6,20 @@
     <meta name="theme-color" content="#efe3d2" />
     <meta
       name="description"
-      content="Một cuốn album sinh nhật nhỏ, được làm riêng cho một người đặc biệt."
+      content="%SITE_DESCRIPTION%"
     />
-    <meta property="og:title" content="A birthday keepsake" />
+    <meta property="og:title" content="%SITE_OG_TITLE%" />
     <meta
       property="og:description"
-      content="Một cuốn album sinh nhật nhỏ, được làm riêng bằng những kỷ niệm."
+      content="%SITE_OG_DESCRIPTION%"
     />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="%GIFT_PUBLIC_URL%" />
-    <meta property="og:image" content="%GIFT_OG_IMAGE_URL%" />
-    <link rel="canonical" href="%GIFT_PUBLIC_URL%" />
+    <meta property="og:url" content="%SITE_CANONICAL_URL%" />
+    <meta property="og:image" content="%SITE_OG_IMAGE_URL%" />
+    <link rel="canonical" href="%SITE_CANONICAL_URL%" />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="./manifest.webmanifest" />
-    <title>Một cuốn album dành cho em</title>
+    <title>%SITE_TITLE%</title>
   </head>
   <body>
     <a class="skip-link" href="#app-main">Bỏ qua phần trang trí</a>
@@ -70,7 +70,7 @@
           <div class="cover-shadow" aria-hidden="true"></div>
           <article class="album-cover">
             <span class="album-spine" aria-hidden="true"></span>
-            <p class="eyebrow">a birthday keepsake</p>
+            <p class="eyebrow">một món quà sinh nhật</p>
             <div class="pressed-flower" aria-hidden="true">
               <span></span><span></span><span></span><span></span>
             </div>
@@ -87,7 +87,7 @@
                 Tiếp tục trong yên lặng
               </button>
             </div>
-            <p class="signature-mark" id="cover-signature">— Yours Truly</p>
+            <p class="signature-mark" id="cover-signature">— Shyn</p>
           </article>
         </div>
       </section>
@@ -146,8 +146,8 @@
                 Dùng cử chỉ
               </button>
               <p>
-                Camera chỉ xử lý trên thiết bị, tạm dừng khi tab bị ẩn và bật lại
-                khi em quay về màn bánh.
+                Camera chỉ xử lý trên thiết bị và sẽ dừng khi tab bị ẩn. Em có thể
+                chủ động bật lại khi quay về màn bánh.
               </p>
             </div>
 
@@ -340,7 +340,7 @@
               Mong tuổi mới sẽ dịu dàng với em, giống như cách em đã làm thế giới của anh
               dịu dàng hơn.
             </p>
-            <p class="final-signature" id="final-signature">— Yours Truly</p>
+            <p class="final-signature" id="final-signature">— Shyn</p>
           </article>
 
           <div class="epilogue-actions">

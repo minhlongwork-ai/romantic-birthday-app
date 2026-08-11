@@ -434,9 +434,9 @@ test('a cached legacy birthday page migrates to the chooser', async ({
     )
     .toBe(0);
 
-  const birthdayLink = page.locator('[data-project-link][href^="./birthday/"]');
+  const birthdayLink = page.locator('[data-project-link][href^="/birthday/"]');
   await expect(birthdayLink).toHaveAttribute(
     'href',
-    './birthday/?to=Em+Test&from=Minh+Long&age=24',
+    '/birthday/?to=Em+Test&from=Minh+Long&age=24',
   );
 });

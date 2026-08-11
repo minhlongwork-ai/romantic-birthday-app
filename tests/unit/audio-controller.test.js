@@ -34,6 +34,30 @@ test('audio starts only on request and toggle pauses active playback', async () 
   assert.deepEqual(events, ['play', 'pause']);
 });
 
+test('a configured soundtrack source is attached only for an explicit start', async () => {
+  const audio = {
+    paused: true,
+    currentTime: 0,
+    src: '',
+    play: async () => {
+      audio.paused = false;
+    },
+    pause: () => {
+      audio.paused = true;
+    },
+  };
+  const controller = createAudioController({
+    audio,
+    source: '/birthday/audio.mp3',
+    scheduleFrame: () => 1,
+    cancelFrame: () => {},
+  });
+
+  assert.equal(audio.src, '');
+  assert.equal(await controller.start(), true);
+  assert.equal(audio.src, '/birthday/audio.mp3');
+});
+
 test('concurrent starts share one playback request and pause stops the lyrics loop', async () => {
   let resolvePlayback;
   let playCalls = 0;

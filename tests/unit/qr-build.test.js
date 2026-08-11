@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   mkdtempSync,
   readFileSync,
@@ -12,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 
-function generateQr(outputPath, publicUrl) {
+function generateQr(outputPath, injectedUrl) {
   return spawnSync(
     process.execPath,
     ['scripts/generate-share-qr.mjs'],
@@ -21,30 +22,29 @@ function generateQr(outputPath, publicUrl) {
       encoding: 'utf8',
       env: {
         ...process.env,
-        GIFT_PUBLIC_URL: publicUrl,
+        GIFT_PUBLIC_URL: injectedUrl,
         QR_OUTPUT_PATH: outputPath,
       },
     },
   );
 }
 
-test('share QR generation rejects personalized URLs and emits a generic SVG', () => {
+test('share QR generation only uses the clean Birthday target from site.json', () => {
   const fixtureRoot = mkdtempSync(join(tmpdir(), 'birthday-qr-'));
   try {
     const outputPath = join(fixtureRoot, 'share-qr.svg');
-    const unsafeRun = generateQr(
+    const safeRun = generateQr(
       outputPath,
       'https://example.com/gift/?to=PrivateName',
     );
-    assert.equal(unsafeRun.status, 1);
-    assert.match(unsafeRun.stderr, /cannot contain.*query parameters/i);
-
-    const safeRun = generateQr(outputPath, 'https://example.com/gift/');
     assert.equal(safeRun.status, 0, `${safeRun.stdout}\n${safeRun.stderr}`);
     const svg = readFileSync(outputPath, 'utf8');
+    const publicUrl = 'https://romantic-birthday-app.vercel.app/birthday/';
+    const digest = createHash('sha256').update(publicUrl).digest('hex');
     assert.match(svg, /<svg/);
-    assert.match(svg, /gift-public-url-sha256:[a-f0-9]{64}/);
-    assert.doesNotMatch(svg, /PrivateName|Thuy Hien|Yours Truly/);
+    assert.match(svg, new RegExp(`gift-public-url-sha256:${digest}`));
+    assert.match(safeRun.stdout, new RegExp(publicUrl.replaceAll('/', '\\/')));
+    assert.doesNotMatch(svg, /PrivateName|example\.com|Thuy Hien|Yours Truly/);
   } finally {
     rmSync(fixtureRoot, { recursive: true, force: true });
   }
