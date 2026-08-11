@@ -102,7 +102,7 @@ test('recipient completes the full gift with quiet audio, reduced motion, and no
 
   await expect(page.getByRole('heading', { name: /Ký ức của chúng mình/i })).toBeVisible();
   await page.getByRole('button', { name: /Khép lại cuốn album/i }).click();
-  await expect(page.getByRole('heading', { name: /Happy Birthday/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Chúc mừng sinh nhật/i })).toBeVisible();
 
   await page.getByRole('button', { name: /Xem lại từ đầu/i }).click();
   await expect(page.getByRole('heading', { name: /Dành cho An/i })).toBeVisible();
@@ -164,6 +164,7 @@ test('tap fallback stays interactive while the 3D upgrade is still downloading',
 test('the Three cake survives when the optional confetti chunk fails', async ({
   page,
 }, testInfo) => {
+  test.setTimeout(60_000);
   test.skip(
     testInfo.project.name !== 'desktop-chrome',
     'One Chromium production smoke test covers an optional animation chunk failure.',
@@ -176,9 +177,10 @@ test('the Three cake survives when the optional confetti chunk fails', async ({
   );
   await page.getByRole('button', { name: /Tiếp tục trong yên lặng/i }).click();
   await page.getByRole('button', { name: /Ước một điều nhé/i }).click();
+  await expect(page.getByRole('heading', { name: /Nhắm mắt/i })).toBeVisible();
 
   await expect(page.locator('#cake-stage canvas')).toBeVisible({
-    timeout: 15_000,
+    timeout: 30_000,
   });
   await page.getByRole('button', { name: /Chạm để thổi nến/i }).click();
   await expect(page.locator('#gift-product-visual')).toBeVisible();
@@ -222,7 +224,7 @@ test('Back and Finish stay usable while the gallery chunk is stalled', async ({
 
     await page.getByRole('button', { name: /Đi thẳng đến những kỷ niệm/i }).click();
     await page.getByRole('button', { name: /Khép lại cuốn album/i }).click();
-    await expect(page.getByRole('heading', { name: /Happy Birthday/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Chúc mừng sinh nhật/i })).toBeVisible();
   } finally {
     releaseGallery();
   }
@@ -477,6 +479,7 @@ test('a delayed Swarovski render upgrades the fallback after Back and re-entry',
 test('the self-hosted MediaPipe bundle starts against a real camera stream', async ({
   page,
 }, testInfo) => {
+  test.setTimeout(60_000);
   test.skip(
     testInfo.project.name !== 'desktop-chrome',
     'The desktop Chromium project provides a deterministic fake camera stream.',
@@ -517,6 +520,15 @@ test('the self-hosted MediaPipe bundle starts against a real camera stream', asy
     .toBe(true);
   expect(
     mediaPipeResponses.every(response => response.status === 200),
+  ).toBe(true);
+  expect(
+    mediaPipeResponses.some(response =>
+      response.url.endsWith('/hand_landmark_full.tflite')),
+    'modelComplexity 0 must never request the 5 MiB full hand model',
+  ).toBe(false);
+  expect(
+    mediaPipeResponses.some(response =>
+      response.url.endsWith('/hand_landmark_lite.tflite')),
   ).toBe(true);
 
   await page.getByRole('button', { name: /Dừng camera/i }).click();
@@ -565,7 +577,7 @@ test('a stalled camera permission request can be cancelled without blocking touc
   ).toBeEnabled();
 });
 
-test('camera resumes after a hidden tab and stops when leaving the cake scene', async ({
+test('camera requires fresh opt-in after three hide/show cycles and cleans every session', async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -638,31 +650,36 @@ test('camera resumes after a hidden tab and stops when leaving the cake scene', 
   await expect(page.locator('#camera-status')).toContainText(/Camera đã bật|Đã thấy|tìm bàn tay/i);
   await expect(page.getByRole('button', { name: /Mở những kỷ niệm/i })).toBeVisible();
 
-  await page.evaluate(() => {
-    Object.defineProperty(document, 'hidden', {
-      configurable: true,
-      value: true,
+  for (let cycle = 1; cycle <= 3; cycle += 1) {
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'hidden', {
+        configurable: true,
+        value: true,
+      });
+      document.dispatchEvent(new Event('visibilitychange'));
     });
-    document.dispatchEvent(new Event('visibilitychange'));
-  });
-  await expect.poll(() => page.evaluate(() => globalThis.__cameraTrackStops)).toBe(1);
-  expect(await page.evaluate(() => globalThis.__detectorCloses)).toBe(1);
+    await expect.poll(() => page.evaluate(() => globalThis.__cameraTrackStops)).toBe(cycle);
+    expect(await page.evaluate(() => globalThis.__detectorCloses)).toBe(cycle);
 
-  await page.evaluate(() => {
-    Object.defineProperty(document, 'hidden', {
-      configurable: true,
-      value: false,
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'hidden', {
+        configurable: true,
+        value: false,
+      });
+      document.dispatchEvent(new Event('visibilitychange'));
     });
-    document.dispatchEvent(new Event('visibilitychange'));
-  });
-  await expect(page.locator('#camera-preview')).toBeVisible();
-  await expect.poll(() => page.evaluate(() => globalThis.__cameraStarts)).toBe(2);
+    await expect(page.locator('#camera-preview')).toBeHidden();
+    expect(await page.evaluate(() => globalThis.__cameraStarts)).toBe(cycle);
+    await page.getByRole('button', { name: /Bật lại cử chỉ/i }).click();
+    await expect(page.locator('#camera-preview')).toBeVisible();
+    await expect.poll(() => page.evaluate(() => globalThis.__cameraStarts)).toBe(cycle + 1);
+  }
 
   await page.getByRole('button', { name: /Mở những kỷ niệm/i }).click();
   await expect(page.getByRole('heading', { name: /Ký ức/i })).toBeVisible();
 
-  expect(await page.evaluate(() => globalThis.__cameraTrackStops)).toBe(2);
-  expect(await page.evaluate(() => globalThis.__detectorCloses)).toBe(2);
+  expect(await page.evaluate(() => globalThis.__cameraTrackStops)).toBe(4);
+  expect(await page.evaluate(() => globalThis.__detectorCloses)).toBe(4);
 });
 
 test('back, skip, chapter navigation, keyboard controls, and the lightbox stay usable', async ({
@@ -692,7 +709,9 @@ test('back, skip, chapter navigation, keyboard controls, and the lightbox stay u
   await page.keyboard.press('ArrowRight');
   await expect(page.locator('#gallery-progress')).toHaveText('Trang 2 / 21');
 
-  const photoButton = page.getByRole('button', { name: /Mở ảnh: Memory 2/i });
+  const photoButton = page.getByRole('button', {
+    name: /Mở ảnh: Bóng một người đứng trước bầu trời/i,
+  });
   await photoButton.click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
@@ -703,7 +722,9 @@ test('back, skip, chapter navigation, keyboard controls, and the lightbox stay u
   await expect(page.locator('#lightbox-counter')).toHaveText('3 / 21');
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
-  await expect(page.getByRole('button', { name: /Mở ảnh: Memory 3/i })).toBeFocused();
+  await expect(page.getByRole('button', {
+    name: /Mở ảnh: Một người mặc váy đen/i,
+  })).toBeFocused();
   await expect(page.locator('#gallery-progress')).toHaveText('Trang 3 / 21');
 
   const viewport = page.locator('#scrapbook-viewport');

@@ -209,34 +209,31 @@ function renderCameraStatus(status) {
     idle: 'Camera đang tắt. Chạm để thổi nến vẫn luôn hoạt động.',
     requesting: 'Đang chờ quyền truy cập camera…',
     streaming: 'Camera đã mở. Đang khởi động nhận diện cử chỉ…',
+    'detector-loading': 'Camera đã mở. Đang tải nhận diện bàn tay…',
     active: 'Camera đã bật. Hãy vẫy tay nhẹ để thổi từng ngọn nến.',
     searching: 'Camera đang tìm bàn tay của em…',
     tracking: 'Đã thấy bàn tay. Vẫy nhẹ để thổi nến.',
     denied:
       'Quyền camera bị từ chối hoặc đang bị chặn. Hãy cho phép camera cạnh thanh địa chỉ rồi bấm “Dùng cử chỉ” lần nữa.',
-    insecure:
-      'Camera chỉ hoạt động trên HTTPS hoặc localhost. Đừng mở thiệp bằng địa chỉ IP bắt đầu với http://.',
     unsupported: 'Thiết bị này không hỗ trợ camera. Nút chạm vẫn hoạt động.',
-    'no-device':
-      'Không tìm thấy camera phù hợp trên thiết bị này. Nút chạm vẫn hoạt động.',
     busy:
       'Camera đang được ứng dụng khác sử dụng. Hãy đóng ứng dụng đó rồi thử lại.',
     timeout:
       'Camera mở quá lâu nhưng chưa sẵn sàng. Hãy bấm “Dùng cử chỉ” để thử lại.',
     error:
       'Không thể mở camera lúc này. Hãy thử lại hoặc dùng nút chạm để tiếp tục.',
-    'processing-error': 'Nhận diện cử chỉ bị gián đoạn. Hãy dùng nút chạm.',
-    'processing-timeout':
-      'Nhận diện cử chỉ không phản hồi. Hãy bật lại cử chỉ hoặc dùng nút chạm.',
-    paused: 'Camera tạm dừng khi tab bị ẩn và sẽ bật lại khi em quay về.',
     stopped: 'Camera đã dừng.',
   };
 
   elements.cameraStatus.dataset.state = status;
   elements.cameraStatus.textContent = messages[status] || messages.error;
-  const visible = ['streaming', 'active', 'searching', 'tracking'].includes(
-    status,
-  );
+  const visible = [
+    'streaming',
+    'detector-loading',
+    'active',
+    'searching',
+    'tracking',
+  ].includes(status);
   elements.cameraPreview.hidden = !visible;
   elements.cameraToggle.disabled = false;
   elements.cameraToggle.setAttribute('aria-pressed', String(visible));
@@ -245,7 +242,7 @@ function renderCameraStatus(status) {
       ? 'Hủy bật camera'
       : visible
         ? 'Dừng camera'
-        : ['paused', 'stopped'].includes(status)
+        : status === 'stopped'
           ? 'Bật lại cử chỉ'
           : 'Dùng cử chỉ';
 }
@@ -255,18 +252,11 @@ const cameraController = createCameraController({
   onGesture: () => cakeScene.blowOne(),
   onStatus: renderCameraStatus,
 });
-let cameraOptedIn = false;
-let resumeCameraWhenVisible = false;
-
 async function startCamera() {
-  cameraOptedIn = true;
-  const started = await cameraController.start();
-  if (!started) cameraOptedIn = false;
-  return started;
+  return cameraController.start();
 }
 
-function stopCamera({ preserveOptIn = false } = {}) {
-  if (!preserveOptIn) cameraOptedIn = false;
+function stopCamera() {
   if (cameraController.engaged) cameraController.stop();
 }
 
@@ -362,13 +352,10 @@ const scenes = {
     element: sceneElements.cake,
     enter() {
       document.body.dataset.theme = 'night';
-      cameraOptedIn = false;
-      resumeCameraWhenVisible = false;
       renderCameraStatus('idle');
       return cakeScene.enter();
     },
     exit() {
-      resumeCameraWhenVisible = false;
       stopCamera();
       cakeScene.exit();
     },
@@ -426,7 +413,6 @@ async function go(scene) {
 }
 
 async function replay() {
-  resumeCameraWhenVisible = false;
   stopCamera();
   cakeScene.reset();
   galleryScene?.reset();
@@ -494,7 +480,6 @@ const actions = {
       return;
     }
     if (cameraController.engaged) {
-      resumeCameraWhenVisible = false;
       stopCamera();
       return;
     }
@@ -581,24 +566,7 @@ elements.motionToggle.addEventListener('click', () => {
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    resumeCameraWhenVisible =
-      sceneController.current === 'cake' &&
-      cameraOptedIn &&
-      cameraController.engaged;
-    if (cameraController.engaged) {
-      cameraController.stop();
-      if (resumeCameraWhenVisible) renderCameraStatus('paused');
-    }
-    return;
-  }
-
-  if (
-    resumeCameraWhenVisible &&
-    cameraOptedIn &&
-    sceneController.current === 'cake'
-  ) {
-    resumeCameraWhenVisible = false;
-    void startCamera();
+    stopCamera();
   }
 });
 

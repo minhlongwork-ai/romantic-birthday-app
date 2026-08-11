@@ -4,20 +4,20 @@
     "age": 23
   },
   "sender": {
-    "name": "Yours Truly"
+    "name": "Shyn"
   },
   "letter": {
-    "greeting": "Dear {{recipient}},",
+    "greeting": "Gửi {{recipient}},",
     "paragraphs": [
-      "Today is not just any day — it celebrates chapter {{age}} of your story, and the moment the world quietly became more beautiful. You arrived and filled every corner with warmth, laughter, and light.",
-      "Thank you for being exactly who you are, and for letting me witness your magic. I wish you a year overflowing with love, joy, and every dream you deserve.",
-      "Happy Birthday, beautiful. 🌸"
+      "Hôm nay không chỉ là một ngày bình thường — đây là lúc chương {{age}} trong câu chuyện của em bắt đầu, và cũng là dịp để nhớ rằng thế giới đã trở nên đẹp hơn từ khi có em.",
+      "Cảm ơn em vì vẫn luôn là chính mình, với sự ấm áp, tiếng cười và ánh sáng rất riêng. Mong tuổi mới mang đến cho em thật nhiều yêu thương, niềm vui và những điều em hằng mong ước.",
+      "Chúc mừng sinh nhật em. 🌸"
     ],
     "closing": "— {{sender}}"
   },
   "epilogue": {
-    "heading": "Happy Birthday",
-    "message": "Happy Birthday, always & forever 💖"
+    "heading": "Chúc mừng sinh nhật",
+    "message": "Mong những điều đẹp nhất sẽ luôn ở lại bên em. 💖"
   },
   "giftReveal": {
     "productName": "Swarovski Dancing Swan",
@@ -188,155 +188,152 @@
     "postcard": true,
     "voiceNote": false
   },
-  "sharing": {
-    "publicUrl": "https://minhlongwork-ai.github.io/romantic-birthday-app/birthday/"
-  },
   "memories": [
     {
       "id": "memory-01",
       "src": "/images/1.jpg",
-      "alt": "Memory 1",
-      "caption": "Every moment with you is a treasure ✨",
+      "alt": "Hai người ngồi gần nhau trong căn phòng có ánh đèn ấm",
+      "caption": "Một khoảng lặng rất nhỏ, nhưng đủ làm ngày hôm ấy dịu dàng. ✨",
       "chapter": "Những ngày đầu"
     },
     {
       "id": "memory-02",
       "src": "/images/2.jpg",
-      "alt": "Memory 2",
-      "caption": "The smile that lights up my world 😊",
+      "alt": "Bóng một người đứng trước bầu trời hoàng hôn màu cam",
+      "caption": "Hoàng hôn giữ lại một dáng hình thật yên. 😊",
       "chapter": "Những ngày đầu"
     },
     {
       "id": "memory-03",
       "src": "/images/3.jpg",
-      "alt": "Memory 3",
-      "caption": "This day, this memory, forever 💖",
+      "alt": "Một người mặc váy đen đứng trên sân thượng nhìn về thành phố ban đêm",
+      "caption": "Giữa thành phố lên đèn, khoảnh khắc này vẫn sáng theo cách riêng. 💖",
       "chapter": "Những ngày đầu"
     },
     {
       "id": "memory-04",
       "src": "/images/4.jpg",
-      "alt": "Memory 4",
-      "caption": "Where we go, magic follows ✨",
+      "alt": "Bóng một người bên mặt hồ dưới bầu trời hoàng hôn rực cam",
+      "caption": "Một chiều rực rỡ như thể cả bầu trời cùng dừng lại. ✨",
       "chapter": "Những ngày đầu"
     },
     {
       "id": "memory-05",
       "src": "/images/5.jpg",
-      "alt": "Memory 5",
-      "caption": "My favorite person, always 🤍",
+      "alt": "Một người nhìn về rừng cây và núi phủ sương",
+      "caption": "Có những ngày bình yên chỉ cần đứng nhìn mây trôi. 🤍",
       "chapter": "Những ngày đầu"
     },
     {
       "id": "memory-06",
       "src": "/images/6.jpg",
-      "alt": "Memory 6",
-      "caption": "Time flies when we're together ♥️",
+      "alt": "Một người đứng bên giá sách và bó hoa trắng trong phòng",
+      "caption": "Giữa những trang sách, một bó hoa làm căn phòng mềm lại. ♥️",
       "chapter": "Những ngày đầu"
     },
     {
       "id": "memory-07",
       "src": "/images/7.jpg",
-      "alt": "Memory 7",
-      "caption": "You make ordinary days extraordinary 🌟",
+      "alt": "Một người mặc váy hồng đứng trước ô cửa nhìn ra khu vườn",
+      "caption": "Ô cửa mở ra một ngày xanh và thật nhiều ánh sáng. 🌟",
       "chapter": "Những ngày đầu"
     },
     {
       "id": "memory-08",
       "src": "/images/8.jpg",
-      "alt": "Memory 8",
-      "caption": "The laughter we share is priceless 🤣",
+      "alt": "Một người đứng trong căn gác gỗ dưới hai chiếc đèn treo",
+      "caption": "Một góc nhỏ bằng gỗ cũng hóa thành khung hình đáng nhớ. 🤍",
       "chapter": "Nắng trong ngày thường"
     },
     {
       "id": "memory-09",
       "src": "/images/9.jpg",
-      "alt": "Memory 9",
-      "caption": "A piece of my heart, always with you 💜",
+      "alt": "Chân dung nghiêng trước nền trời hoàng hôn màu vàng cam",
+      "caption": "Nắng cuối ngày chạm khẽ lên một khoảnh khắc rất thơ. 💜",
       "chapter": "Nắng trong ngày thường"
     },
     {
       "id": "memory-10",
       "src": "/images/10.jpg",
-      "alt": "Memory 10",
-      "caption": "Captured happiness ✨",
+      "alt": "Một người đứng trên cao nhìn xuống hồ giữa núi đá",
+      "caption": "Đứng trước núi rộng, mọi lo toan bỗng trở nên thật nhỏ. ✨",
       "chapter": "Nắng trong ngày thường"
     },
     {
       "id": "memory-11",
       "src": "/images/11.jpg",
-      "alt": "Memory 11",
-      "caption": "Every photo tells our story 📸",
+      "alt": "Chân dung một người dưới ánh đèn đỏ bên chiếc ly trên bàn",
+      "caption": "Ánh đèn đỏ nhuộm đêm thành một thước phim dịu. 📸",
       "chapter": "Nắng trong ngày thường"
     },
     {
       "id": "memory-12",
       "src": "/images/12.jpg",
-      "alt": "Memory 12",
-      "caption": "Your joy is contagious, I love it 🎉",
+      "alt": "Một người mặc váy hồng đi trên lối nhỏ giữa hàng dừa",
+      "caption": "Con đường nhiều nắng, hàng dừa và một ngày thong thả. 🎉",
       "chapter": "Nắng trong ngày thường"
     },
     {
       "id": "memory-13",
       "src": "/images/13.jpg",
-      "alt": "Memory 13",
-      "caption": "These memories keep me warm 🧣",
+      "alt": "Một người mặc váy trắng đứng trước bể sứa trong thủy cung",
+      "caption": "Những chú sứa trôi chậm như ánh sáng đang bơi. 🫧",
       "chapter": "Nắng trong ngày thường"
     },
     {
       "id": "memory-14",
       "src": "/images/14.jpg",
-      "alt": "Memory 14",
-      "caption": "Beautiful soul, beautiful moments 🌸",
+      "alt": "Một người đứng giữa khu vườn xanh cạnh mái ngói cũ",
+      "caption": "Màu xanh, mái ngói và một buổi đi dạo thật êm. 🌸",
       "chapter": "Nắng trong ngày thường"
     },
     {
       "id": "memory-15",
       "src": "/images/15.jpg",
-      "alt": "Memory 15",
-      "caption": "Forever grateful for you 🙏",
+      "alt": "Chân dung một người bên bờ biển dưới bầu trời nhiều mây",
+      "caption": "Gió biển đi qua, để lại một khung trời lộng gió. 🌊",
       "chapter": "Cùng nhau"
     },
     {
       "id": "memory-16",
       "src": "/images/16.jpg",
-      "alt": "Memory 16",
-      "caption": "You are my sunshine ☀️",
+      "alt": "Bóng một người đứng trước bức tường chữ được chiếu sáng",
+      "caption": "Một chút ánh sáng giữa đêm cũng đủ thành dấu nhớ. ☀️",
       "chapter": "Cùng nhau"
     },
     {
       "id": "memory-17",
       "src": "/images/17.jpg",
-      "alt": "Memory 17",
-      "caption": "Life is better with you in it 💚",
+      "alt": "Một người ngồi chơi đàn piano cạnh khung cửa",
+      "caption": "Bản nhạc bên khung cửa làm thời gian trôi chậm hơn. 💚",
       "chapter": "Cùng nhau"
     },
     {
       "id": "memory-18",
       "src": "/images/18.jpg",
-      "alt": "Memory 18",
-      "caption": "Every smile, a gift 🎁",
+      "alt": "Bóng một người trước không gian trưng bày nhiều điểm sáng",
+      "caption": "Ngàn đốm sáng gom lại thành một đêm lấp lánh. 🎁",
       "chapter": "Cùng nhau"
     },
     {
       "id": "memory-19",
       "src": "/images/19.jpg",
-      "alt": "Memory 19",
-      "caption": "Together is my favorite place 🏠",
+      "alt": "Một người nhìn ra hồ và đường chân trời thành phố lúc chạng vạng",
+      "caption": "Mặt hồ phản chiếu một vệt hồng cuối ngày. 🏙️",
       "chapter": "Cùng nhau"
     },
     {
       "id": "memory-20",
       "src": "/images/20.jpg",
-      "alt": "Memory 20",
-      "caption": "The best is yet to come 🚀",
+      "alt": "Bóng một người bên đường dưới những tia nắng xuyên qua tán cây",
+      "caption": "Nắng xuyên qua tán lá, phủ lên con đường một lớp dịu dàng. 🌿",
       "chapter": "Cùng nhau"
     },
     {
       "id": "memory-21",
       "src": "/images/21.jpg",
-      "alt": "Memory 21",
-      "caption": "Happy Birthday, always & forever 💖",
+      "alt": "Bóng một người đứng bên mặt nước khi mặt trời sắp lặn",
+      "caption": "Khép lại cuốn album bằng một mặt trời vẫn còn sáng. 💖",
       "chapter": "Cùng nhau"
     }
   ]

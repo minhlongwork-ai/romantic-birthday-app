@@ -1,27 +1,15 @@
 import { defineConfig } from 'vite';
 import { readFileSync } from 'node:fs';
 
-const gift = JSON.parse(
-  readFileSync(new URL('./src/content/gift.json', import.meta.url), 'utf8'),
+import { createSiteMetadataPlugin } from './scripts/site-metadata.mjs';
+
+const site = JSON.parse(
+  readFileSync(new URL('./src/content/site.json', import.meta.url), 'utf8'),
 );
-const publicUrl = new URL(gift.sharing.publicUrl).href;
-const socialPreviewUrl = new URL('og-preview.jpg', publicUrl).href;
 
 export default defineConfig({
-  base: './',
-  plugins: [
-    {
-      name: 'gift-safe-sharing-metadata',
-      transformIndexHtml: {
-        order: 'pre',
-        handler(html) {
-          return html
-            .replaceAll('%GIFT_PUBLIC_URL%', publicUrl)
-            .replaceAll('%GIFT_OG_IMAGE_URL%', socialPreviewUrl);
-        },
-      },
-    },
-  ],
+  base: '/birthday/',
+  plugins: [createSiteMetadataPlugin(site, 'birthday')],
   build: {
     manifest: true,
     target: 'es2022',

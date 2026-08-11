@@ -138,19 +138,6 @@ function isSupportedMemoryPath(value) {
   return /^\/images\/[^/]+\.jpg$/i.test(value.trim());
 }
 
-function isSafeShareUrl(value) {
-  try {
-    const url = new URL(value.trim());
-    return url.protocol === 'https:'
-      && !url.username
-      && !url.password
-      && !url.search
-      && !url.hash;
-  } catch {
-    return false;
-  }
-}
-
 function validateObject(errors, value, path) {
   if (!isRecord(value)) {
     errors.push(`${path} must be an object.`);
@@ -394,20 +381,6 @@ export function validateGiftConfig(raw) {
         errors.push(`features.${feature} must be a boolean.`);
       }
     });
-  }
-
-  if ('sharing' in raw && validateObject(errors, raw.sharing, 'sharing')) {
-    const shareUrlIsText = validateRequiredText(
-      errors,
-      raw.sharing.publicUrl,
-      'sharing.publicUrl',
-      LIMITS.path,
-    );
-    if (shareUrlIsText && !isSafeShareUrl(raw.sharing.publicUrl)) {
-      errors.push(
-        'sharing.publicUrl must be an HTTPS URL without credentials, query parameters, or a fragment.',
-      );
-    }
   }
 
   if (!Array.isArray(raw.memories) || raw.memories.length === 0) {

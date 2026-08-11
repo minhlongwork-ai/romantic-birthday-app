@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
 import { validateGiftConfig } from '../src/lib/gift-config.js';
+import { buildShareUrl, loadSiteConfig } from './site-config.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const MEBIBYTE = 1024 * 1024;
@@ -44,11 +45,9 @@ const RUNTIME_REFERENCES = [
   { field: 'PWA icon 512', publicPath: '/icons/icon-512.png' },
   { field: 'MediaPipe runtime', publicPath: '/vendor/mediapipe/hands/hands.js' },
   { field: 'MediaPipe graph', publicPath: '/vendor/mediapipe/hands/hands.binarypb' },
-  { field: 'MediaPipe full model', publicPath: '/vendor/mediapipe/hands/hand_landmark_full.tflite' },
   { field: 'MediaPipe lite model', publicPath: '/vendor/mediapipe/hands/hand_landmark_lite.tflite' },
   { field: 'MediaPipe assets', publicPath: '/vendor/mediapipe/hands/hands_solution_packed_assets.data' },
   { field: 'MediaPipe assets loader', publicPath: '/vendor/mediapipe/hands/hands_solution_packed_assets_loader.js' },
-  { field: 'MediaPipe SIMD data', publicPath: '/vendor/mediapipe/hands/hands_solution_simd_wasm_bin.data' },
   { field: 'MediaPipe SIMD loader', publicPath: '/vendor/mediapipe/hands/hands_solution_simd_wasm_bin.js' },
   { field: 'MediaPipe SIMD WASM', publicPath: '/vendor/mediapipe/hands/hands_solution_simd_wasm_bin.wasm' },
   { field: 'MediaPipe WASM loader', publicPath: '/vendor/mediapipe/hands/hands_solution_wasm_bin.js' },
@@ -371,12 +370,12 @@ async function checkVariantDigests(config, publicDir) {
   return errors;
 }
 
-async function checkShareQr(config, publicDir) {
-  if (!config.sharing?.publicUrl) return [];
+async function checkShareQr(publicDir) {
   try {
+    const site = await loadSiteConfig();
     const source = await readFile(resolve(publicDir, 'share-qr.svg'), 'utf8');
     const expectedDigest = createHash('sha256')
-      .update(new URL(config.sharing.publicUrl).href)
+      .update(buildShareUrl(site, 'birthday'))
       .digest('hex');
     return source.includes(`gift-public-url-sha256:${expectedDigest}`)
       ? []
@@ -422,7 +421,7 @@ async function main() {
     media.errors.push(...await checkVariantDigests(raw, options.publicDir));
   }
   if (!options.skipRuntimeAssets) {
-    media.errors.push(...await checkShareQr(raw, options.publicDir));
+    media.errors.push(...await checkShareQr(options.publicDir));
   }
   if (media.errors.length > 0) {
     printErrors(media.errors);

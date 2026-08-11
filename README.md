@@ -46,8 +46,10 @@ Chỉnh `src/content/gift.json` — đây là nguồn dữ liệu duy nhất c�
   phẩm chỉ dùng để giữ asset chính xác, không hiển thị như trang bán hàng.
 - `memories`: danh sách ảnh, mô tả thay thế, chú thích, chương và ngày tùy chọn.
 - `features`: bật/tắt các tính năng được hỗ trợ.
-- `sharing.publicUrl`: URL HTTPS công khai dùng để tạo QR; không được chứa query
-  cá nhân hóa, thông tin đăng nhập hoặc fragment.
+
+URL production, canonical route, Open Graph và đích QR được quản lý riêng trong
+`src/content/site.json`. QR Birthday luôn trỏ tới `/birthday/`, không mang query
+hoặc fragment cá nhân hóa.
 
 Sau mỗi lần sửa, chạy:
 
@@ -114,16 +116,19 @@ dùng xóa dữ liệu trang.
 | `npm run dev` | Build và chạy cổng chọn cùng cả hai thiệp tại port 4183. |
 | `npm run dev:birthday` | Chạy riêng Vite development server của thiệp sinh nhật. |
 | `npm run build` | Kiểm tra dữ liệu rồi build chooser, Birthday và August vào `dist/`. |
-| `npm run validate` | Kiểm tra `gift.json` và toàn bộ media được tham chiếu. |
+| `npm run validate` | Kiểm tra config nguồn, nội dung, Open Graph và toàn bộ media. |
+| `npm run validate:dist` | Xác minh digest, MIME, route và giới hạn asset trong `dist/`. |
+| `npm run validate:remote -- URL` | HEAD mọi asset và GET asset critical của deployment. |
 | `npm run generate:qr` | Sinh `public/share-qr.svg` từ URL chia sẻ an toàn. |
 | `npm test` | Chạy unit test của cả Birthday và August. |
 | `npm run test:e2e` | Build production rồi chạy browser matrix Playwright trên `dist/`. |
 | `npm run test:e2e:run` | Chạy Playwright trên `dist/` đã build sẵn (dùng trong CI). |
 | `npm run optimize` | Tạo WebP, AVIF và các asset thương hiệu từ ảnh gốc. |
 
-E2E được cấu hình cho desktop Chrome, Android Chrome, desktop Firefox, desktop
-WebKit (Safari) và iPhone WebKit (iOS Safari). Workflow CI cài đủ ba browser
-engine trước khi chạy.
+E2E được cấu hình cho desktop Chrome, Pixel 7 Chromium, desktop Firefox,
+desktop WebKit, iPhone 13 WebKit và một project regression iPhone X riêng.
+Đặt `E2E_REMOTE_URL=https://deployment.example/` để test trực tiếp deployment;
+Playwright sẽ không khởi động local server trong chế độ này.
 
 ## PWA và chế độ offline
 
@@ -142,14 +147,19 @@ một deployment mới làm URL chunk cũ không còn tồn tại, gallery vẫn
 lời kết hoạt động, đồng thời hiện nút tải lại; nút này chủ động kích hoạt bản
 service worker đang chờ rồi mở lại phiên bản mới.
 
-## Triển khai GitHub Pages
+## CI và triển khai Vercel
 
-Workflow `.github/workflows/pages.yml` tự động:
+Workflow `.github/workflows/ci.yml` chỉ làm quality gate, không có quyền deploy:
 
-1. cài dependency bằng `npm ci`;
-2. chạy unit test, validate dữ liệu và tạo artifact composite;
-3. cài browser matrix rồi chạy E2E trên bản production preview;
-4. với push lên `main`, upload duy nhất `dist/` và triển khai bằng GitHub Pages.
+1. validate source;
+2. chạy unit test;
+3. build và validate artifact composite;
+4. chạy toàn bộ Playwright matrix;
+5. giữ report, test result và build manifest trong 30 ngày.
+
+Vercel là nền tảng production duy nhất. Project theo dõi branch `main`, chạy
+`npm run build` và publish `dist/`. Release chỉ được chấp nhận khi deployment
+`READY` có đúng Git commit SHA đã merge và vượt qua remote quality gates.
 
 Artifact sau build có cấu trúc:
 
@@ -164,20 +174,11 @@ Service worker tại trang gốc chỉ dùng để gỡ cache của bản Birthd
 sinh nhật đăng ký service worker riêng trong scope `/birthday/`, nên không can
 thiệp vào August Herbarium.
 
-Trong repository GitHub, vào **Settings → Pages → Build and deployment** và chọn
-**GitHub Actions** làm source. Mỗi lần push lên nhánh `main` (hoặc chạy workflow
-thủ công) sẽ tạo một bản triển khai mới; pull request chỉ chạy kiểm tra, không có
-quyền deploy. Nếu nhánh mặc định có tên khác, cập nhật `branches` trong workflow
-trước khi dùng.
-
 Ảnh social preview là artwork chung, không chứa tên hoặc ảnh cá nhân. Build cũng
-tạo `public/share-qr.svg` từ `sharing.publicUrl`; QR cố ý không dùng các query
-`to`, `age`, `from`. Nếu dùng custom domain, cập nhật URL này trước khi build.
+tạo `public/share-qr.svg` từ `src/content/site.json`; QR cố ý không dùng các
+query `to`, `age`, `from`. Khi đổi domain chính thức, chỉ cập nhật `origin` trong
+file này rồi chạy lại validate/build.
 
-## Vercel
-
-`vercel.json` khai báo `npm run build` và output `dist/`. Vì toàn bộ asset dùng
-đường dẫn tương đối, cùng artifact có thể chạy trên Vercel Preview hoặc Vercel
-Production mà không cần rewrite. URL trong QR và metadata Birthday vẫn trỏ tới
-GitHub Pages để giữ một đường dẫn chia sẻ ổn định; chỉ đổi
-`sharing.publicUrl` nếu Vercel sẽ trở thành domain chính thức.
+`vercel.json` phục vụ custom 404, buộc root migration worker và Birthday service
+worker revalidate, đồng thời giữ ba route canonical `/`, `/birthday/`, `/august/`
+hoạt động khi truy cập hoặc refresh trực tiếp.
