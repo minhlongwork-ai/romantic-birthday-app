@@ -39,3 +39,37 @@ test('the chooser omits the kicker and loads its Vietnamese display font', async
     typography.fontSize * 0.98,
   );
 });
+
+test('the chooser opens both cards and forwards only supported personalization', async ({
+  baseURL,
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop-chrome',
+    'Chooser routing is verified once in desktop Chrome.',
+  );
+
+  const chooserURL = new URL('../', baseURL);
+  chooserURL.search = new URLSearchParams({
+    to: 'Em Test',
+    from: 'Shyn',
+    age: '24',
+    privateNote: 'must-not-leak',
+  });
+  chooserURL.hash = 'private-fragment';
+  await page.goto(chooserURL.href);
+
+  const expectedQuery = '?to=Em+Test&from=Shyn&age=24';
+  const birthdayLink = page.locator('[data-project-link][href^="/birthday/"]');
+  const augustLink = page.locator('[data-project-link][href^="/august/"]');
+  await expect(birthdayLink).toHaveAttribute('href', `/birthday/${expectedQuery}`);
+  await expect(augustLink).toHaveAttribute('href', `/august/${expectedQuery}`);
+
+  for (const link of [birthdayLink, augustLink]) {
+    const destination = await link.getAttribute('href');
+    const response = await page.request.get(new URL(destination, chooserURL).href);
+    expect(response.status()).toBe(200);
+    expect(response.url()).not.toContain('privateNote');
+    expect(response.url()).not.toContain('private-fragment');
+  }
+});
