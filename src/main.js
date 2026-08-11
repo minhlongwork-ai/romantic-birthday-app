@@ -137,7 +137,6 @@ function renderPersonalContent() {
   );
   document.querySelector('#final-signature').textContent = `— ${gift.sender.name}`;
 
-  elements.soundtrack.src = gift.soundtrack.src;
   elements.soundtrack.loop = gift.soundtrack.loop !== false;
   elements.lyrics.hidden = !gift.features.lyrics;
   document.querySelector('#camera-consent').hidden =
@@ -178,6 +177,7 @@ function renderAudioState({ playing, error }) {
 
 const audioController = createAudioController({
   audio: elements.soundtrack,
+  source: gift.soundtrack.src,
   lyrics: gift.features.lyrics ? gift.soundtrack.lyrics : [],
   lyricsElement: gift.features.lyrics ? elements.lyrics : null,
   onStateChange: renderAudioState,

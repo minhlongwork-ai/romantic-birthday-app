@@ -1,5 +1,6 @@
 export function createAudioController({
   audio,
+  source = '',
   lyrics = [],
   lyricsElement,
   onStateChange = () => {},
@@ -11,6 +12,13 @@ export function createAudioController({
   let startPromise = null;
   let generation = 0;
   let lastState = null;
+  let sourceAttached = !source;
+
+  function attachSource() {
+    if (sourceAttached) return;
+    audio.src = source;
+    sourceAttached = true;
+  }
 
   function emitState(playing, error = null) {
     if (lastState?.playing === playing && lastState?.error === error) return;
@@ -50,6 +58,7 @@ export function createAudioController({
   async function start() {
     if (!audio.paused) return true;
     if (startPromise) return startPromise;
+    attachSource();
     const requestGeneration = ++generation;
 
     const pending = (async () => {
