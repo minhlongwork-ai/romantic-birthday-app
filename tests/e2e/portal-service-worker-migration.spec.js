@@ -5,6 +5,7 @@ const desktopMigrationProjects = new Set([
   'desktop-firefox',
   'desktop-safari',
 ]);
+const remoteDeployment = Boolean(process.env.E2E_REMOTE_URL);
 
 async function expectRootCacheRetired(page, cacheName, projectName) {
   if (projectName === 'desktop-safari') {
@@ -266,6 +267,10 @@ test('the chooser retires a legacy pass-through root worker', async ({
   page,
 }, testInfo) => {
   test.skip(
+    remoteDeployment,
+    'Legacy mock workers are served only by the local E2E fixture server.',
+  );
+  test.skip(
     !desktopMigrationProjects.has(testInfo.project.name),
     'Cross-browser migration is exercised once per desktop engine.',
   );
@@ -369,6 +374,10 @@ test('a cached legacy birthday page migrates to the chooser', async ({
   baseURL,
   page,
 }, testInfo) => {
+  test.skip(
+    remoteDeployment,
+    'Legacy mock workers are served only by the local E2E fixture server.',
+  );
   test.skip(
     !desktopMigrationProjects.has(testInfo.project.name),
     'Cross-browser migration is exercised once per desktop engine.',
