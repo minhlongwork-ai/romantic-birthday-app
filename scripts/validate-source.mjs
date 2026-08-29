@@ -6,6 +6,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 
+import { loadExperienceRegistry } from './experience-registry.mjs';
+import { createReleaseValidationPlan } from './experience-release.mjs';
 import { loadSiteConfig } from './site-config.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -61,18 +63,24 @@ async function validateOpenGraph(site) {
   const errors = [];
   const uniquePaths = new Set(Object.values(site.pages).map(page => page.ogImage));
   for (const publicPath of uniquePaths) {
-    const filePath = publicPath.startsWith(site.routes.birthday)
-      ? resolve(projectRoot, 'public', publicPath.slice(site.routes.birthday.length))
-      : publicPath.startsWith(`${site.routes.august}public/`)
-        ? resolve(projectRoot, 'apps/august/public', publicPath.slice(`${site.routes.august}public/`.length))
-        : publicPath.startsWith(site.routes.september)
-          ? resolve(projectRoot, 'apps/september/public', publicPath.slice(site.routes.september.length))
-        : resolve(projectRoot, 'portal', publicPath.replace(/^\//, ''));
+    const preview = site.experiences.find(record =>
+      record.preview.publicPath === publicPath)?.preview;
+    const expectedWidth = preview?.width ?? 1200;
+    const expectedHeight = preview?.height ?? 630;
+    const filePath = preview
+      ? resolve(projectRoot, preview.source)
+      : publicPath.startsWith(site.routes.birthday)
+        ? resolve(projectRoot, 'public', publicPath.slice(site.routes.birthday.length))
+        : publicPath.startsWith(`${site.routes.august}public/`)
+          ? resolve(projectRoot, 'apps/august/public', publicPath.slice(`${site.routes.august}public/`.length))
+          : publicPath.startsWith(site.routes.september)
+            ? resolve(projectRoot, 'apps/september/public', publicPath.slice(site.routes.september.length))
+          : resolve(projectRoot, 'portal', publicPath.replace(/^\//, ''));
     try {
       const metadata = await sharp(filePath, { failOn: 'error' }).metadata();
       const fileStat = await stat(filePath);
-      if (metadata.width !== 1200 || metadata.height !== 630) {
-        errors.push(`${publicPath} must be exactly 1200×630.`);
+      if (metadata.width !== expectedWidth || metadata.height !== expectedHeight) {
+        errors.push(`${publicPath} must be exactly ${expectedWidth}×${expectedHeight}.`);
       }
       if (fileStat.size > 500 * 1024) errors.push(`${publicPath} must be at most 500 KB.`);
     } catch (error) {
@@ -83,19 +91,20 @@ async function validateOpenGraph(site) {
 }
 
 export async function validateSource() {
-  const [site, gift] = await Promise.all([
+  const [site, gift, experiences] = await Promise.all([
     loadSiteConfig(),
     readFile(resolve(projectRoot, 'src/content/gift.json'), 'utf8').then(JSON.parse),
+    loadExperienceRegistry(),
   ]);
   const errors = [
     ...validateEditorialContent(gift),
     ...await validateOpenGraph(site),
   ];
   if (errors.length > 0) throw new Error(errors.join('\n'));
-  await run(process.execPath, ['scripts/validate-gift.mjs']);
-  await run(process.execPath, ['apps/august/scripts/validate.mjs']);
-  await run(process.execPath, ['apps/september/scripts/validate.mjs']);
-  return { site, gift };
+  for (const validation of createReleaseValidationPlan(experiences, 'development')) {
+    await run(process.execPath, validation.argv);
+  }
+  return { site, gift, experiences };
 }
 
 async function main() {

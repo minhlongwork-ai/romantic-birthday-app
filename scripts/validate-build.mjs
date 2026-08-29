@@ -26,14 +26,57 @@ const HASHED_APPLICATION_ASSET = /\/assets\/[^/]+-[A-Za-z0-9_-]{8,}\.(?:css|js)$
 const SHA256 = /^[a-f0-9]{64}$/;
 const BUILD_SHA = /^[a-f0-9]{7,40}$|^local-[a-f0-9]{12}$/;
 const FORBIDDEN_RUNTIME_ASSET = /(?:hand_landmark_full\.tflite|(?:^|[/_.-])(?:rain|moon)(?:[/_.-]|$))/i;
+const FORBIDDEN_MANIFEST_FIELDS = new Set([
+  'age',
+  'query',
+  'recipient',
+  'referrer',
+  'sender',
+]);
 
-function expectedRoutes(site) {
+function registryExperiences(site) {
+  return Array.isArray(site?.experiences) ? site.experiences : [];
+}
+
+function expectedCatalog(site) {
+  return registryExperiences(site).map(record => ({
+    id: record.id,
+    year: record.year,
+    month: record.month,
+    route: record.route,
+    previewPublicPath: record.preview.publicPath,
+  }));
+}
+
+function expectedRoutes(site, manifest) {
+  const catalog = Array.isArray(manifest?.catalog) ? manifest.catalog : [];
+  const catalogById = new Map(catalog.map(record => [record?.id, record]));
   return [
     { id: 'chooser', path: site.routes.chooser, index: '/index.html' },
-    { id: 'birthday', path: site.routes.birthday, index: '/birthday/index.html' },
-    { id: 'august', path: site.routes.august, index: '/august/index.html' },
-    { id: 'september', path: site.routes.september, index: '/september/index.html' },
+    ...registryExperiences(site).filter(record =>
+      catalogById.get(record.id)?.built === true).map(record => ({
+      id: record.id,
+      path: record.route,
+      index: `${record.route}index.html`,
+    })),
   ];
+}
+
+function findForbiddenManifestFields(value, path = 'manifest', errors = []) {
+  if (Array.isArray(value)) {
+    value.forEach((entry, index) =>
+      findForbiddenManifestFields(entry, `${path}[${index}]`, errors));
+    return errors;
+  }
+  if (!value || typeof value !== 'object') return errors;
+  for (const [key, child] of Object.entries(value)) {
+    const fieldPath = `${path}.${key}`;
+    if (FORBIDDEN_MANIFEST_FIELDS.has(key.toLowerCase())) {
+      errors.push(`${fieldPath} is a forbidden personalized field.`);
+    }
+    findForbiddenManifestFields(child, fieldPath, errors);
+  }
+  return errors;
 }
 
 function isSameOriginPath(value) {
@@ -63,10 +106,37 @@ export function validateBuildManifest(manifest, site) {
   const errors = [];
   if (!manifest || typeof manifest !== 'object') return ['Build manifest must be an object.'];
   if (!BUILD_SHA.test(manifest.buildSha || '')) errors.push('buildSha is missing or invalid.');
+  errors.push(...findForbiddenManifestFields(manifest));
+
+  const registered = expectedCatalog(site);
+  const registeredById = new Map(registryExperiences(site).map(record => [record.id, record]));
+  const catalog = Array.isArray(manifest.catalog) ? manifest.catalog : [];
+  if (!Array.isArray(manifest.catalog)) {
+    errors.push('Manifest catalog is missing.');
+  }
+  const catalogIdentity = catalog.map(({ id, year, month, route, previewPublicPath }) => ({
+    id,
+    year,
+    month,
+    route,
+    previewPublicPath,
+  }));
+  if (JSON.stringify(catalogIdentity) !== JSON.stringify(registered)) {
+    errors.push('Manifest catalog does not match the experience registry.');
+  }
+  for (const record of catalog) {
+    if (typeof record?.built !== 'boolean') {
+      errors.push(`${record?.id || '(missing catalog id)'} has no boolean built state.`);
+    }
+    if (record?.built === false && registeredById.get(record.id)?.status !== 'draft') {
+      errors.push(`Published experience ${record.id} cannot be omitted from the build.`);
+    }
+  }
 
   const routes = Array.isArray(manifest.routes) ? manifest.routes : [];
-  if (JSON.stringify(routes) !== JSON.stringify(expectedRoutes(site))) {
-    errors.push('Manifest routes do not match the canonical site config.');
+  const buildRoutes = expectedRoutes(site, manifest);
+  if (JSON.stringify(routes) !== JSON.stringify(buildRoutes)) {
+    errors.push('Manifest routes do not match the built registry catalog; unregistered routes are forbidden.');
   }
 
   const externalRuntimeUrls = Array.isArray(manifest.externalRuntimeUrls)
@@ -78,17 +148,19 @@ export function validateBuildManifest(manifest, site) {
 
   const assets = Array.isArray(manifest.assets) ? manifest.assets : [];
   if (assets.length === 0) errors.push('Manifest assets must not be empty.');
+  const builtIds = new Set(buildRoutes.map(({ id }) => id));
   const seen = new Set();
   for (const asset of assets) {
     const label = asset?.url || '(missing URL)';
     if (!isSameOriginPath(asset?.url)) errors.push(`${label} must be a same-origin path.`);
     if (seen.has(asset?.url)) errors.push(`Duplicate manifest asset: ${label}`);
     seen.add(asset?.url);
-    if (!['chooser', 'birthday', 'august', 'september'].includes(asset?.route)) {
+    if (!builtIds.has(asset?.route)) {
       errors.push(`${label} has an invalid route owner.`);
     }
-    if (asset?.route === 'september' && !String(asset?.url || '').startsWith('/september/')) {
-      errors.push(`${label} must remain inside the September namespace (/september/).`);
+    const experience = registeredById.get(asset?.route);
+    if (experience && !String(asset?.url || '').startsWith(experience.route)) {
+      errors.push(`${label} must remain inside the ${experience.id} namespace (${experience.route}).`);
     }
     if (!SHA256.test(asset?.sha256 || '')) errors.push(`${label} has an invalid SHA-256 digest.`);
     if (!Number.isSafeInteger(asset?.bytes) || asset.bytes <= 0) {
@@ -107,7 +179,20 @@ export function validateBuildManifest(manifest, site) {
     }
   }
 
-  for (const route of expectedRoutes(site)) {
+  for (const record of catalog) {
+    if (!assets.some(asset => asset.url === record?.previewPublicPath)) {
+      errors.push(`${record?.id || '(missing catalog id)'} chooser preview is missing from manifest assets.`);
+    }
+    if (record?.built === false) {
+      const routePrefix = String(record.route || '');
+      if (assets.some(asset =>
+        asset?.route === record.id || String(asset?.url || '').startsWith(routePrefix))) {
+        errors.push(`Non-built experience ${record.id} has assets in its runtime namespace.`);
+      }
+    }
+  }
+
+  for (const route of buildRoutes) {
     if (!assets.some(asset => asset.route === route.id && asset.critical === true)) {
       errors.push(`${route.id} has no critical asset.`);
     }
@@ -116,7 +201,7 @@ export function validateBuildManifest(manifest, site) {
   if (!initialAssetUrlsByRoute || typeof initialAssetUrlsByRoute !== 'object') {
     errors.push('Manifest initial dependency closures are missing.');
   }
-  for (const route of expectedRoutes(site)) {
+  for (const route of buildRoutes) {
     const initialUrls = initialAssetUrlsByRoute?.[route.id];
     if (!Array.isArray(initialUrls)) {
       errors.push(`${route.id} initial dependency closure is missing.`);
@@ -131,19 +216,26 @@ export function validateBuildManifest(manifest, site) {
       }
     }
   }
-  const septemberInitialUrls = [...(initialAssetUrlsByRoute?.september || [])].sort();
-  const septemberCriticalUrls = assets
-    .filter(asset => asset?.route === 'september' && asset?.critical === true)
-    .map(({ url }) => url)
-    .sort();
-  if (JSON.stringify(septemberInitialUrls) !== JSON.stringify(septemberCriticalUrls)) {
-    errors.push('September initial dependency closure must exactly match its critical asset flags.');
+  for (const record of catalog.filter(({ built }) => built === false)) {
+    if (Object.hasOwn(initialAssetUrlsByRoute || {}, record.id)) {
+      errors.push(`Non-built experience ${record.id} has an initial dependency closure.`);
+    }
   }
-  const septemberInitialBytes = assets
-    .filter(asset => septemberInitialUrls.includes(asset?.url))
-    .reduce((total, asset) => total + (Number.isSafeInteger(asset.bytes) ? asset.bytes : 0), 0);
-  if (septemberInitialBytes > 500 * 1024) {
-    errors.push(`September initial transfer is ${septemberInitialBytes} bytes; limit is 500 KB.`);
+  if (builtIds.has('september')) {
+    const septemberInitialUrls = [...(initialAssetUrlsByRoute?.september || [])].sort();
+    const septemberCriticalUrls = assets
+      .filter(asset => asset?.route === 'september' && asset?.critical === true)
+      .map(({ url }) => url)
+      .sort();
+    if (JSON.stringify(septemberInitialUrls) !== JSON.stringify(septemberCriticalUrls)) {
+      errors.push('September initial dependency closure must exactly match its critical asset flags.');
+    }
+    const septemberInitialBytes = assets
+      .filter(asset => septemberInitialUrls.includes(asset?.url))
+      .reduce((total, asset) => total + (Number.isSafeInteger(asset.bytes) ? asset.bytes : 0), 0);
+    if (septemberInitialBytes > 500 * 1024) {
+      errors.push(`September initial transfer is ${septemberInitialBytes} bytes; limit is 500 KB.`);
+    }
   }
   return errors;
 }
@@ -156,6 +248,7 @@ export async function validateBuildOutput({
   const manifestPath = resolve(distDir, 'build-manifest.json');
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
   const errors = validateBuildManifest(manifest, resolvedSite);
+  const buildRoutes = expectedRoutes(resolvedSite, manifest);
   let mediaPipeBytes = 0;
   const runtimeArtifacts = [];
 
@@ -182,13 +275,15 @@ export async function validateBuildOutput({
     }
   }
 
-  const requiredMediaPipeAssets = [
-    '/birthday/vendor/mediapipe/hands/hands_solution_wasm_bin.wasm',
-    '/birthday/vendor/mediapipe/hands/hands_solution_simd_wasm_bin.wasm',
-  ];
-  for (const url of requiredMediaPipeAssets) {
-    if (!(manifest.assets || []).some(asset => asset.url === url)) {
-      errors.push(`Required MediaPipe fallback is missing: ${url}`);
+  if (buildRoutes.some(({ id }) => id === 'birthday')) {
+    const requiredMediaPipeAssets = [
+      '/birthday/vendor/mediapipe/hands/hands_solution_wasm_bin.wasm',
+      '/birthday/vendor/mediapipe/hands/hands_solution_simd_wasm_bin.wasm',
+    ];
+    for (const url of requiredMediaPipeAssets) {
+      if (!(manifest.assets || []).some(asset => asset.url === url)) {
+        errors.push(`Required MediaPipe fallback is missing: ${url}`);
+      }
     }
   }
   if (mediaPipeBytes > 18 * 1024 * 1024) {
@@ -197,7 +292,7 @@ export async function validateBuildOutput({
 
   const runtimeAnalysis = analyzeRuntimeArtifacts({
     artifacts: runtimeArtifacts,
-    routes: expectedRoutes(resolvedSite),
+    routes: buildRoutes,
     siteOrigin: resolvedSite.origin,
   });
   if (
@@ -218,7 +313,7 @@ export async function validateBuildOutput({
     );
   }
 
-  for (const route of expectedRoutes(resolvedSite)) {
+  for (const route of buildRoutes) {
     try {
       const html = await readFile(resolve(distDir, route.index.replace(/^\//, '')), 'utf8');
       const canonical = new URL(route.path, resolvedSite.origin).href;
@@ -226,6 +321,20 @@ export async function validateBuildOutput({
       if (/%SITE_[A-Z_]+%|github\.io/i.test(html)) errors.push(`${route.index} contains stale metadata.`);
     } catch (error) {
       errors.push(`${route.index} is missing: ${error.message}`);
+    }
+  }
+
+  const catalogById = new Map((manifest.catalog || []).map(record => [record?.id, record]));
+  for (const record of registryExperiences(resolvedSite).filter(candidate =>
+    candidate.status === 'draft' && catalogById.get(candidate.id)?.built === false)) {
+    const namespace = resolve(distDir, record.route.replace(/^\/+/, ''));
+    try {
+      await stat(namespace);
+      errors.push(`Non-built experience ${record.id} runtime namespace exists in dist.`);
+    } catch (error) {
+      if (error?.code !== 'ENOENT') {
+        errors.push(`Non-built experience ${record.id} namespace cannot be checked: ${error.message}`);
+      }
     }
   }
 
@@ -249,6 +358,7 @@ export async function validateRemoteBuild(baseUrl, {
   const manifest = await manifestResponse.json();
   const site = await loadSiteConfig();
   const errors = validateBuildManifest(manifest, site);
+  const buildRoutes = expectedRoutes(site, manifest);
   if (expectedBuildSha && manifest.buildSha !== expectedBuildSha) {
     errors.push(`Remote build SHA ${manifest.buildSha || '(missing)'} does not match expected ${expectedBuildSha}.`);
   }
@@ -268,7 +378,7 @@ export async function validateRemoteBuild(baseUrl, {
     }
   }
 
-  for (const route of expectedRoutes(site)) {
+  for (const route of buildRoutes) {
     try {
       const response = await fetchImpl(new URL(route.path, origin), {
         method: 'GET',

@@ -17,6 +17,32 @@ const site = {
     august: '/august/',
     september: '/september/',
   },
+  experiences: [
+    {
+      id: 'birthday',
+      year: 2026,
+      month: 5,
+      route: '/birthday/',
+      status: 'published',
+      preview: { publicPath: '/experience-previews/birthday.webp' },
+    },
+    {
+      id: 'august',
+      year: 2026,
+      month: 8,
+      route: '/august/',
+      status: 'published',
+      preview: { publicPath: '/experience-previews/august.webp' },
+    },
+    {
+      id: 'september',
+      year: 2026,
+      month: 9,
+      route: '/september/',
+      status: 'draft',
+      preview: { publicPath: '/experience-previews/september.webp' },
+    },
+  ],
 };
 
 function validManifest() {
@@ -27,6 +53,32 @@ function validManifest() {
       { id: 'birthday', path: '/birthday/', index: '/birthday/index.html' },
       { id: 'august', path: '/august/', index: '/august/index.html' },
       { id: 'september', path: '/september/', index: '/september/index.html' },
+    ],
+    catalog: [
+      {
+        id: 'birthday',
+        year: 2026,
+        month: 5,
+        route: '/birthday/',
+        built: true,
+        previewPublicPath: '/experience-previews/birthday.webp',
+      },
+      {
+        id: 'august',
+        year: 2026,
+        month: 8,
+        route: '/august/',
+        built: true,
+        previewPublicPath: '/experience-previews/august.webp',
+      },
+      {
+        id: 'september',
+        year: 2026,
+        month: 9,
+        route: '/september/',
+        built: true,
+        previewPublicPath: '/experience-previews/september.webp',
+      },
     ],
     assets: [
       {
@@ -61,6 +113,14 @@ function validManifest() {
         contentType: 'text/javascript',
         critical: true,
       },
+      ...['birthday', 'august', 'september'].map((id, index) => ({
+        route: 'chooser',
+        url: `/experience-previews/${id}.webp`,
+        sha256: String(index + 5).repeat(64),
+        bytes: 1024,
+        contentType: 'image/webp',
+        critical: false,
+      })),
     ],
     initialAssetUrlsByRoute: {
       chooser: ['/assets/portal-Abcdef12.js'],
@@ -70,6 +130,16 @@ function validManifest() {
     },
     externalRuntimeUrls: [],
   };
+}
+
+function validProductionManifest() {
+  const manifest = validManifest();
+  manifest.routes = manifest.routes.filter(({ id }) => id !== 'september');
+  manifest.catalog.find(({ id }) => id === 'september').built = false;
+  manifest.assets = manifest.assets.filter(({ route, url }) =>
+    route !== 'september' && !url.startsWith('/september/'));
+  delete manifest.initialAssetUrlsByRoute.september;
+  return manifest;
 }
 
 test('built-artifact analysis derives the September initial dependency closure', () => {
@@ -159,6 +229,39 @@ test('built-artifact analysis detects injected third-party HTML, CSS, and JS URL
 
 test('build manifest contract accepts clean canonical route assets', () => {
   assert.deepEqual(validateBuildManifest(validManifest(), site), []);
+});
+
+test('production manifest accepts a non-built draft while retaining its chooser preview', () => {
+  assert.deepEqual(validateBuildManifest(validProductionManifest(), site), []);
+});
+
+test('build manifest rejects a runtime namespace for a non-built draft', () => {
+  const manifest = validProductionManifest();
+  manifest.assets.push({
+    route: 'september',
+    url: '/september/assets/index-Abcdef12.js',
+    sha256: 'f'.repeat(64),
+    bytes: 1,
+    contentType: 'text/javascript',
+    critical: false,
+  });
+
+  assert.match(
+    validateBuildManifest(manifest, site).join('\n'),
+    /non-built experience september|September namespace/i,
+  );
+});
+
+test('build manifest rejects unregistered routes and personalized fields', () => {
+  const manifest = validProductionManifest();
+  manifest.routes.push({ id: 'october', path: '/october/', index: '/october/index.html' });
+  manifest.recipient = 'Private recipient';
+  manifest.catalog[0].query = '?to=Private';
+
+  const errors = validateBuildManifest(manifest, site).join('\n');
+  assert.match(errors, /unregistered|routes do not match/i);
+  assert.match(errors, /recipient/i);
+  assert.match(errors, /query/i);
 });
 
 test('build manifest contract rejects external, unhashed, or forbidden runtime assets', () => {

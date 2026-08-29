@@ -10,7 +10,7 @@
     "dev": "npm run build && node scripts/serve-dist.mjs",
     "dev:birthday": "vite",
     "build": "node scripts/build-composite.mjs",
-    "build:release": "npm run validate:september:release && npm run build",
+    "build:release": "node scripts/build-vercel.mjs --production",
     "build:vercel": "node scripts/build-vercel.mjs",
     "preview": "vite preview",
     "preview:e2e": "node scripts/serve-dist.mjs",
