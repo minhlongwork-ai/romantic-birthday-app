@@ -1,4 +1,4 @@
-import { access, readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -37,9 +37,20 @@ function isSafePublicPath(value, { directory = false } = {}) {
   }
 }
 
-function existsWithinRoot(rootDir, path) {
+async function hasExpectedTypeWithinRoot(rootDir, path, expectedType) {
   if (!isSafeRepositoryPath(path)) return Promise.resolve(false);
-  return access(resolve(rootDir, path)).then(() => true, () => false);
+  return stat(resolve(rootDir, path)).then(
+    entry => expectedType === 'file' ? entry.isFile() : entry.isDirectory(),
+    () => false,
+  );
+}
+
+function isRegularFileWithinRoot(rootDir, path) {
+  return hasExpectedTypeWithinRoot(rootDir, path, 'file');
+}
+
+function isDirectoryWithinRoot(rootDir, path) {
+  return hasExpectedTypeWithinRoot(rootDir, path, 'directory');
 }
 
 function isWithinDirectory(directory, target) {
@@ -73,7 +84,7 @@ async function validateArgv(argv, field, id, rootDir, errors) {
     addError(errors, id, field, 'must contain only string arguments');
     return;
   }
-  if (!isSafeRepositoryPath(argv[0]) || !await existsWithinRoot(rootDir, argv[0])) {
+  if (!isSafeRepositoryPath(argv[0]) || !await isRegularFileWithinRoot(rootDir, argv[0])) {
     addError(errors, id, field, 'must begin with an existing repository script');
   }
 }
@@ -110,7 +121,7 @@ export async function validateExperienceRegistry(records, { rootDir = DEFAULT_RO
     if (!isPlainObject(preview)) {
       addError(errors, id, 'preview', 'must be an object');
     } else {
-      if (!isSafeRepositoryPath(preview.source) || !await existsWithinRoot(rootDir, preview.source)) addError(errors, id, 'preview.source', 'must be an existing repository image');
+      if (!isSafeRepositoryPath(preview.source) || !await isRegularFileWithinRoot(rootDir, preview.source)) addError(errors, id, 'preview.source', 'must be an existing repository image');
       if (!isSafePublicPath(preview.publicPath) || !preview.publicPath.startsWith('/experience-previews/')) addError(errors, id, 'preview.publicPath', 'must be a clean path under /experience-previews/');
       if (typeof preview.alt !== 'string' || preview.alt.trim() === '') addError(errors, id, 'preview.alt', 'must be non-empty text');
       for (const field of ['width', 'height']) {
@@ -133,7 +144,7 @@ export async function validateExperienceRegistry(records, { rootDir = DEFAULT_RO
       addError(errors, id, 'build', 'must be an object');
       return;
     }
-    if (!isSafeRepositoryPath(build.config) || !await existsWithinRoot(rootDir, build.config)) addError(errors, id, 'build.config', 'must be an existing repository config');
+    if (!isSafeRepositoryPath(build.config) || !await isRegularFileWithinRoot(rootDir, build.config)) addError(errors, id, 'build.config', 'must be an existing repository config');
     const distDir = resolve(rootDir, 'dist');
     const destination = isSafeRepositoryPath(build.destination) ? resolve(distDir, build.destination) : null;
     if (!destination || !isWithinDirectory(distDir, destination)) addError(errors, id, 'build.destination', 'must stay within dist');
@@ -155,7 +166,7 @@ export async function validateExperienceRegistry(records, { rootDir = DEFAULT_RO
     } else {
       await Promise.all(build.postBuild.map(async (hook, hookIndex) => {
         const field = `build.postBuild.${hookIndex}`;
-        if (!isPlainObject(hook) || !isSafeRepositoryPath(hook.script) || !await existsWithinRoot(rootDir, hook.script)) {
+        if (!isPlainObject(hook) || !isSafeRepositoryPath(hook.script) || !await isRegularFileWithinRoot(rootDir, hook.script)) {
           addError(errors, id, field, 'must name an existing repository script');
           return;
         }
@@ -172,7 +183,7 @@ export async function validateExperienceRegistry(records, { rootDir = DEFAULT_RO
           addError(errors, id, field, 'must be a tree copy rule');
           return;
         }
-        if (!isSafeRepositoryPath(copy.source) || !await existsWithinRoot(rootDir, copy.source)) addError(errors, id, `${field}.source`, 'must be an existing repository path');
+        if (!isSafeRepositoryPath(copy.source) || !await isDirectoryWithinRoot(rootDir, copy.source)) addError(errors, id, `${field}.source`, 'must be an existing repository directory');
         const target = isSafeRepositoryPath(copy.destination) ? resolve(distDir, copy.destination) : null;
         if (!target || !isWithinDirectory(distDir, target)) addError(errors, id, `${field}.destination`, 'must stay within dist');
       }));

@@ -79,3 +79,18 @@ test('rejects a missing release validator', async () => {
     records.find(record => record.id === 'september').build.validation.release[0] = 'apps/september/scripts/missing.mjs';
   }, 'september', 'build.validation.release');
 });
+
+test('rejects directories in file-valued registry fields', async () => {
+  await assertInvalid(records => {
+    records.find(record => record.id === 'september').preview.source = 'apps/september/public/images';
+  }, 'september', 'preview.source');
+  await assertInvalid(records => {
+    records.find(record => record.id === 'september').build.config = 'apps/september';
+  }, 'september', 'build.config');
+  await assertInvalid(records => {
+    records.find(record => record.id === 'september').build.validation.release[0] = 'apps/september/scripts';
+  }, 'september', 'build.validation.release');
+  await assertInvalid(records => {
+    records.find(record => record.id === 'birthday').build.postBuild[0].script = 'scripts';
+  }, 'birthday', 'build.postBuild.0');
+});
