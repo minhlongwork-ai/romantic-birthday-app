@@ -16,6 +16,12 @@ test('chooser offers all three canonical experiences with the shared personaliza
   assert.match(portalHtml, /aria-describedby="september-description"/);
   assert.match(portalHtml, /Bánh kem chanh và bó hồng kem hồng phấn trên nền lụa nâu ấm/);
   assert.match(portalHtml, /Hộp quà hai món/);
+  assert.match(portalHtml, />Một chút ngọt, một chút hoa</);
+  assert.match(
+    portalHtml,
+    /Chạm vào bánh và hoa theo thứ tự em chọn, rồi thắt chiếc nơ cuối cùng\./,
+  );
+  assert.match(portalHtml, /Mở hộp quà tháng Chín/);
   assert.doesNotMatch(portalHtml, /Ba Pha Trăng|bộ ba mỹ phẩm|ba vầng trăng/u);
   assert.match(portalScript, /const forwardedKeys = \["to", "from", "age"\];/);
 });

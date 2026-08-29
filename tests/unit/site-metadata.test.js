@@ -27,6 +27,15 @@ test('metadata values resolve from site.json without route-specific URL literals
     'https://romantic-birthday-app.vercel.app/september/images/preview.webp',
   );
   assert.equal(september.title, 'Một chút ngọt, một chút hoa');
+  assert.equal(
+    september.description,
+    'Hai món quà nhỏ — bánh tiramisu chanh và một bó hoa — được chuẩn bị riêng cho em.',
+  );
+  assert.equal(september.ogTitle, 'Một chút ngọt, một chút hoa');
+  assert.equal(
+    september.ogDescription,
+    'Chạm vào hai món quà theo thứ tự em chọn và thắt chiếc nơ cuối cùng.',
+  );
 });
 
 test('metadata placeholders are completely resolved for every route', () => {

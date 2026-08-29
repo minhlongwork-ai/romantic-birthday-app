@@ -48,9 +48,15 @@ Safari opens the matching fragment. Test both discovery orders, screen-lock
 recovery, and **Mở không dùng NFC**; manual opening must remain a complete
 fallback. The website never requests NFC permission or reads raw NFC data.
 
-The only persisted NFC state is anonymous two-gift progress, retained for at
-most 24 hours. It contains no name, query, URL, photo, or referrer, expires and
-is removed automatically, and the experience continues in memory if storage is
+The matching fragment is consumed locally and removed immediately with
+`history.replaceState`; it is not sent to the server or included in referrers.
+September uses no camera, microphone, Web NFC, or runtime request to a
+third-party service.
+
+The sole persisted NFC state is the anonymous record
+`{v,foundGiftIds,expiresAt}`, retained for at most 24 hours; it has no other
+fields. It contains no name, query, URL, photo, or referrer, expires and is
+removed automatically, and the experience continues in memory if storage is
 unavailable. Do not include personalized values in NFC URLs or release evidence.
 
 Immediately after deploy and again after 30 minutes, smoke `/`, `/birthday/`,

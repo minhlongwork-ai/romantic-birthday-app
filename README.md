@@ -112,7 +112,8 @@ URL thứ nhất dành cho bánh tiramisu chanh, URL thứ hai dành cho bó h�
 hồng phấn. Không thêm tên, query, ảnh, mã bí mật hay URL khác vào thẻ. Trên
 iPhone XS hoặc mới hơn, người nhận bật màn hình, chạm phần trên của iPhone gần
 thẻ, rồi chạm thông báo hệ thống để mở Safari. Website không xin quyền NFC và
-không đọc dữ liệu NFC thô.
+không đọc dữ liệu NFC thô. Fragment được xử lý tại chỗ và xóa ngay bằng
+`history.replaceState`, nên không được gửi tới server hoặc referrer.
 
 Không dán thẻ trực tiếp lên kim loại hoặc giấy bạc. Đặt thẻ bánh trong hang tag
 giấy cán màng/chống ẩm, để cả hai thẻ vẫn chạm được sau khi mở quà, và in chỉ dẫn
@@ -120,9 +121,11 @@ ngắn “Chạm phần trên iPhone vào đây”. Mỗi ngăn vẫn có nút *
 với kết quả tương đương; hãy hướng dẫn người nhận dùng nút này nếu điện thoại
 không hiện thông báo.
 
-Chỉ tiến trình NFC ẩn danh của hai món quà được lưu cùng origin, tối đa 24 giờ.
-Nó không chứa tên, query, URL, ảnh hoặc referrer; khi local storage bị từ chối,
-trải nghiệm vẫn tiếp tục trong bộ nhớ và reset sẽ xóa bản ghi.
+Chỉ một bản ghi tiến trình NFC ẩn danh `{v,foundGiftIds,expiresAt}` được lưu
+cùng origin, tối đa 24 giờ; không có trường nào khác. Nó không chứa tên, query,
+URL, ảnh hoặc referrer; khi local storage bị từ chối, trải nghiệm vẫn tiếp tục
+trong bộ nhớ và reset sẽ xóa bản ghi. September không dùng camera, microphone,
+Web NFC, hay bất kỳ runtime request nào tới bên thứ ba.
 
 ## Quyền riêng tư khi xuất bản
 
