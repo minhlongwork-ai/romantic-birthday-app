@@ -529,6 +529,12 @@ test("mobile intro CTA stays in the first viewport without horizontal overflow",
     await page.setViewportSize(viewport);
     await page.goto("/september/");
     const cta = page.getByRole("button", { name: "Bắt đầu" });
+    for (const seal of await page.locator(".scene-intro .gift-seal").all()) {
+      const sealBox = await seal.boundingBox();
+      expect(sealBox).not.toBeNull();
+      expect(sealBox.width).toBeCloseTo(120, 1);
+      expect(sealBox.height).toBeCloseTo(120, 1);
+    }
     const box = await cta.boundingBox();
     expect(box).not.toBeNull();
     expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
@@ -562,19 +568,25 @@ test("mobile layout remains usable at 200% zoom", async ({ page }, testInfo) => 
 
 test("ribbon pointer targets stay large without disabling touch outside the puzzle", async ({ page }, testInfo) => {
   desktopChromeOnly(testInfo);
+  await page.setViewportSize({ width: 320, height: 568 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await enterPuzzle(page);
 
-  const metrics = await page.locator(".ribbon-puzzle").evaluate((puzzle) => ({
-    touchAction: getComputedStyle(puzzle).touchAction,
-    wrapperTouchAction: getComputedStyle(puzzle.parentElement).touchAction,
-    hitStroke: Number.parseFloat(
-      getComputedStyle(puzzle.querySelector(".ring-hit-target")).strokeWidth,
-    ),
-  }));
+  const metrics = await page.locator(".ribbon-puzzle").evaluate((puzzle) => {
+    const cssPixelsPerSvgUnit = puzzle.getBoundingClientRect().width / puzzle.viewBox.baseVal.width;
+    return {
+      touchAction: getComputedStyle(puzzle).touchAction,
+      wrapperTouchAction: getComputedStyle(puzzle.parentElement).touchAction,
+      renderedHitThicknesses: [...puzzle.querySelectorAll(".ring-hit-target")].map(
+        (target) => Number.parseFloat(getComputedStyle(target).strokeWidth) * cssPixelsPerSvgUnit,
+      ),
+    };
+  });
   expect(metrics.touchAction).toBe("none");
   expect(metrics.wrapperTouchAction).not.toBe("none");
-  expect(metrics.hitStroke).toBeGreaterThanOrEqual(44);
+  for (const thickness of metrics.renderedHitThicknesses) {
+    expect(thickness).toBeGreaterThanOrEqual(44);
+  }
 
   for (const control of await page.locator(".button-ribbon").all()) {
     const box = await control.boundingBox();

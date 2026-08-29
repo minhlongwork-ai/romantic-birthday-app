@@ -848,7 +848,7 @@ a:focus-visible {
   fill: none;
   pointer-events: stroke;
   stroke: transparent;
-  stroke-width: 44;
+  stroke-width: 46;
 }
 
 .ribbon-ring .ring-track {
@@ -1299,16 +1299,6 @@ a:focus-visible {
 
   .scene-intro .scene-title {
     font-size: 2rem;
-  }
-
-  .intro-gifts,
-  [data-scene="intro"] .scene-stage > :first-child {
-    grid-template-columns: repeat(2, 6.8rem);
-  }
-
-  .intro-gifts > .gift-seal,
-  [data-scene="intro"] .scene-stage > :first-child > .gift-seal {
-    width: 6.8rem;
   }
 
   .compartment {
