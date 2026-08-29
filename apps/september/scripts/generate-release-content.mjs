@@ -82,7 +82,7 @@ async function buildArtifacts({
       reason: gift.reason,
       personalMessage: gift.personalMessage,
       approved: gift.approved,
-      fixture: gift.fixture === true,
+      fixture: gift.fixture,
       media: {
         assetId: gift.productAssetId,
         avifSrc: gift.media.avifSrc,

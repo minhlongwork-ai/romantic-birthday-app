@@ -133,3 +133,17 @@ test("release artifacts derive fixture mode and omit preview copy for approved g
     /bản xem thử|Ảnh Pexels|chỉ để minh họa/iu,
   );
 });
+
+test("release generation rejects an omitted fixture flag instead of normalizing it", async () => {
+  const gifts = productionGifts();
+  delete gifts[0].fixture;
+
+  await assert.rejects(
+    releaseGenerator.buildArtifacts({ release: true, gifts }),
+    (error) => {
+      assert.match(error.message, /must declare boolean approved and fixture/u);
+      assert.match(error.message, /must set fixture:false for release/u);
+      return true;
+    },
+  );
+});

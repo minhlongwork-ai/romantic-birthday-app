@@ -53,6 +53,21 @@ test("content requires a non-empty product asset ID", () => {
   );
 });
 
+test("development content rejects omitted and non-boolean fixture flags", () => {
+  for (const fixture of [undefined, "false"]) {
+    const gifts = structuredClone(SEPTEMBER_GIFTS);
+    if (fixture === undefined) delete gifts[0].fixture;
+    else gifts[0].fixture = fixture;
+
+    assert.ok(
+      validateSeptemberContent(gifts).some((error) =>
+        /must declare boolean approved and fixture/u.test(error),
+      ),
+      `fixture ${String(fixture)} must fail development validation`,
+    );
+  }
+});
+
 test("release rejects both demo fixtures", () => {
   const errors = validateSeptemberContent(SEPTEMBER_GIFTS, { release: true });
   assert.equal(errors.filter((error) => /approved:true/u.test(error)).length, 2);
@@ -65,6 +80,17 @@ test("release accepts fully approved non-fixture gifts with no preview copy", ()
 
   assert.deepEqual(validateSeptemberContent(gifts, { release: true }), []);
   assert.doesNotMatch(JSON.stringify(gifts), /bản xem thử|Ảnh Pexels|chỉ để minh họa/iu);
+});
+
+test("release requires an explicit fixture:false flag", () => {
+  const gifts = productionGifts();
+  delete gifts[0].fixture;
+
+  assert.ok(
+    validateSeptemberContent(gifts, { release: true }).some((error) =>
+      /must set fixture:false for release/u.test(error),
+    ),
+  );
 });
 
 test("release rejects residual preview wording even when flags are approved", () => {

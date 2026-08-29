@@ -120,10 +120,10 @@ export function validateSeptemberContent(gifts, { release = false } = {}) {
 
     if (
       typeof gift?.approved !== "boolean"
-      || (gift?.fixture !== undefined && typeof gift.fixture !== "boolean")
+      || typeof gift?.fixture !== "boolean"
     ) {
       errors.push(
-        `gifts[${index}] must declare boolean approved; fixture, when present, must be boolean.`,
+        `gifts[${index}] must declare boolean approved and fixture.`,
       );
     }
 
@@ -133,6 +133,8 @@ export function validateSeptemberContent(gifts, { release = false } = {}) {
       }
       if (gift?.fixture === true) {
         errors.push(`gifts[${index}] is a development fixture and cannot ship.`);
+      } else if (gift?.fixture !== false) {
+        errors.push(`gifts[${index}] must set fixture:false for release.`);
       }
       if (
         [
