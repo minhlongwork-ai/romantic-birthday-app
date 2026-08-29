@@ -59,23 +59,66 @@ function run(command, args) {
   });
 }
 
+export function resolveOpenGraphAsset(site, publicPath, {
+  rootDir = projectRoot,
+} = {}) {
+  const experiences = Array.isArray(site?.experiences) ? site.experiences : [];
+  const preview = experiences.find(record =>
+    record.preview.publicPath === publicPath)?.preview;
+  if (preview) {
+    return {
+      filePath: resolve(rootDir, preview.source),
+      width: preview.width,
+      height: preview.height,
+    };
+  }
+
+  const owner = [...experiences]
+    .sort((left, right) => right.route.length - left.route.length)
+    .find(record => publicPath.startsWith(record.route));
+  if (owner) {
+    const outputPath = publicPath.replace(/^\//, '');
+    const copy = (owner.build.copies || []).find(rule =>
+      outputPath === rule.destination || outputPath.startsWith(`${rule.destination}/`));
+    if (copy) {
+      return {
+        filePath: resolve(
+          rootDir,
+          copy.source,
+          outputPath.slice(copy.destination.length).replace(/^\//, ''),
+        ),
+        width: 1200,
+        height: 630,
+      };
+    }
+    return {
+      filePath: resolve(
+        rootDir,
+        dirname(owner.build.config),
+        'public',
+        publicPath.slice(owner.route.length),
+      ),
+      width: 1200,
+      height: 630,
+    };
+  }
+
+  return {
+    filePath: resolve(rootDir, 'portal', publicPath.replace(/^\//, '')),
+    width: 1200,
+    height: 630,
+  };
+}
+
 async function validateOpenGraph(site) {
   const errors = [];
   const uniquePaths = new Set(Object.values(site.pages).map(page => page.ogImage));
   for (const publicPath of uniquePaths) {
-    const preview = site.experiences.find(record =>
-      record.preview.publicPath === publicPath)?.preview;
-    const expectedWidth = preview?.width ?? 1200;
-    const expectedHeight = preview?.height ?? 630;
-    const filePath = preview
-      ? resolve(projectRoot, preview.source)
-      : publicPath.startsWith(site.routes.birthday)
-        ? resolve(projectRoot, 'public', publicPath.slice(site.routes.birthday.length))
-        : publicPath.startsWith(`${site.routes.august}public/`)
-          ? resolve(projectRoot, 'apps/august/public', publicPath.slice(`${site.routes.august}public/`.length))
-          : publicPath.startsWith(site.routes.september)
-            ? resolve(projectRoot, 'apps/september/public', publicPath.slice(site.routes.september.length))
-          : resolve(projectRoot, 'portal', publicPath.replace(/^\//, ''));
+    const {
+      filePath,
+      width: expectedWidth,
+      height: expectedHeight,
+    } = resolveOpenGraphAsset(site, publicPath);
     try {
       const metadata = await sharp(filePath, { failOn: 'error' }).metadata();
       const fileStat = await stat(filePath);

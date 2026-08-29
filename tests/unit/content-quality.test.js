@@ -1,8 +1,13 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { resolve } from 'node:path';
 import test from 'node:test';
 
-import { validateEditorialContent } from '../../scripts/validate-source.mjs';
+import {
+  resolveOpenGraphAsset,
+  validateEditorialContent,
+} from '../../scripts/validate-source.mjs';
 
 const giftUrl = new URL('../../src/content/gift.json', import.meta.url);
 
@@ -31,4 +36,52 @@ test('editorial validation rejects placeholder alt text and untranslated card co
   const errors = validateEditorialContent(gift).join('\n');
   assert.match(errors, /Vietnamese/i);
   assert.match(errors, /placeholder alt/i);
+});
+
+test('Open Graph source ownership follows a synthetic registry record', () => {
+  const rootDir = resolve(tmpdir(), 'experience-source-owner');
+  const syntheticSite = {
+    experiences: [{
+      id: 'october',
+      route: '/october/',
+      preview: {
+        source: 'apps/october/public/images/preview.webp',
+        publicPath: '/experience-previews/october.webp',
+        width: 1600,
+        height: 900,
+      },
+      build: {
+        config: 'apps/october/vite.config.js',
+        copies: [{
+          source: 'apps/october/public',
+          destination: 'october/public',
+        }],
+      },
+    }],
+  };
+
+  assert.deepEqual(
+    resolveOpenGraphAsset(
+      syntheticSite,
+      '/october/public/images/og-card.jpg',
+      { rootDir },
+    ),
+    {
+      filePath: resolve(rootDir, 'apps/october/public/images/og-card.jpg'),
+      width: 1200,
+      height: 630,
+    },
+  );
+  assert.deepEqual(
+    resolveOpenGraphAsset(
+      syntheticSite,
+      '/experience-previews/october.webp',
+      { rootDir },
+    ),
+    {
+      filePath: resolve(rootDir, 'apps/october/public/images/preview.webp'),
+      width: 1600,
+      height: 900,
+    },
+  );
 });

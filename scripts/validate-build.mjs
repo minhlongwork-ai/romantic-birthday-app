@@ -5,6 +5,8 @@ import { readFile, stat } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { resolveBuildEnvironment } from './experience-builds.mjs';
+import { selectBuildExperiences } from './experience-registry.mjs';
 import { loadSiteConfig } from './site-config.mjs';
 import { analyzeRuntimeArtifacts } from './runtime-dependencies.mjs';
 
@@ -28,10 +30,12 @@ const BUILD_SHA = /^[a-f0-9]{7,40}$|^local-[a-f0-9]{12}$/;
 const FORBIDDEN_RUNTIME_ASSET = /(?:hand_landmark_full\.tflite|(?:^|[/_.-])(?:rain|moon)(?:[/_.-]|$))/i;
 const FORBIDDEN_MANIFEST_FIELDS = new Set([
   'age',
+  'from',
   'query',
   'recipient',
   'referrer',
   'sender',
+  'to',
 ]);
 
 function registryExperiences(site) {
@@ -48,13 +52,20 @@ function expectedCatalog(site) {
   }));
 }
 
-function expectedRoutes(site, manifest) {
+function expectedBuiltExperiences(site, manifest, environment) {
+  const experiences = registryExperiences(site);
+  if (environment === 'production') {
+    return selectBuildExperiences(experiences, environment);
+  }
   const catalog = Array.isArray(manifest?.catalog) ? manifest.catalog : [];
   const catalogById = new Map(catalog.map(record => [record?.id, record]));
+  return experiences.filter(record => catalogById.get(record.id)?.built === true);
+}
+
+function expectedRoutes(site, manifest, environment) {
   return [
     { id: 'chooser', path: site.routes.chooser, index: '/index.html' },
-    ...registryExperiences(site).filter(record =>
-      catalogById.get(record.id)?.built === true).map(record => ({
+    ...expectedBuiltExperiences(site, manifest, environment).map(record => ({
       id: record.id,
       path: record.route,
       index: `${record.route}index.html`,
@@ -102,7 +113,9 @@ export function validateNotFoundDocument(html) {
   return errors;
 }
 
-export function validateBuildManifest(manifest, site) {
+export function validateBuildManifest(manifest, site, {
+  environment = 'development',
+} = {}) {
   const errors = [];
   if (!manifest || typeof manifest !== 'object') return ['Build manifest must be an object.'];
   if (!BUILD_SHA.test(manifest.buildSha || '')) errors.push('buildSha is missing or invalid.');
@@ -110,6 +123,9 @@ export function validateBuildManifest(manifest, site) {
 
   const registered = expectedCatalog(site);
   const registeredById = new Map(registryExperiences(site).map(record => [record.id, record]));
+  const expectedBuiltIds = new Set(
+    expectedBuiltExperiences(site, manifest, environment).map(record => record.id),
+  );
   const catalog = Array.isArray(manifest.catalog) ? manifest.catalog : [];
   if (!Array.isArray(manifest.catalog)) {
     errors.push('Manifest catalog is missing.');
@@ -131,10 +147,17 @@ export function validateBuildManifest(manifest, site) {
     if (record?.built === false && registeredById.get(record.id)?.status !== 'draft') {
       errors.push(`Published experience ${record.id} cannot be omitted from the build.`);
     }
+    if (
+      environment === 'production'
+      && record?.built === true
+      && !expectedBuiltIds.has(record.id)
+    ) {
+      errors.push(`Draft experience ${record.id} cannot be built in production.`);
+    }
   }
 
   const routes = Array.isArray(manifest.routes) ? manifest.routes : [];
-  const buildRoutes = expectedRoutes(site, manifest);
+  const buildRoutes = expectedRoutes(site, manifest, environment);
   if (JSON.stringify(routes) !== JSON.stringify(buildRoutes)) {
     errors.push('Manifest routes do not match the built registry catalog; unregistered routes are forbidden.');
   }
@@ -216,7 +239,7 @@ export function validateBuildManifest(manifest, site) {
       }
     }
   }
-  for (const record of catalog.filter(({ built }) => built === false)) {
+  for (const record of catalog.filter(record => !expectedBuiltIds.has(record.id))) {
     if (Object.hasOwn(initialAssetUrlsByRoute || {}, record.id)) {
       errors.push(`Non-built experience ${record.id} has an initial dependency closure.`);
     }
@@ -242,13 +265,14 @@ export function validateBuildManifest(manifest, site) {
 
 export async function validateBuildOutput({
   distDir = resolve(projectRoot, 'dist'),
+  environment = resolveBuildEnvironment(),
   site,
 } = {}) {
   const resolvedSite = site || await loadSiteConfig();
   const manifestPath = resolve(distDir, 'build-manifest.json');
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
-  const errors = validateBuildManifest(manifest, resolvedSite);
-  const buildRoutes = expectedRoutes(resolvedSite, manifest);
+  const errors = validateBuildManifest(manifest, resolvedSite, { environment });
+  const buildRoutes = expectedRoutes(resolvedSite, manifest, environment);
   let mediaPipeBytes = 0;
   const runtimeArtifacts = [];
 
@@ -324,9 +348,11 @@ export async function validateBuildOutput({
     }
   }
 
-  const catalogById = new Map((manifest.catalog || []).map(record => [record?.id, record]));
+  const expectedBuiltIds = new Set(
+    expectedBuiltExperiences(resolvedSite, manifest, environment).map(record => record.id),
+  );
   for (const record of registryExperiences(resolvedSite).filter(candidate =>
-    candidate.status === 'draft' && catalogById.get(candidate.id)?.built === false)) {
+    candidate.status === 'draft' && !expectedBuiltIds.has(candidate.id))) {
     const namespace = resolve(distDir, record.route.replace(/^\/+/, ''));
     try {
       await stat(namespace);
@@ -349,6 +375,7 @@ export async function validateBuildOutput({
 }
 
 export async function validateRemoteBuild(baseUrl, {
+  environment = resolveBuildEnvironment(),
   fetchImpl = fetch,
   expectedBuildSha,
 } = {}) {
@@ -357,8 +384,8 @@ export async function validateRemoteBuild(baseUrl, {
   if (!manifestResponse.ok) throw new Error(`Remote manifest returned ${manifestResponse.status}.`);
   const manifest = await manifestResponse.json();
   const site = await loadSiteConfig();
-  const errors = validateBuildManifest(manifest, site);
-  const buildRoutes = expectedRoutes(site, manifest);
+  const errors = validateBuildManifest(manifest, site, { environment });
+  const buildRoutes = expectedRoutes(site, manifest, environment);
   if (expectedBuildSha && manifest.buildSha !== expectedBuildSha) {
     errors.push(`Remote build SHA ${manifest.buildSha || '(missing)'} does not match expected ${expectedBuildSha}.`);
   }
@@ -402,6 +429,29 @@ export async function validateRemoteBuild(baseUrl, {
       }
     } catch (error) {
       errors.push(`Direct route ${route.path} failed: ${error.message}`);
+    }
+  }
+
+  const expectedBuiltIds = new Set(
+    expectedBuiltExperiences(site, manifest, environment).map(record => record.id),
+  );
+  for (const record of registryExperiences(site).filter(candidate =>
+    candidate.status === 'draft' && !expectedBuiltIds.has(candidate.id))) {
+    try {
+      const response = await fetchImpl(new URL(record.route, origin), {
+        method: 'GET',
+        redirect: 'follow',
+      });
+      if (response.status !== 404) {
+        errors.push(`Draft route ${record.route} returned ${response.status}; expected 404.`);
+      }
+      const actualType = response.headers.get('content-type') || '';
+      if (!contentTypeMatches('text/html', actualType)) {
+        errors.push(`Draft route ${record.route} returned ${actualType || 'no MIME'}; expected text/html.`);
+      }
+      errors.push(...validateNotFoundDocument(await response.text()));
+    } catch (error) {
+      errors.push(`Draft route ${record.route} failed: ${error.message}`);
     }
   }
 

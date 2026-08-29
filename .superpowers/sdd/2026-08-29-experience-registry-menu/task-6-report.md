@@ -26,3 +26,12 @@
 
 - Existing dirty and untracked September assets, shared portal/E2E changes, CI changes, and the user-owned `scripts/build-composite.mjs` build-SHA change were preserved and excluded from this task's commit.
 - Generated `dist` and `staging` outputs remain ignored and were not staged.
+
+## Review fix round 1
+
+- Production manifest validation now derives built experiences from the registry through `selectBuildExperiences` instead of trusting catalog `built` flags. A self-consistent manifest that marks draft September built is rejected.
+- Recursive manifest privacy validation now rejects the actual forwarded query keys `to` and `from` at any nesting depth.
+- Open Graph asset ownership now resolves preview sources, route public directories, and registry copy rules from each experience record. A synthetic October record verifies the resolver without adding route-specific branches.
+- Remote validation now requests every non-built draft route and requires a shared HTML 404 document, in addition to the generic missing-route probe.
+- RED evidence: the four regressions initially failed with an accepted production draft, missing `to`/`from` diagnostics, a missing resolver export/double `public` source path, and no `/september/` remote request.
+- GREEN evidence: `node --test tests/unit/experience-release.test.js tests/unit/vercel-build-gate.test.js tests/unit/build-validator.test.js tests/unit/content-quality.test.js` passed 27 tests with 0 failures; `npm run validate` and `git diff --check` also passed.

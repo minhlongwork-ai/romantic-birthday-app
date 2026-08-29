@@ -232,7 +232,18 @@ test('build manifest contract accepts clean canonical route assets', () => {
 });
 
 test('production manifest accepts a non-built draft while retaining its chooser preview', () => {
-  assert.deepEqual(validateBuildManifest(validProductionManifest(), site), []);
+  assert.deepEqual(
+    validateBuildManifest(validProductionManifest(), site, { environment: 'production' }),
+    [],
+  );
+});
+
+test('production manifest rejects a draft that claims it was built', () => {
+  const errors = validateBuildManifest(validManifest(), site, {
+    environment: 'production',
+  }).join('\n');
+
+  assert.match(errors, /draft experience september cannot be built in production/i);
 });
 
 test('build manifest rejects a runtime namespace for a non-built draft', () => {
@@ -262,6 +273,18 @@ test('build manifest rejects unregistered routes and personalized fields', () =>
   assert.match(errors, /unregistered|routes do not match/i);
   assert.match(errors, /recipient/i);
   assert.match(errors, /query/i);
+});
+
+test('build manifest rejects forwarded to and from query fields at any depth', () => {
+  const manifest = validProductionManifest();
+  manifest.catalog[0].to = 'Private recipient';
+  manifest.assets[0].metadata = { from: 'Private sender' };
+
+  const errors = validateBuildManifest(manifest, site, {
+    environment: 'production',
+  }).join('\n');
+  assert.match(errors, /manifest\.catalog\[0\]\.to/i);
+  assert.match(errors, /manifest\.assets\[0\]\.metadata\.from/i);
 });
 
 test('build manifest contract rejects external, unhashed, or forbidden runtime assets', () => {
@@ -445,4 +468,56 @@ test('remote validation rejects a deployment from the wrong commit', async () =>
     expectedBuildSha: 'fedcba987654',
   });
   assert.match(result.errors.join('\n'), /does not match expected fedcba987654/i);
+});
+
+test('remote production validation requires every non-built draft route to serve shared 404', async () => {
+  const manifest = validProductionManifest();
+  const requests = [];
+  const fetchImpl = async (input, init = {}) => {
+    const url = new URL(input);
+    const method = init.method || 'GET';
+    requests.push([method, url.pathname]);
+
+    if (url.pathname === '/build-manifest.json') {
+      return new Response(JSON.stringify(manifest), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    const asset = manifest.assets.find(candidate => candidate.url === url.pathname);
+    if (asset) {
+      return new Response(method === 'HEAD' ? null : 'asset', {
+        status: 200,
+        headers: { 'content-type': asset.contentType },
+      });
+    }
+    const route = manifest.routes.find(candidate => candidate.path === url.pathname);
+    if (route) {
+      return new Response(
+        `<link rel="canonical" href="${new URL(route.path, site.origin).href}">`,
+        { status: 200, headers: { 'content-type': 'text/html' } },
+      );
+    }
+    if (url.pathname === '/september/') {
+      return new Response('<h1>Leaked draft</h1>', {
+        status: 200,
+        headers: { 'content-type': 'text/html' },
+      });
+    }
+    return new Response([
+      '<meta name="robots" content="noindex">',
+      '<a href="/">Quay về chọn thiệp</a>',
+    ].join(''), {
+      status: 404,
+      headers: { 'content-type': 'text/html' },
+    });
+  };
+
+  const result = await validateRemoteBuild('https://production.example.test', {
+    fetchImpl,
+    environment: 'production',
+  });
+  assert.ok(requests.some(([method, pathname]) =>
+    method === 'GET' && pathname === '/september/'));
+  assert.match(result.errors.join('\n'), /Draft route \/september\/ returned 200; expected 404/i);
 });
