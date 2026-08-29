@@ -1,12 +1,10 @@
-import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 
+import { loadSiteConfig } from "../../scripts/site-config.mjs";
 import { createSiteMetadataPlugin } from "../../scripts/site-metadata.mjs";
 
-const site = JSON.parse(
-  readFileSync(new URL("../../src/content/site.json", import.meta.url), "utf8"),
-);
+const site = await loadSiteConfig();
 
 export default defineConfig({
   root: fileURLToPath(new URL(".", import.meta.url)),

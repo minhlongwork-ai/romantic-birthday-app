@@ -1,44 +1,10 @@
 {
   "origin": "https://romantic-birthday-app.vercel.app",
-  "routes": {
-    "chooser": "/",
-    "birthday": "/birthday/",
-    "august": "/august/",
-    "september": "/september/"
-  },
-  "shareTargets": {
-    "birthday": "/birthday/",
-    "august": "/august/",
-    "september": "/september/"
-  },
-  "pages": {
-    "chooser": {
-      "title": "Chọn tấm thiệp dành cho em",
-      "description": "Chọn một trong ba tấm thiệp được chuẩn bị riêng cho em.",
-      "ogTitle": "Chọn tấm thiệp dành cho em",
-      "ogDescription": "Ba tấm thiệp, ba câu chuyện được chuẩn bị riêng cho em.",
-      "ogImage": "/birthday/og-preview.jpg"
-    },
-    "birthday": {
-      "title": "Một cuốn album dành cho em",
-      "description": "Một cuốn album sinh nhật nhỏ, được làm riêng cho một người đặc biệt.",
-      "ogTitle": "Một cuốn album sinh nhật dành cho em",
-      "ogDescription": "Một cuốn album sinh nhật nhỏ, được làm riêng bằng những kỷ niệm.",
-      "ogImage": "/birthday/og-preview.jpg"
-    },
-    "august": {
-      "title": "Tháng tám ở lại",
-      "description": "Một lá thư tháng tám, một bó hoa thật và một khoảnh khắc có thể được giữ lại.",
-      "ogTitle": "Tháng tám ở lại",
-      "ogDescription": "Mở thư, chọn một lời chúc và tạo trang hoa ép của riêng em.",
-      "ogImage": "/birthday/og-preview.jpg"
-    },
-    "september": {
-      "title": "Một chút ngọt, một chút hoa",
-      "description": "Hai món quà nhỏ — bánh tiramisu chanh và một bó hoa — được chuẩn bị riêng cho em.",
-      "ogTitle": "Một chút ngọt, một chút hoa",
-      "ogDescription": "Chạm vào hai món quà theo thứ tự em chọn và thắt chiếc nơ cuối cùng.",
-      "ogImage": "/september/images/preview.webp"
-    }
+  "chooser": {
+    "title": "Chọn tấm thiệp dành cho em",
+    "description": "Những tấm thiệp được giữ lại theo từng tháng, dành riêng cho em.",
+    "ogTitle": "Những tấm thiệp dành cho em",
+    "ogDescription": "Mỗi tháng là một câu chuyện nhỏ được chuẩn bị riêng.",
+    "ogImage": "/experience-previews/birthday.webp"
   }
 }

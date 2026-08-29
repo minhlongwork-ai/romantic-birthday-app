@@ -1,17 +1,14 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
+import { loadSiteConfig } from '../../scripts/site-config.mjs';
 import {
   applySiteMetadata,
   createMetadataValues,
 } from '../../scripts/site-metadata.mjs';
 
-const site = JSON.parse(
-  await readFile(new URL('../../src/content/site.json', import.meta.url), 'utf8'),
-);
-
-test('metadata values resolve from site.json without route-specific URL literals', () => {
+test('metadata values resolve from registry-derived site config without route-specific URL literals', async () => {
+  const site = await loadSiteConfig();
   const values = createMetadataValues(site, 'birthday');
   assert.equal(values.canonicalUrl, 'https://romantic-birthday-app.vercel.app/birthday/');
   assert.equal(values.ogImageUrl, 'https://romantic-birthday-app.vercel.app/birthday/og-preview.jpg');
@@ -38,7 +35,8 @@ test('metadata values resolve from site.json without route-specific URL literals
   );
 });
 
-test('metadata placeholders are completely resolved for every route', () => {
+test('metadata placeholders are completely resolved for every route', async () => {
+  const site = await loadSiteConfig();
   const template = [
     '<title>%SITE_TITLE%</title>',
     '<meta name="description" content="%SITE_DESCRIPTION%">',

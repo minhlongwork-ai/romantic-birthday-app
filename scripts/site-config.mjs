@@ -1,7 +1,6 @@
 import { readFile } from 'node:fs/promises';
+import { loadExperienceRegistry } from './experience-registry.mjs';
 
-const ROUTE_IDS = Object.freeze(['chooser', 'birthday', 'august', 'september']);
-const SHARE_IDS = Object.freeze(['birthday', 'august', 'september']);
 const PAGE_TEXT_FIELDS = Object.freeze([
   'title',
   'description',
@@ -33,6 +32,27 @@ export function validateSiteConfig(config) {
   const errors = [];
   if (!isPlainObject(config)) return ['site config must be an object.'];
 
+  if (!Array.isArray(config.experiences)) {
+    errors.push('experiences must be an array.');
+  }
+  const experienceIds = Array.isArray(config.experiences)
+    ? config.experiences.map((experience, index) => {
+      if (!isPlainObject(experience) || typeof experience.id !== 'string' || experience.id === '') {
+        errors.push(`experiences.${index}.id must be non-empty text.`);
+        return null;
+      }
+      return experience.id;
+    }).filter(Boolean)
+    : [];
+  const duplicateExperienceIds = experienceIds.filter(
+    (id, index) => experienceIds.indexOf(id) !== index,
+  );
+  for (const id of new Set(duplicateExperienceIds)) {
+    errors.push(`experiences contains duplicate id: ${id}.`);
+  }
+  const routeIds = ['chooser', ...experienceIds];
+  const shareIds = experienceIds;
+
   try {
     const origin = new URL(config.origin);
     if (
@@ -52,7 +72,7 @@ export function validateSiteConfig(config) {
   if (!isPlainObject(config.routes)) {
     errors.push('routes must be an object.');
   } else {
-    for (const routeId of ROUTE_IDS) {
+    for (const routeId of routeIds) {
       if (!isCleanPath(config.routes[routeId])) {
         errors.push(`routes.${routeId} must be a clean root-relative path ending in /.`);
       }
@@ -62,7 +82,7 @@ export function validateSiteConfig(config) {
   if (!isPlainObject(config.shareTargets)) {
     errors.push('shareTargets must be an object.');
   } else {
-    for (const routeId of SHARE_IDS) {
+    for (const routeId of shareIds) {
       const target = config.shareTargets[routeId];
       if (!isCleanPath(target) || target !== config.routes?.[routeId]) {
         errors.push(`shareTargets.${routeId} must equal routes.${routeId}.`);
@@ -73,7 +93,7 @@ export function validateSiteConfig(config) {
   if (!isPlainObject(config.pages)) {
     errors.push('pages must be an object.');
   } else {
-    for (const routeId of ROUTE_IDS) {
+    for (const routeId of routeIds) {
       const page = config.pages[routeId];
       if (!isPlainObject(page)) {
         errors.push(`pages.${routeId} must be an object.`);
@@ -93,6 +113,22 @@ export function validateSiteConfig(config) {
   return errors;
 }
 
+export function composeSiteConfig(shell, experiences) {
+  return {
+    origin: shell.origin,
+    routes: Object.fromEntries([
+      ['chooser', '/'],
+      ...experiences.map(record => [record.id, record.route]),
+    ]),
+    shareTargets: Object.fromEntries(experiences.map(record => [record.id, record.route])),
+    pages: Object.fromEntries([
+      ['chooser', shell.chooser],
+      ...experiences.map(record => [record.id, record.metadata]),
+    ]),
+    experiences,
+  };
+}
+
 function isCleanAssetPath(value) {
   if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')) {
     return false;
@@ -110,9 +146,13 @@ function isCleanAssetPath(value) {
 }
 
 export async function loadSiteConfig(
-  configUrl = new URL('../src/content/site.json', import.meta.url),
+  { siteUrl = new URL('../src/content/site.json', import.meta.url) } = {},
 ) {
-  const config = JSON.parse(await readFile(configUrl, 'utf8'));
+  const [shell, experiences] = await Promise.all([
+    readFile(siteUrl, 'utf8').then(JSON.parse),
+    loadExperienceRegistry(),
+  ]);
+  const config = composeSiteConfig(shell, experiences);
   const errors = validateSiteConfig(config);
   if (errors.length > 0) {
     throw new Error(`Invalid site config:\n${errors.map(error => `- ${error}`).join('\n')}`);
