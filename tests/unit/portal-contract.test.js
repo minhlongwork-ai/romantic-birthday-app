@@ -2,17 +2,25 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-const [portalHtml, portalScript, notFoundHtml] = await Promise.all([
+import { applyExperienceCatalog } from '../../portal/experience-catalog-plugin.mjs';
+import { loadExperienceRegistry } from '../../scripts/experience-registry.mjs';
+
+const [portalSourceHtml, portalScript, notFoundHtml] = await Promise.all([
   readFile(new URL('../../portal/index.html', import.meta.url), 'utf8'),
   readFile(new URL('../../portal/portal.js', import.meta.url), 'utf8'),
   readFile(new URL('../../portal/404.html', import.meta.url), 'utf8'),
 ]);
 
-test('chooser offers all three canonical experiences with the shared personalization contract', () => {
+test('chooser renders published links and a non-interactive September card with the shared personalization contract', async () => {
+  const portalHtml = applyExperienceCatalog(portalSourceHtml, await loadExperienceRegistry());
   const projectLinks = [...portalHtml.matchAll(/href="(\/(?:birthday|august|september)\/)"\s+data-project-link/g)]
     .map(match => match[1]);
-  assert.deepEqual(projectLinks, ['/birthday/', '/august/', '/september/']);
-  assert.match(portalHtml, /src="\/september\/images\/preview\.webp"/);
+  const september = portalHtml.slice(portalHtml.indexOf('gift-card-september'));
+
+  assert.deepEqual(projectLinks, ['/birthday/', '/august/']);
+  assert.ok(portalHtml.indexOf('gift-card-birthday') < portalHtml.indexOf('gift-card-august'));
+  assert.ok(portalHtml.indexOf('gift-card-august') < portalHtml.indexOf('gift-card-september'));
+  assert.match(portalHtml, /src="\/experience-previews\/september\.webp"/);
   assert.match(portalHtml, /aria-describedby="september-description"/);
   assert.match(portalHtml, /Bánh kem chanh và bó hồng kem hồng phấn trên nền lụa nâu ấm/);
   assert.match(portalHtml, /Hộp quà hai món/);
@@ -21,7 +29,8 @@ test('chooser offers all three canonical experiences with the shared personaliza
     portalHtml,
     /Chạm vào bánh và hoa theo thứ tự em chọn, rồi thắt chiếc nơ cuối cùng\./,
   );
-  assert.match(portalHtml, /Mở hộp quà tháng Chín/);
+  assert.match(portalHtml, /<article class="gift-card gift-card-september" aria-disabled="true"/);
+  assert.doesNotMatch(september, /href="\/september\/"|data-project-link|Mở hộp quà tháng Chín/);
   assert.doesNotMatch(portalHtml, /Ba Pha Trăng|bộ ba mỹ phẩm|ba vầng trăng/u);
   assert.match(portalScript, /const forwardedKeys = \["to", "from", "age"\];/);
 });

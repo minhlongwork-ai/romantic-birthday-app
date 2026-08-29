@@ -14,3 +14,9 @@
 - Build: `npx vite build --config portal/vite.config.js --outDir /private/tmp/experience-catalog-portal-build` passed. The generated chooser contains birthday and August links, omits the September link, and contains no catalog marker.
 
 The build retains the existing unresolved-runtime-font warnings from the portal stylesheet; they are unrelated to this task.
+
+## Fix round 1
+
+- Updated `tests/unit/portal-contract.test.js` to apply the catalog transform to the source template before inspecting chooser cards.
+- The contract now asserts chronological card order, links for published Birthday/August only, and a disabled, non-link September card. The exact `to`, `from`, `age` forwarding allowlist assertion is unchanged.
+- Verification: `node --test tests/unit/experience-catalog.test.js tests/unit/experience-catalog-plugin.test.js tests/unit/portal-contract.test.js` passed (11 tests).
