@@ -273,30 +273,37 @@ for (const order of [GIFTS, [...GIFTS].reverse()]) {
 test("malformed reveal history recovers to a replace-only box entry", async ({ page }, testInfo) => {
   desktopChromeOnly(testInfo);
   await enterBox(page);
-  const sessionToken = await page.evaluate(() => {
-    const nativeReplaceState = history.replaceState.bind(history);
-    window.__septemberReplaceTrace = [];
-    history.replaceState = (state, unused, url) => {
-      window.__septemberReplaceTrace.push({ state, url: String(url) });
-      return nativeReplaceState(state, unused, url);
-    };
+  const fixture = await page.evaluate(() => {
     const token = history.state.sessionToken;
     history.pushState({ v: 1, sessionToken: token, scene: "reveal", giftId: "moon" }, "", location.pathname);
     history.pushState({ v: 1, sessionToken: token, scene: "box" }, "", location.pathname);
-    return token;
+    const nativeReplaceState = history.replaceState.bind(history);
+    const nativePushState = history.pushState.bind(history);
+    window.__septemberHistoryTrace = [];
+    history.replaceState = (state, unused, url) => {
+      window.__septemberHistoryTrace.push({ method: "replaceState", state, url: String(url) });
+      return nativeReplaceState(state, unused, url);
+    };
+    history.pushState = (state, unused, url) => {
+      window.__septemberHistoryTrace.push({ method: "pushState", state, url: String(url) });
+      return nativePushState(state, unused, url);
+    };
+    return { historyLength: history.length, sessionToken: token };
   });
 
   await page.goBack();
   await expect(page.locator('section[data-scene="box"]')).toBeVisible();
   expect(await page.evaluate(() => history.state)).toEqual({
     v: 1,
-    sessionToken,
+    sessionToken: fixture.sessionToken,
     scene: "box",
   });
-  expect(await page.evaluate(() => window.__septemberReplaceTrace)).toEqual([{
-    state: { v: 1, sessionToken, scene: "box" },
+  expect(await page.evaluate(() => window.__septemberHistoryTrace)).toEqual([{
+    method: "replaceState",
+    state: { v: 1, sessionToken: fixture.sessionToken, scene: "box" },
     url: "/september/",
   }]);
+  expect(await page.evaluate(() => history.length)).toBe(fixture.historyLength);
   await expect(page.locator('section[data-scene="reveal"]')).toHaveCount(0);
 });
 
@@ -381,7 +388,14 @@ for (const { motion, revealDelay } of [
       .toBe(progressBeforeReveal);
     expect(await page.evaluate(() => window.__septemberProgressWrites)).toEqual([]);
 
-    await page.clock.runFor(revealDelay);
+    await page.clock.runFor(revealDelay - 1);
+    expect(await product.evaluate((node) => node.hidden)).toBe(true);
+    await expect(product).toHaveAttribute("hidden", "", { timeout: 0 });
+    expect(await page.evaluate(() => localStorage.getItem("september:nfc-progress:v1")))
+      .toBe(progressBeforeReveal);
+    expect(await page.evaluate(() => window.__septemberProgressWrites)).toEqual([]);
+
+    await page.clock.runFor(1);
     await expect(product).toBeVisible();
     await expect(product).not.toHaveAttribute("hidden", "");
     await expect(productHeading).toBeVisible();
@@ -687,6 +701,11 @@ test("ribbon pointer targets stay large without disabling touch outside the puzz
     await page.evaluate(() => localStorage.removeItem("september:nfc-progress:v1"));
     await enterPuzzle(page);
 
+    const visibleHitTargets = page.locator(".ring-hit-target:visible");
+    const visibleRibbonButtons = page.locator(".button-ribbon:visible");
+    await expect(visibleHitTargets).toHaveCount(2);
+    await expect(visibleRibbonButtons).toHaveCount(4);
+
     const metrics = await page.locator(".ribbon-puzzle").evaluate((puzzle) => {
       const cssPixelsPerSvgUnit = puzzle.getBoundingClientRect().width / puzzle.viewBox.baseVal.width;
       return {
@@ -706,7 +725,7 @@ test("ribbon pointer targets stay large without disabling touch outside the puzz
       expect(thickness).toBeGreaterThanOrEqual(44);
     }
 
-    for (const control of await page.locator(".button-ribbon").all()) {
+    for (const control of await visibleRibbonButtons.all()) {
       const box = await control.boundingBox();
       expect(box).not.toBeNull();
       expect(box.height).toBeGreaterThanOrEqual(44);
