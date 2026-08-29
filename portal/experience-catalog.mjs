@@ -75,9 +75,12 @@ function renderExperienceCard(record, { isPriority = false } = {}) {
 }
 
 export function renderExperienceCatalog(records) {
-  const priorityExperienceId = [...records].find(record => record.status === 'published')?.id;
+  const experienceYears = groupExperiencesByYear(records);
+  const priorityExperienceId = experienceYears
+    .flatMap(({ experiences }) => experiences)
+    .find(record => record.status === 'published')?.id;
 
-  return groupExperiencesByYear(records).map(({ year, experiences }) => `
+  return experienceYears.map(({ year, experiences }) => `
     <section class="experience-year" aria-labelledby="experience-year-${escapeHtml(year)}">
       <h2 id="experience-year-${escapeHtml(year)}" class="experience-year-title">${escapeHtml(year)}</h2>
       <div class="gift-options">

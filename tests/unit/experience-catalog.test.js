@@ -35,6 +35,19 @@ test('the first published card keeps the above-fold image loading priority', asy
   assert.doesNotMatch(birthday, /loading="lazy"/);
 });
 
+test('image priority follows rendered chronology for unsorted records', async () => {
+  const records = await loadExperienceRegistry();
+  const byId = Object.fromEntries(records.map(record => [record.id, record]));
+  const html = renderExperienceCatalog([byId.august, byId.september, byId.birthday]);
+  const birthday = html.slice(html.indexOf('gift-card-birthday'), html.indexOf('gift-card-august'));
+  const august = html.slice(html.indexOf('gift-card-august'), html.indexOf('gift-card-september'));
+
+  assert.match(birthday, /fetchpriority="high"/);
+  assert.doesNotMatch(birthday, /loading="lazy"/);
+  assert.match(august, /loading="lazy"/);
+  assert.doesNotMatch(august, /fetchpriority="high"/);
+});
+
 test('catalog escapes record text and attributes', () => {
   const html = renderExperienceCatalog([{
     id: 'memory',
