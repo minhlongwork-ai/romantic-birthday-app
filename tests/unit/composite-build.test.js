@@ -25,6 +25,7 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
       ['chooser', '/'],
       ['birthday', '/birthday/'],
       ['august', '/august/'],
+      ['september', '/september/'],
     ],
   );
   assert.deepEqual(manifest.externalRuntimeUrls, []);
@@ -38,7 +39,7 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
       && !url.endsWith('/service-worker.js')
       && !url.includes('/vendor/mediapipe/'),
   );
-  assert.ok(codeAssets.length >= 6);
+  assert.ok(codeAssets.length >= 8);
   assert.deepEqual(unhashedApplicationCode, []);
   assert.ok(
     codeAssets.every(({ url }) => /\/assets\/[^/]+-[A-Za-z0-9_-]{8,}\.(?:css|js)$/.test(url)),
@@ -46,6 +47,7 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
   assert.ok(manifest.assets.some(asset => asset.route === 'chooser' && asset.critical));
   assert.ok(manifest.assets.some(asset => asset.route === 'birthday' && asset.critical));
   assert.ok(manifest.assets.some(asset => asset.route === 'august' && asset.critical));
+  assert.ok(manifest.assets.some(asset => asset.route === 'september' && asset.critical));
 
   for (const asset of manifest.assets) {
     const outputPath = join(distDir, asset.url.replace(/^\//, ''));
@@ -65,6 +67,7 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
     /\/fonts\/cormorant-garamond-vi\.woff2/,
   );
   assert.equal(existsSync(join(distDir, 'chooser-birthday.webp')), true);
+  assert.equal(existsSync(join(distDir, 'september', 'images', 'preview.webp')), true);
   assert.ok(manifest.assets.some(asset =>
     asset.url === '/chooser-birthday.webp'
       && asset.route === 'chooser'

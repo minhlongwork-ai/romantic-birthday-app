@@ -50,6 +50,14 @@ const routeBuilds = Object.freeze([
     destination: resolve(distDir, 'august'),
     index: '/august/index.html',
   },
+  {
+    id: 'september',
+    path: site.routes.september,
+    config: resolve(projectRoot, 'apps/september/vite.config.js'),
+    output: resolve(stagingDir, 'september'),
+    destination: resolve(distDir, 'september'),
+    index: '/september/index.html',
+  },
 ]);
 
 function run(command, args, cwd = projectRoot) {
@@ -131,6 +139,7 @@ function contentTypeFor(pathname) {
 function routeForUrl(url) {
   if (url.startsWith('/birthday/')) return 'birthday';
   if (url.startsWith('/august/')) return 'august';
+  if (url.startsWith('/september/')) return 'september';
   return 'chooser';
 }
 
@@ -149,6 +158,9 @@ function isCriticalAsset(url, routeId, entryAssets) {
   if (routeId === 'august') {
     return url.endsWith('/public/fonts/cormorant-garamond-vi.woff2')
       || url.endsWith('/public/images/herbarium/poppy.webp');
+  }
+  if (routeId === 'september') {
+    return url.endsWith('/preview.webp');
   }
   return false;
 }
@@ -181,6 +193,7 @@ async function getBuildSha() {
 await Promise.all([
   access(resolve(projectRoot, 'portal/index.html')),
   access(resolve(projectRoot, 'apps/august/index.html')),
+  access(resolve(projectRoot, 'apps/september/index.html')),
 ]);
 await rm(stagingDir, { recursive: true, force: true });
 await rm(distDir, { recursive: true, force: true });
@@ -190,6 +203,7 @@ await mkdir(distDir, { recursive: true });
 await run(process.execPath, ['scripts/generate-share-qr.mjs']);
 await run(process.execPath, ['scripts/validate-gift.mjs']);
 await run(process.execPath, ['apps/august/scripts/validate.mjs']);
+await run(process.execPath, ['apps/september/scripts/validate.mjs']);
 
 for (const route of routeBuilds) {
   await run(process.execPath, [
@@ -279,4 +293,4 @@ await writeFile(
 await run(process.execPath, ['scripts/validate-build.mjs']);
 
 await rm(stagingDir, { recursive: true, force: true });
-console.log('Composite Vite site built with hashed chooser, Birthday, and August bundles.');
+console.log('Composite Vite site built with hashed chooser, Birthday, August, and September bundles.');

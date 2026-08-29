@@ -23,6 +23,14 @@ test('site.json is the single canonical Vercel origin for every public route', (
     buildCanonicalUrl(siteConfig, 'august'),
     siteConfig.origin + '/august/',
   );
+  assert.equal(
+    buildCanonicalUrl(siteConfig, 'september'),
+    siteConfig.origin + '/september/',
+  );
+  assert.equal(
+    siteConfig.shareTargets.september,
+    siteConfig.routes.september,
+  );
 });
 
 test('site config rejects personalized, external, or incomplete route targets', () => {
@@ -35,4 +43,11 @@ test('site config rejects personalized, external, or incomplete route targets', 
   assert.ok(errors.some(error => error.includes('routes.chooser')));
   assert.ok(errors.some(error => error.includes('routes.birthday')));
   assert.ok(errors.some(error => error.includes('shareTargets.august')));
+});
+
+test('Vercel production uses the environment-aware September release gate', async () => {
+  const config = JSON.parse(
+    await readFile(new URL('../../vercel.json', import.meta.url), 'utf8'),
+  );
+  assert.equal(config.buildCommand, 'npm run build:vercel');
 });

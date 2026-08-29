@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#211713" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="%SITE_DESCRIPTION%" />
+    <meta property="og:title" content="%SITE_OG_TITLE%" />
+    <meta property="og:description" content="%SITE_OG_DESCRIPTION%" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="%SITE_CANONICAL_URL%" />
+    <meta property="og:image" content="%SITE_OG_IMAGE_URL%" />
+    <link rel="canonical" href="%SITE_CANONICAL_URL%" />
+    <link rel="icon" href="data:," />
+    <title>%SITE_TITLE%</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#september-app">Đi đến nội dung món quà</a>
+    <main id="september-app" class="app-shell" tabindex="-1"></main>
+    <p id="app-live" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+    <noscript>
+      <p class="noscript">Trải nghiệm cần JavaScript để mở hai món quà và thắt chiếc nơ cuối cùng.</p>
+    </noscript>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

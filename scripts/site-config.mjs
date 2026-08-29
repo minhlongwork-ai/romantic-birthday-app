@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 
-const ROUTE_IDS = Object.freeze(['chooser', 'birthday', 'august']);
-const SHARE_IDS = Object.freeze(['birthday', 'august']);
+const ROUTE_IDS = Object.freeze(['chooser', 'birthday', 'august', 'september']);
+const SHARE_IDS = Object.freeze(['birthday', 'august', 'september']);
 const PAGE_TEXT_FIELDS = Object.freeze([
   'title',
   'description',

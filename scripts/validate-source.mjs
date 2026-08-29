@@ -65,6 +65,8 @@ async function validateOpenGraph(site) {
       ? resolve(projectRoot, 'public', publicPath.slice(site.routes.birthday.length))
       : publicPath.startsWith(`${site.routes.august}public/`)
         ? resolve(projectRoot, 'apps/august/public', publicPath.slice(`${site.routes.august}public/`.length))
+        : publicPath.startsWith(site.routes.september)
+          ? resolve(projectRoot, 'apps/september/public', publicPath.slice(site.routes.september.length))
         : resolve(projectRoot, 'portal', publicPath.replace(/^\//, ''));
     try {
       const metadata = await sharp(filePath, { failOn: 'error' }).metadata();
@@ -92,6 +94,7 @@ export async function validateSource() {
   if (errors.length > 0) throw new Error(errors.join('\n'));
   await run(process.execPath, ['scripts/validate-gift.mjs']);
   await run(process.execPath, ['apps/august/scripts/validate.mjs']);
+  await run(process.execPath, ['apps/september/scripts/validate.mjs']);
   return { site, gift };
 }
 

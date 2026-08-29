@@ -31,6 +31,7 @@ function expectedRoutes(site) {
     { id: 'chooser', path: site.routes.chooser, index: '/index.html' },
     { id: 'birthday', path: site.routes.birthday, index: '/birthday/index.html' },
     { id: 'august', path: site.routes.august, index: '/august/index.html' },
+    { id: 'september', path: site.routes.september, index: '/september/index.html' },
   ];
 }
 
@@ -40,6 +41,21 @@ function isSameOriginPath(value) {
     && !value.startsWith('//')
     && !value.includes('\\')
     && !value.split('/').includes('..');
+}
+
+export function validateNotFoundDocument(html) {
+  const source = String(html || '');
+  const errors = [];
+  if (!/<meta\s+name=["']robots["']\s+content=["'][^"']*\bnoindex\b[^"']*["']/i.test(source)) {
+    errors.push('Shared 404 document must include a robots noindex directive.');
+  }
+  if (!/<a\s+[^>]*href=["']\/["']/i.test(source)) {
+    errors.push('Shared 404 document must link back to the chooser.');
+  }
+  if (/%SITE_[A-Z_]+%|github\.io/i.test(source)) {
+    errors.push('Shared 404 document contains a stale metadata placeholder.');
+  }
+  return errors;
 }
 
 export function validateBuildManifest(manifest, site) {
@@ -67,8 +83,11 @@ export function validateBuildManifest(manifest, site) {
     if (!isSameOriginPath(asset?.url)) errors.push(`${label} must be a same-origin path.`);
     if (seen.has(asset?.url)) errors.push(`Duplicate manifest asset: ${label}`);
     seen.add(asset?.url);
-    if (!['chooser', 'birthday', 'august'].includes(asset?.route)) {
+    if (!['chooser', 'birthday', 'august', 'september'].includes(asset?.route)) {
       errors.push(`${label} has an invalid route owner.`);
+    }
+    if (asset?.route === 'september' && !String(asset?.url || '').startsWith('/september/')) {
+      errors.push(`${label} must remain inside the September namespace (/september/).`);
     }
     if (!SHA256.test(asset?.sha256 || '')) errors.push(`${label} has an invalid SHA-256 digest.`);
     if (!Number.isSafeInteger(asset?.bytes) || asset.bytes <= 0) {
@@ -91,6 +110,12 @@ export function validateBuildManifest(manifest, site) {
     if (!assets.some(asset => asset.route === route.id && asset.critical === true)) {
       errors.push(`${route.id} has no critical asset.`);
     }
+  }
+  const septemberInitialBytes = assets
+    .filter(asset => asset?.route === 'september' && asset?.critical === true)
+    .reduce((total, asset) => total + (Number.isSafeInteger(asset.bytes) ? asset.bytes : 0), 0);
+  if (septemberInitialBytes > 500 * 1024) {
+    errors.push(`September initial transfer is ${septemberInitialBytes} bytes; limit is 500 KB.`);
   }
   return errors;
 }
@@ -145,16 +170,29 @@ export async function validateBuildOutput({
     }
   }
 
+  try {
+    const notFoundHtml = await readFile(resolve(distDir, '404.html'), 'utf8');
+    errors.push(...validateNotFoundDocument(notFoundHtml));
+  } catch (error) {
+    errors.push(`/404.html is missing: ${error.message}`);
+  }
+
   return { manifest, errors };
 }
 
-export async function validateRemoteBuild(baseUrl, { fetchImpl = fetch } = {}) {
+export async function validateRemoteBuild(baseUrl, {
+  fetchImpl = fetch,
+  expectedBuildSha,
+} = {}) {
   const origin = new URL(baseUrl).origin;
   const manifestResponse = await fetchImpl(new URL('/build-manifest.json', origin));
   if (!manifestResponse.ok) throw new Error(`Remote manifest returned ${manifestResponse.status}.`);
   const manifest = await manifestResponse.json();
   const site = await loadSiteConfig();
   const errors = validateBuildManifest(manifest, site);
+  if (expectedBuildSha && manifest.buildSha !== expectedBuildSha) {
+    errors.push(`Remote build SHA ${manifest.buildSha || '(missing)'} does not match expected ${expectedBuildSha}.`);
+  }
 
   for (const asset of manifest.assets || []) {
     if (!isSameOriginPath(asset.url)) continue;
@@ -170,13 +208,60 @@ export async function validateRemoteBuild(baseUrl, { fetchImpl = fetch } = {}) {
       }
     }
   }
+
+  for (const route of expectedRoutes(site)) {
+    try {
+      const response = await fetchImpl(new URL(route.path, origin), {
+        method: 'GET',
+        redirect: 'follow',
+      });
+      if (!response.ok) {
+        errors.push(`Direct route ${route.path} returned ${response.status}.`);
+        continue;
+      }
+      const actualType = response.headers.get('content-type') || '';
+      if (!contentTypeMatches('text/html', actualType)) {
+        errors.push(`Direct route ${route.path} returned ${actualType || 'no MIME'}; expected text/html.`);
+      }
+      const html = await response.text();
+      const canonical = new URL(route.path, site.origin).href;
+      if (!html.includes(canonical)) {
+        errors.push(`Direct route ${route.path} is missing canonical URL ${canonical}.`);
+      }
+      if (/%SITE_[A-Z_]+%|github\.io/i.test(html)) {
+        errors.push(`Direct route ${route.path} contains stale metadata.`);
+      }
+    } catch (error) {
+      errors.push(`Direct route ${route.path} failed: ${error.message}`);
+    }
+  }
+
+  const missingPath = '/__route_validation_missing__';
+  try {
+    const response = await fetchImpl(new URL(missingPath, origin), {
+      method: 'GET',
+      redirect: 'follow',
+    });
+    if (response.status !== 404) {
+      errors.push(`Shared 404 route returned ${response.status}; expected 404.`);
+    }
+    const actualType = response.headers.get('content-type') || '';
+    if (!contentTypeMatches('text/html', actualType)) {
+      errors.push(`Shared 404 route returned ${actualType || 'no MIME'}; expected text/html.`);
+    }
+    errors.push(...validateNotFoundDocument(await response.text()));
+  } catch (error) {
+    errors.push(`Shared 404 route failed: ${error.message}`);
+  }
   return { manifest, errors };
 }
 
 async function main() {
   const baseFlag = process.argv.indexOf('--base-url');
   const result = baseFlag >= 0
-    ? await validateRemoteBuild(process.argv[baseFlag + 1])
+    ? await validateRemoteBuild(process.argv[baseFlag + 1], {
+        expectedBuildSha: process.env.EXPECTED_BUILD_SHA?.trim() || undefined,
+      })
     : await validateBuildOutput();
   if (result.errors.length > 0) throw new Error(result.errors.join('\n'));
   console.log(`Build validation passed (${result.manifest.assets.length} assets).`);
