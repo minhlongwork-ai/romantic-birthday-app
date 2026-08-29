@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { createHash } from "node:crypto";
-import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -21,6 +21,7 @@ const outputNames = Object.freeze([
   "media-manifest.json",
   "font-manifest.json",
 ]);
+const defaultFileSystem = Object.freeze({ mkdir, rename, rm, writeFile });
 
 const sha256 = (buffer) => createHash("sha256").update(buffer).digest("hex");
 
@@ -134,6 +135,59 @@ async function buildArtifacts({ release = false } = {}) {
   };
 }
 
+export async function publishArtifacts(
+  artifacts,
+  { destinationDir = generatedDir, fileSystem = defaultFileSystem } = {},
+) {
+  const temporaryDir = `${destinationDir}.tmp-${process.pid}`;
+  const backupDir = `${destinationDir}.backup-${process.pid}`;
+  await fileSystem.mkdir(path.dirname(destinationDir), { recursive: true });
+  await fileSystem.rm(temporaryDir, { recursive: true, force: true });
+  await fileSystem.mkdir(temporaryDir, { recursive: true });
+
+  let destinationMoved = false;
+  try {
+    for (const name of outputNames) {
+      await fileSystem.writeFile(
+        path.join(temporaryDir, name),
+        artifacts[name],
+        "utf8",
+      );
+    }
+
+    try {
+      await fileSystem.rename(destinationDir, backupDir);
+      destinationMoved = true;
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+
+    try {
+      await fileSystem.rename(temporaryDir, destinationDir);
+    } catch (publishError) {
+      if (destinationMoved) {
+        try {
+          await fileSystem.rename(backupDir, destinationDir);
+          destinationMoved = false;
+        } catch (rollbackError) {
+          throw new AggregateError(
+            [publishError, rollbackError],
+            "September generated content publication and rollback both failed.",
+          );
+        }
+      }
+      throw publishError;
+    }
+
+    if (destinationMoved) {
+      await fileSystem.rm(backupDir, { recursive: true, force: true });
+      destinationMoved = false;
+    }
+  } finally {
+    await fileSystem.rm(temporaryDir, { recursive: true, force: true });
+  }
+}
+
 async function main() {
   const args = new Set(process.argv.slice(2));
   const unknown = [...args].filter((arg) => !["--check", "--release"].includes(arg));
@@ -158,18 +212,8 @@ async function main() {
     console.log("September generated content is fresh.");
     return;
   }
-  await mkdir(generatedDir, { recursive: true });
-  const temporaryDir = `${generatedDir}.tmp-${process.pid}`;
-  await mkdir(temporaryDir, { recursive: true });
-  try {
-    await Promise.all(outputNames.map((name) => writeFile(path.join(temporaryDir, name), artifacts[name], "utf8")));
-    await Promise.all(outputNames.map((name) => rename(path.join(temporaryDir, name), path.join(generatedDir, name))));
-    console.log(`Generated September release content (${outputNames.length} artifacts).`);
-  } finally {
-    await Promise.all(outputNames.map(async (name) => {
-      try { await rename(path.join(temporaryDir, name), path.join(generatedDir, name)); } catch {}
-    }));
-  }
+  await publishArtifacts(artifacts);
+  console.log(`Generated September release content (${outputNames.length} artifacts).`);
 }
 
 if (path.resolve(process.argv[1] ?? "") === scriptPath) await main();
