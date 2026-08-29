@@ -20,7 +20,7 @@ Trong mỗi năm, menu sắp xếp thiệp theo tháng từ cũ đến mới. C�
 - Menu build-time chia theo năm và sắp theo tháng.
 - Hai trạng thái `draft` và `published`.
 - Preview build tất cả route; production chỉ build route published.
-- Thẻ draft luôn xuất hiện nhưng bị khóa.
+- Thiệp draft vẫn xuất hiện trong dòng thời gian nhưng không có hành động mở.
 - Direct URL của draft hoạt động trong development và preview.
 - Metadata, share target, route build và validation được suy ra từ registry.
 - Migration Birthday, August và September mà không đổi URL hay hành vi trong app.
@@ -124,7 +124,9 @@ Thay mảng `routeBuilds` hardcode bằng danh sách từ registry. Chooser vẫ
 
 ## 6. Menu và accessibility
 
-Menu hiển thị heading năm, sau đó các thẻ tháng theo thứ tự tăng dần.
+Menu được trình bày như một dòng thời gian quà tặng, không giống bảng quản trị. Mỗi năm là một chương nhẹ; mỗi thiệp dùng tên tháng bằng tiếng Việt, ảnh lớn, tiêu đề và một đoạn kể ngắn. Các trường kỹ thuật như `status`, `draft`, `published`, route hoặc build state không bao giờ được hiển thị cho người nhận.
+
+Menu hiển thị heading năm, sau đó các thẻ tháng theo thứ tự tăng dần. Typography, khoảng trắng và chuyển động giữ cảm giác gần gũi, mềm và có chủ ý; không dùng status chip, bảng dữ liệu, icon hệ thống hoặc copy kỹ thuật.
 
 ### Published card
 
@@ -133,12 +135,12 @@ Menu hiển thị heading năm, sau đó các thẻ tháng theo thứ tự tăng
 - `portal.js` chuyển tiếp duy nhất `to`, `from`, `age`.
 - Preview fallback hiện trạng thái ảnh không tải được mà không khóa link.
 
-### Draft card
+### Thiệp chưa thể mở
 
 - Vẫn hiển thị title, tháng, preview và description.
-- Có badge “Đang hoàn thiện”.
 - Không có `href` và không được gắn `data-project-link`.
-- Dùng phần tử semantic không tương tác với `aria-disabled="true"` và giải thích ngắn rằng bản xem thử được mở bằng URL trực tiếp.
+- Không có badge, status text hoặc CTA giả. Nội dung kể chuyện của thiệp vẫn tự nhiên như các tháng khác.
+- Dùng phần tử semantic không tương tác với `aria-disabled="true"`; thêm mô tả chỉ dành cho assistive technology rằng thiệp hiện chưa thể mở.
 - Không xuất hiện trong tab order như một link giả.
 
 Không dùng disabled anchor. Target tương tác published tối thiểu 44 CSS px, focus indicator giữ nguyên AA và menu hoạt động ở zoom 200%.
@@ -149,13 +151,13 @@ Không dùng disabled anchor. Target tương tác published tối thiểu 44 CSS
 
 - Menu chứa tất cả record.
 - Published card mở bình thường.
-- Draft card bị khóa trên menu.
+- Thiệp draft không có hành động mở trên menu và không hiển thị nhãn trạng thái.
 - Tất cả route, gồm draft, được composite build để direct URL dùng cho review.
 
 ### Production
 
 - Menu vẫn chứa tất cả record để người nhận thấy timeline đầy đủ.
-- Draft card bị khóa.
+- Thiệp draft không có hành động mở và không hiển thị nhãn trạng thái.
 - Chỉ route published được xuất vào `dist`.
 - Preview chooser của draft vẫn được xuất dưới `/experience-previews/`; các asset runtime khác của draft không được xuất.
 - Direct refresh draft đi tới shared 404.
@@ -171,7 +173,7 @@ Release validator riêng của một app chỉ chạy ở production khi record 
 - Menu có metadata cấp site, không dùng metadata của thiệp đầu tiên.
 - `shareTargets` được suy ra từ route registry.
 - Menu chỉ chuyển `to`, `from`, `age`; duplicate values giữ thứ tự như contract hiện tại.
-- Draft card không nhận query vì không có link.
+- Thiệp draft không nhận query vì không có link.
 - Registry, build manifest và logs không lưu personalized query.
 
 ## 9. Migration
@@ -218,7 +220,7 @@ Sau migration, route/metadata/build entries cũ bị xóa khỏi các cấu hìn
 
 - Một card cho mỗi registry record, đúng nhóm năm.
 - Published dùng link và `data-project-link`.
-- Draft không có link, có badge, `aria-disabled` và không vào tab order.
+- Draft không có link, không có badge/status text, có `aria-disabled` và không vào tab order.
 - Copy, preview và alt lấy đúng từ registry.
 
 ### Build tests
@@ -232,7 +234,7 @@ Sau migration, route/metadata/build entries cũ bị xóa khỏi các cấu hìn
 
 - Menu desktop/mobile sắp đúng năm/tháng.
 - `to`, `from`, `age` được chuyển tới published links; query lạ không được chuyển.
-- Draft card không thể kích hoạt bằng pointer hoặc keyboard.
+- Thiệp draft không thể kích hoạt bằng pointer hoặc keyboard; assistive technology vẫn hiểu rằng thiệp chưa thể mở.
 - Direct refresh September hoạt động ở preview fixture và về 404 trong production fixture.
 - Canonical, OG metadata và preview đúng cho mọi published route.
 - Birthday, August và September preview regressions vẫn vượt qua.
@@ -242,10 +244,10 @@ Sau migration, route/metadata/build entries cũ bị xóa khỏi các cấu hìn
 1. Tạo app, Vite config và preview asset.
 2. Thêm một record `status: "draft"` vào registry.
 3. Chạy source/schema tests.
-4. Preview tự hiển thị card khóa và build direct route.
+4. Preview tự hiển thị thiệp trong dòng thời gian, không có hành động mở, đồng thời build direct route cho người review.
 5. Review nội dung, accessibility, assets và release-specific gates của app.
 6. Đổi record sang `status: "published"`.
-7. Production composite build tự thêm route và mở khóa card.
+7. Production composite build tự thêm route và biến thiệp thành liên kết có lời mời mở tự nhiên.
 
 Không chỉnh thủ công HTML menu, route array, metadata map hoặc test route list khi thêm tháng mới.
 
@@ -253,5 +255,5 @@ Không chỉnh thủ công HTML menu, route array, metadata map hoặc test rout
 
 - Nếu registry migration gây lỗi, revert commit registry cùng renderer/build consumers trong một lần.
 - Không xóa app hoặc assets cũ trong migration đầu tiên; chỉ thay nguồn orchestration.
-- Nếu một thiệp published cần rút khẩn cấp, đổi trạng thái thành draft: menu khóa card và production kế tiếp loại route khỏi dist.
+- Nếu một thiệp published cần rút khẩn cấp, đổi trạng thái thành draft: menu bỏ hành động mở mà không hiện thông báo kỹ thuật, và production kế tiếp loại route khỏi dist.
 - Không tự động xóa deployment cũ hoặc dữ liệu bên ngoài repository.
