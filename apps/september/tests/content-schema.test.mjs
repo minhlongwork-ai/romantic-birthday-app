@@ -15,6 +15,17 @@ test("development content contains the exact Sweet & Bloom gifts", () => {
   assert.deepEqual(validateSeptemberContent(SEPTEMBER_GIFTS), []);
 });
 
+test("content requires a non-empty product asset ID", () => {
+  const gifts = structuredClone(SEPTEMBER_GIFTS);
+  gifts[0].productAssetId = "";
+
+  assert.ok(
+    validateSeptemberContent(gifts).some((error) =>
+      /complete product content: productAssetId/u.test(error),
+    ),
+  );
+});
+
 test("release rejects both demo fixtures", () => {
   const errors = validateSeptemberContent(SEPTEMBER_GIFTS, { release: true });
   assert.equal(errors.filter((error) => /approved:true/u.test(error)).length, 2);

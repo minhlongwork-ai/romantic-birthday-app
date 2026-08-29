@@ -93,13 +93,14 @@ export function validateSeptemberContent(gifts, { release = false } = {}) {
     }
 
     if (
-      !isNonEmptyString(gift?.productName)
+      !isNonEmptyString(gift?.productAssetId)
+      || !isNonEmptyString(gift?.productName)
       || !isNonEmptyString(gift?.variant)
       || !isNonEmptyString(gift?.reason)
       || !isNonEmptyString(gift?.media?.alt)
     ) {
       errors.push(
-        `gifts[${index}] must contain complete product content: productName, variant, reason, and media.alt.`,
+        `gifts[${index}] must contain complete product content: productAssetId, productName, variant, reason, and media.alt.`,
       );
     }
 
