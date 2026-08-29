@@ -81,17 +81,18 @@ test('the chooser renders the registry timeline and forwards only supported pers
   chooserURL.hash = 'private-fragment';
   await page.goto(chooserURL.href);
 
-  expect(orderedExperiences.filter(({ status }) => status === 'published').map(({ id }) => id))
-    .toEqual(['birthday', 'august']);
-  expect(orderedExperiences.find(({ id }) => id === 'september')?.status).toBe('draft');
+  const publishedExperiences = orderedExperiences.filter(({ status }) => status === 'published');
+  const draftExperiences = orderedExperiences.filter(({ status }) => status === 'draft');
   await expect(page.locator('.gift-card')).toHaveCount(orderedExperiences.length);
-  await expect(page.locator('.experience-year-title')).toHaveText(['2026']);
+  await expect(page.locator('.experience-year-title')).toHaveText(
+    [...new Set(orderedExperiences.map(({ year }) => String(year)))],
+  );
   await expect(page.locator('.gift-month')).toHaveText(
     orderedExperiences.map(({ month }) => vietnameseMonths[month - 1]),
   );
 
   const expectedQuery = '?to=Em+Test&from=Shyn&age=24';
-  for (const experience of orderedExperiences.filter(({ status }) => status === 'published')) {
+  for (const experience of publishedExperiences) {
     const card = page.locator(`.gift-card-${experience.id}`);
     await expect(card).toHaveAttribute('href', `${experience.route}${expectedQuery}`);
     await expect(card).toHaveAttribute('data-project-link', '');
@@ -102,17 +103,19 @@ test('the chooser renders the registry timeline and forwards only supported pers
     expect(response.url()).not.toContain('private-fragment');
   }
 
-  const september = page.locator('.gift-card-september');
-  expect(await september.evaluate(card => card.tagName)).toBe('ARTICLE');
-  await expect(september).toHaveAttribute('aria-disabled', 'true');
-  await expect(september).not.toHaveAttribute('href');
-  await expect(september).not.toHaveAttribute('data-project-link');
-  await expect(september.locator('.sr-only')).toHaveText('Thiệp này hiện chưa thể mở.');
+  for (const experience of draftExperiences) {
+    const card = page.locator(`.gift-card-${experience.id}`);
+    expect(await card.evaluate(element => element.tagName)).toBe('ARTICLE');
+    await expect(card).toHaveAttribute('aria-disabled', 'true');
+    await expect(card).not.toHaveAttribute('href');
+    await expect(card).not.toHaveAttribute('data-project-link');
+    await expect(card.locator('.sr-only')).toHaveText('Thiệp này hiện chưa thể mở.');
+  }
   await expect(page.locator('body')).not.toContainText(
     /draft|published|đang hoàn thiện|trạng thái/i,
   );
 
-  const publishedExperience = orderedExperiences.find(({ status }) => status === 'published');
+  const publishedExperience = publishedExperiences[0];
   if (!publishedExperience) throw new Error('Registry must contain a published experience.');
   const publishedCard = page.locator(`.gift-card-${publishedExperience.id}`);
   await publishedCard.locator('.gift-media img').evaluate(image => {

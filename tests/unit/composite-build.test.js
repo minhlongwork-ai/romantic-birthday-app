@@ -7,6 +7,9 @@ import { fileURLToPath } from 'node:url';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const distDir = join(projectRoot, 'dist');
+const registry = JSON.parse(
+  readFileSync(join(projectRoot, 'src/content/experiences.json'), 'utf8'),
+).sort((left, right) => left.year - right.year || left.month - right.month);
 const obsoleteSeptemberOutputs = [
   ...['cleanser', 'moisturizer', 'lipstick'].flatMap(name =>
     ['avif', 'jpg', 'webp'].map(extension => `/september/images/${name}.${extension}`)),
@@ -43,39 +46,17 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
   });
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
   const developmentManifest = assertSafeSeptemberManifest();
-  assert.deepEqual(developmentManifest.catalog, [
-    {
-      id: 'birthday',
-      year: 2026,
-      month: 5,
-      route: '/birthday/',
-      built: true,
-      previewPublicPath: '/experience-previews/birthday.webp',
-    },
-    {
-      id: 'august',
-      year: 2026,
-      month: 8,
-      route: '/august/',
-      built: true,
-      previewPublicPath: '/experience-previews/august.webp',
-    },
-    {
-      id: 'september',
-      year: 2026,
-      month: 9,
-      route: '/september/',
-      built: true,
-      previewPublicPath: '/experience-previews/september.webp',
-    },
-  ]);
+  assert.deepEqual(developmentManifest.catalog, registry.map(record => ({
+    id: record.id,
+    year: record.year,
+    month: record.month,
+    route: record.route,
+    built: true,
+    previewPublicPath: record.preview.publicPath,
+  })));
   for (const pathname of [
-    'birthday/index.html',
-    'august/index.html',
-    'september/index.html',
-    'experience-previews/birthday.webp',
-    'experience-previews/august.webp',
-    'experience-previews/september.webp',
+    ...registry.map(record => `${record.build.destination}/index.html`),
+    ...registry.map(record => record.preview.publicPath.replace(/^\/+/, '')),
   ]) {
     assert.equal(existsSync(join(distDir, pathname)), true, `${pathname} is missing from dist`);
   }
@@ -94,9 +75,7 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
     manifest.routes.map(({ id, path }) => [id, path]),
     [
       ['chooser', '/'],
-      ['birthday', '/birthday/'],
-      ['august', '/august/'],
-      ['september', '/september/'],
+      ...registry.map(({ id, route }) => [id, route]),
     ],
   );
   const codeAssets = manifest.assets.filter(({ contentType }) =>
@@ -150,12 +129,13 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
     readFileSync(join(distDir, portalCss.url.replace(/^\//, '')), 'utf8'),
     /\/fonts\/cormorant-garamond-vi\.woff2/,
   );
-  assert.equal(existsSync(join(distDir, 'chooser-birthday.webp')), true);
+  assert.equal(existsSync(join(distDir, 'chooser-birthday.webp')), false);
   assert.equal(existsSync(join(distDir, 'september', 'images', 'preview.webp')), true);
-  assert.ok(manifest.assets.some(asset =>
-    asset.url === '/chooser-birthday.webp'
-      && asset.route === 'chooser'
-      && asset.critical));
+  assert.equal(manifest.assets.some(asset => asset.url === '/chooser-birthday.webp'), false);
+  for (const record of registry) {
+    assert.ok(manifest.assets.some(asset =>
+      asset.url === record.preview.publicPath && asset.route === 'chooser'));
+  }
 
   for (const route of manifest.routes) {
     const html = readFileSync(join(distDir, route.index.replace(/^\//, '')), 'utf8');
@@ -182,17 +162,14 @@ test('production assembly excludes the draft route while retaining every chooser
     manifest.routes.map(({ id, path }) => [id, path]),
     [
       ['chooser', '/'],
-      ['birthday', '/birthday/'],
-      ['august', '/august/'],
+      ...registry
+        .filter(({ status }) => status === 'published')
+        .map(({ id, route }) => [id, route]),
     ],
   );
   assert.deepEqual(
     manifest.catalog.map(({ id, built }) => [id, built]),
-    [
-      ['birthday', true],
-      ['august', true],
-      ['september', false],
-    ],
+    registry.map(({ id, status }) => [id, status === 'published']),
   );
   assert.deepEqual(manifest.externalRuntimeUrls, []);
   assert.equal(existsSync(join(distDir, 'birthday/index.html')), true);
@@ -204,7 +181,7 @@ test('production assembly excludes the draft route while retaining every chooser
       route === 'september' || url.startsWith('/september/')),
     false,
   );
-  for (const id of ['birthday', 'august', 'september']) {
+  for (const { id } of registry) {
     assert.equal(
       existsSync(join(distDir, 'experience-previews', `${id}.webp`)),
       true,

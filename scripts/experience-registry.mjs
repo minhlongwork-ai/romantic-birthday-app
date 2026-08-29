@@ -1,6 +1,7 @@
 import { readFile, stat } from 'node:fs/promises';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import sharp from 'sharp';
 
 const DEFAULT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const BUILD_ENVIRONMENTS = new Set(['development', 'preview', 'production']);
@@ -8,6 +9,8 @@ const STATUSES = new Set(['draft', 'published']);
 const ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const TEXT_FIELDS = ['kind', 'title', 'description', 'actionLabel'];
 const METADATA_FIELDS = ['title', 'description', 'ogTitle', 'ogDescription'];
+// Recipient-facing registry copy is intentionally concise and bounded.
+const MAX_EXPERIENCE_TEXT_LENGTH = 200;
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -75,6 +78,16 @@ function addError(errors, id, field, reason) {
   errors.push(`${id}.${field} ${reason}.`);
 }
 
+function validateBoundedText(value, field, id, errors) {
+  if (typeof value !== 'string' || value.trim() === '') {
+    addError(errors, id, field, 'must be non-empty text');
+    return;
+  }
+  if ([...value].length > MAX_EXPERIENCE_TEXT_LENGTH) {
+    addError(errors, id, field, `must be at most ${MAX_EXPERIENCE_TEXT_LENGTH} characters`);
+  }
+}
+
 async function validateArgv(argv, field, id, rootDir, errors) {
   if (!Array.isArray(argv) || argv.length === 0) {
     addError(errors, id, field, 'must be a non-empty argv array');
@@ -114,16 +127,38 @@ export async function validateExperienceRegistry(records, { rootDir = DEFAULT_RO
     if (!isSafePublicPath(record.route, { directory: true })) addError(errors, id, 'route', 'must be a clean root-relative path ending in /');
 
     for (const field of TEXT_FIELDS) {
-      if (typeof record[field] !== 'string' || record[field].trim() === '') addError(errors, id, field, 'must be non-empty text');
+      validateBoundedText(record[field], field, id, errors);
     }
 
     const preview = record.preview;
     if (!isPlainObject(preview)) {
       addError(errors, id, 'preview', 'must be an object');
     } else {
-      if (!isSafeRepositoryPath(preview.source) || !await isRegularFileWithinRoot(rootDir, preview.source)) addError(errors, id, 'preview.source', 'must be an existing repository image');
+      const previewSourceExists = isSafeRepositoryPath(preview.source)
+        && await isRegularFileWithinRoot(rootDir, preview.source);
+      if (!previewSourceExists) {
+        addError(errors, id, 'preview.source', 'must be an existing repository image');
+      } else {
+        try {
+          const metadata = await sharp(resolve(rootDir, preview.source)).metadata();
+          if (!Number.isInteger(metadata.width) || !Number.isInteger(metadata.height)) {
+            addError(errors, id, 'preview.source', 'must decode as an image with intrinsic dimensions');
+          } else {
+            if (Number.isInteger(preview.width) && preview.width > 0
+              && preview.width !== metadata.width) {
+              addError(errors, id, 'preview.width', `must match intrinsic image width ${metadata.width}`);
+            }
+            if (Number.isInteger(preview.height) && preview.height > 0
+              && preview.height !== metadata.height) {
+              addError(errors, id, 'preview.height', `must match intrinsic image height ${metadata.height}`);
+            }
+          }
+        } catch {
+          addError(errors, id, 'preview.source', 'must decode as an image');
+        }
+      }
       if (!isSafePublicPath(preview.publicPath) || !preview.publicPath.startsWith('/experience-previews/')) addError(errors, id, 'preview.publicPath', 'must be a clean path under /experience-previews/');
-      if (typeof preview.alt !== 'string' || preview.alt.trim() === '') addError(errors, id, 'preview.alt', 'must be non-empty text');
+      validateBoundedText(preview.alt, 'preview.alt', id, errors);
       for (const field of ['width', 'height']) {
         if (!Number.isInteger(preview[field]) || preview[field] <= 0) addError(errors, id, `preview.${field}`, 'must be a positive integer');
       }

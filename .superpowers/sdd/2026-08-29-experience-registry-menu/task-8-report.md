@@ -104,3 +104,53 @@ the existing intentional project skips.
 - Pre-existing dirty/untracked CI, portal, composite-build, September media,
   and September test files were preserved. The only Task 8 code/config change
   is the test-runner serialization in `package.json`, plus this report.
+
+## Final-review fix round
+
+The load-bearing final-review findings were resolved without changing product
+content or route availability:
+
+- the main-push approval gate now runs the status-aware `npm run build:release`
+  command after preview browser coverage; the existing production route-matrix
+  step remains in place;
+- registry preview sources must decode through Sharp, their intrinsic dimensions
+  must exactly match the declared dimensions, and recipient-facing
+  `kind`/`title`/`description`/`actionLabel`/preview-alt copy is capped at 200
+  Unicode characters (documented in `docs/experience-registry.md`);
+- development and preview build validation now expects every registry record,
+  independently of manifest `built` claims, while production still expects only
+  published records;
+- every built chooser/experience route must declare a same-origin Open Graph
+  image that exists as an image asset in the build manifest;
+- the obsolete hardcoded `/chooser-birthday.webp` copy and critical-asset rule
+  were removed. Composite coverage now proves it is absent and that registry
+  preview paths are the chooser's authoritative preview assets;
+- registry/build/release/Vercel/portal tests derive complete ID, month, status,
+  and route expectations from the loaded registry, retaining focused app-specific
+  assertions only where they exercise an actual Birthday/August/September
+  regression.
+
+### TDD and automated verification
+
+- RED: the new focused unit tests failed for a preview manifest that omitted
+  September, a `package.json` preview source, mismatched intrinsic dimensions,
+  oversized copy, a missing built-route Open Graph asset, and the stale chooser
+  preview copy.
+- GREEN: the focused registry/build/release suite passed 40/40; the serialized
+  composite/Vercel suite passed 6/6.
+- `npm test` passed all 210 tests: 119 shared/Birthday, 39 August, and 52
+  September.
+- `npm run validate` passed; the three pre-existing MediaPipe size warnings
+  remain warnings only.
+- `npm run build && npm run validate:dist` passed with all three development
+  routes and 177 manifest assets.
+- `npm run build:release` passed with two published routes and 147 manifest
+  assets; `EXPERIENCE_BUILD_ENV=production npm run validate:dist` independently
+  passed the production artifact.
+- Preview and production chooser/registry/routing matrices each passed 12 tests
+  across desktop Chromium, Firefox, and WebKit, with 6 intentional project-scoped
+  skips. Desktop Chromium verified the direct-route metadata matrix, draft
+  September 404 in production, generic shared 404, and critical assets.
+- A final development build and `npm run validate:dist` restored and validated
+  the normal three-route local-review artifact (177 assets).
+- `git diff --check` passed. No deployment was performed.

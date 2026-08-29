@@ -6,6 +6,8 @@ import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { loadExperienceRegistry } from "../../scripts/experience-registry.mjs";
+
 const projectRoot = new URL("../..", import.meta.url);
 const projectRootPath = fileURLToPath(projectRoot);
 
@@ -62,6 +64,7 @@ test("September gate and composite entry have all clean-checkout dependencies tr
 });
 
 test("Vercel production builds published routes and retains the draft chooser preview", async () => {
+  const records = await loadExperienceRegistry();
   const result = spawnSync("npm", ["run", "build:vercel"], {
     cwd: projectRoot,
     encoding: "utf8",
@@ -74,24 +77,22 @@ test("Vercel production builds published routes and retains the draft chooser pr
   );
   assert.deepEqual(
     manifest.routes.map(({ id }) => id),
-    ["chooser", "birthday", "august"],
+    ["chooser", ...records.filter(({ status }) => status === "published").map(({ id }) => id)],
   );
   assert.deepEqual(
     manifest.catalog.map(({ id, built }) => [id, built]),
-    [
-      ["birthday", true],
-      ["august", true],
-      ["september", false],
-    ],
+    records.map(({ id, status }) => [id, status === "published"]),
   );
-  assert.ok(
-    manifest.assets.some(({ url }) => url === "/experience-previews/september.webp"),
-  );
-  assert.equal(
-    manifest.assets.some(({ route, url }) =>
-      route === "september" || url.startsWith("/september/")),
-    false,
-  );
+  for (const record of records) {
+    assert.ok(manifest.assets.some(({ url }) => url === record.preview.publicPath));
+    if (record.status !== "published") {
+      assert.equal(
+        manifest.assets.some(({ route, url }) =>
+          route === record.id || url.startsWith(record.route)),
+        false,
+      );
+    }
+  }
 });
 
 test("publishing the September fixture fails before Vite", async (t) => {

@@ -7,14 +7,12 @@ import { createReleaseValidationPlan } from '../../scripts/experience-release.mj
 test('draft September cannot block a production deployment', async () => {
   const records = await loadExperienceRegistry();
   const plan = createReleaseValidationPlan(records, 'production');
+  const published = records.filter(({ status }) => status === 'published');
 
-  assert.deepEqual(plan.map(({ id }) => id), ['birthday', 'august']);
+  assert.deepEqual(plan.map(({ id }) => id), published.map(({ id }) => id));
   assert.deepEqual(
     plan.map(({ argv }) => argv),
-    [
-      ['scripts/validate-gift.mjs'],
-      ['apps/august/scripts/validate.mjs'],
-    ],
+    published.map(record => record.build.validation.release),
   );
 });
 
@@ -34,10 +32,8 @@ test('preview and development validation remain fixture-tolerant', async () => {
 
   for (const environment of ['preview', 'development']) {
     const plan = createReleaseValidationPlan(records, environment);
-    assert.deepEqual(plan.map(({ id }) => id), ['birthday', 'august', 'september']);
-    assert.deepEqual(
-      plan.find(({ id }) => id === 'september').argv,
-      ['apps/september/scripts/validate.mjs'],
-    );
+    assert.deepEqual(plan.map(({ id }) => id), records.map(({ id }) => id));
+    assert.deepEqual(plan.map(({ argv }) => argv),
+      records.map(record => record.build.validation.development));
   }
 });

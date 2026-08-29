@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
@@ -8,22 +9,33 @@ import {
   validateExperienceRegistry,
 } from '../../scripts/experience-registry.mjs';
 
-test('2026 catalog is ordered May, August, September', async () => {
+test('catalog records load in registry-derived chronological order', async () => {
+  const sourceRecords = JSON.parse(
+    await readFile(new URL('../../src/content/experiences.json', import.meta.url), 'utf8'),
+  );
+  const expected = [...sourceRecords].sort((left, right) =>
+    left.year - right.year || left.month - right.month || left.id.localeCompare(right.id));
   const records = await loadExperienceRegistry();
-  assert.deepEqual(records.map(({ id }) => id), ['birthday', 'august', 'september']);
-  assert.deepEqual(records.map(({ month }) => month), [5, 8, 9]);
-  assert.deepEqual(groupExperiencesByYear(records).map(({ year }) => year), [2026]);
+
+  assert.deepEqual(
+    records.map(({ id, year, month }) => ({ id, year, month })),
+    expected.map(({ id, year, month }) => ({ id, year, month })),
+  );
+  assert.deepEqual(
+    groupExperiencesByYear(records).map(({ year }) => year),
+    [...new Set(expected.map(({ year }) => year))],
+  );
 });
 
 test('production selects only published records', async () => {
   const records = await loadExperienceRegistry();
   assert.deepEqual(
     selectBuildExperiences(records, 'production').map(({ id }) => id),
-    ['birthday', 'august'],
+    records.filter(({ status }) => status === 'published').map(({ id }) => id),
   );
   assert.deepEqual(
     selectBuildExperiences(records, 'preview').map(({ id }) => id),
-    ['birthday', 'august', 'september'],
+    records.map(({ id }) => id),
   );
 });
 
@@ -72,6 +84,29 @@ test('rejects a missing preview image', async () => {
   await assertInvalid(records => {
     records.find(record => record.id === 'september').preview.source = 'apps/september/public/images/missing.webp';
   }, 'september', 'preview.source');
+});
+
+test('rejects a regular file that is not a decodable preview image', async () => {
+  await assertInvalid(records => {
+    records.find(record => record.id === 'september').preview.source = 'package.json';
+  }, 'september', 'preview.source');
+});
+
+test('rejects preview dimensions that do not match the source image', async () => {
+  await assertInvalid(records => {
+    records.find(record => record.id === 'september').preview.width += 1;
+  }, 'september', 'preview.width');
+});
+
+test('rejects oversized recipient-facing registry copy', async () => {
+  for (const field of ['kind', 'title', 'description', 'actionLabel']) {
+    await assertInvalid(records => {
+      records.find(record => record.id === 'september')[field] = 'x'.repeat(201);
+    }, 'september', field);
+  }
+  await assertInvalid(records => {
+    records.find(record => record.id === 'september').preview.alt = 'x'.repeat(201);
+  }, 'september', 'preview.alt');
 });
 
 test('rejects a missing release validator', async () => {

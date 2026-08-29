@@ -26,6 +26,11 @@ nhãn trạng thái, CTA giả hoặc copy kỹ thuật vào thẻ người nh�
 thiệp draft vẫn có ảnh, tên tháng, tiêu đề và mô tả; nó không có `href` hay
 tab stop, và chỉ có mô tả dành cho screen reader rằng thiệp chưa thể mở.
 
+Các trường copy hướng tới người nhận (`kind`, `title`, `description`,
+`actionLabel` và `preview.alt`) tối đa 200 ký tự Unicode mỗi trường. File
+`preview.source` phải giải mã được như một ảnh và `preview.width`/
+`preview.height` phải khớp chính xác kích thước intrinsic của file.
+
 Sau thay đổi registry, chạy ít nhất:
 
 ```bash

@@ -137,8 +137,7 @@ function isCriticalAsset(url, routeId, entryAssets) {
   if (url === routeBuilds.find(route => route.id === routeId)?.index) return true;
   if (entryAssets.has(url)) return true;
   if (routeId === 'chooser') {
-    return url === '/chooser-birthday.webp'
-      || url === '/fonts/cormorant-garamond-vi.woff2'
+    return url === '/fonts/cormorant-garamond-vi.woff2'
       || url === '/fonts/cormorant-garamond-latin.woff2';
   }
   if (routeId === 'birthday') {
@@ -224,10 +223,6 @@ for (const route of experienceRouteBuilds) {
 for (const preview of previewCopies) {
   await copyStandalone(preview.source, preview.publicPath);
 }
-await copyStandalone(
-  resolve(projectRoot, 'public/images/swarovski-dancing-swan-5514421.webp'),
-  'chooser-birthday.webp',
-);
 await copyStandalone(
   resolve(projectRoot, 'apps/august/public/fonts/cormorant-garamond-vi.woff2'),
   'fonts/cormorant-garamond-vi.woff2',

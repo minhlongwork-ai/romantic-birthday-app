@@ -49,6 +49,10 @@ jobs:
       - name: Run full Playwright matrix
         run: npm run test:e2e:run
 
+      - name: Enforce published experience approvals on main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: npm run build:release
+
       - name: Verify production registry route matrix
         run: |
           EXPERIENCE_BUILD_ENV=production npm run build

@@ -17,6 +17,12 @@ const site = {
     august: '/august/',
     september: '/september/',
   },
+  pages: {
+    chooser: { ogImage: '/experience-previews/birthday.webp' },
+    birthday: { ogImage: '/birthday/og-preview.jpg' },
+    august: { ogImage: '/birthday/og-preview.jpg' },
+    september: { ogImage: '/september/images/preview.webp' },
+  },
   experiences: [
     {
       id: 'birthday',
@@ -112,6 +118,22 @@ function validManifest() {
         bytes: 384,
         contentType: 'text/javascript',
         critical: true,
+      },
+      {
+        route: 'birthday',
+        url: '/birthday/og-preview.jpg',
+        sha256: 'e'.repeat(64),
+        bytes: 2048,
+        contentType: 'image/jpeg',
+        critical: false,
+      },
+      {
+        route: 'september',
+        url: '/september/images/preview.webp',
+        sha256: 'f'.repeat(64),
+        bytes: 2048,
+        contentType: 'image/webp',
+        critical: false,
       },
       ...['birthday', 'august', 'september'].map((id, index) => ({
         route: 'chooser',
@@ -235,6 +257,27 @@ test('production manifest accepts a non-built draft while retaining its chooser 
   assert.deepEqual(
     validateBuildManifest(validProductionManifest(), site, { environment: 'production' }),
     [],
+  );
+});
+
+test('preview manifest rejects an omitted registry route even when catalog marks it unbuilt', () => {
+  const manifest = validProductionManifest();
+  const errors = validateBuildManifest(manifest, site, {
+    environment: 'preview',
+  }).join('\n');
+
+  assert.match(errors, /Manifest routes do not match/i);
+  assert.match(errors, /september has no critical asset/i);
+  assert.match(errors, /september initial dependency closure is missing/i);
+});
+
+test('build manifest rejects a missing Open Graph image for a built route', () => {
+  const manifest = validManifest();
+  manifest.assets = manifest.assets.filter(({ url }) => url !== '/birthday/og-preview.jpg');
+
+  assert.match(
+    validateBuildManifest(manifest, site).join('\n'),
+    /birthday Open Graph image \/birthday\/og-preview\.jpg is missing/i,
   );
 });
 

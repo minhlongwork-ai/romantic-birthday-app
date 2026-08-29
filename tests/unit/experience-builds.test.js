@@ -24,12 +24,12 @@ test('preview builds every experience while production builds only published exp
   assert.deepEqual(
     createExperienceRouteBuilds({ records, environment: 'preview', paths })
       .map(({ id }) => id),
-    ['birthday', 'august', 'september'],
+    records.map(({ id }) => id),
   );
   assert.deepEqual(
     createExperienceRouteBuilds({ records, environment: 'production', paths })
       .map(({ id }) => id),
-    ['birthday', 'august'],
+    records.filter(({ status }) => status === 'published').map(({ id }) => id),
   );
 });
 
@@ -77,23 +77,11 @@ test('preview copy plans include drafts and reject colliding public destinations
       publicPath,
       destination,
     })),
-    [
-      {
-        id: 'birthday',
-        publicPath: '/experience-previews/birthday.webp',
-        destination: resolve(paths.distDir, 'experience-previews/birthday.webp'),
-      },
-      {
-        id: 'august',
-        publicPath: '/experience-previews/august.webp',
-        destination: resolve(paths.distDir, 'experience-previews/august.webp'),
-      },
-      {
-        id: 'september',
-        publicPath: '/experience-previews/september.webp',
-        destination: resolve(paths.distDir, 'experience-previews/september.webp'),
-      },
-    ],
+    records.map(record => ({
+      id: record.id,
+      publicPath: record.preview.publicPath,
+      destination: resolve(paths.distDir, record.preview.publicPath.replace(/^\/+/, '')),
+    })),
   );
 
   const colliding = structuredClone(records);
