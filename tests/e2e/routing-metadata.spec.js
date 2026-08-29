@@ -9,8 +9,13 @@ const [catalog, siteShell] = await Promise.all([
   readFile(new URL('../../src/content/experiences.json', import.meta.url), 'utf8').then(JSON.parse),
   readFile(new URL('../../src/content/site.json', import.meta.url), 'utf8').then(JSON.parse),
 ]);
+const expectedEnvironment = process.env.E2E_EXPECTED_ENV || 'preview';
 
-test('registry routes have metadata in preview and draft routes use the shared production 404', async ({
+if (!['preview', 'production'].includes(expectedEnvironment)) {
+  throw new TypeError('E2E_EXPECTED_ENV must be preview or production.');
+}
+
+test('registry routes match the explicit preview or production metadata matrix', async ({
   baseURL,
   page,
   request,
@@ -33,11 +38,11 @@ test('registry routes have metadata in preview and draft routes use the shared p
     .filter(({ status }) => status === 'published')
     .map(({ id }) => id)
     .sort();
-  const isPreviewArtifact = JSON.stringify(builtExperienceIds) === JSON.stringify(allExperienceIds);
+  const expectedBuiltExperienceIds = expectedEnvironment === 'preview'
+    ? allExperienceIds
+    : publishedExperienceIds;
 
-  if (!isPreviewArtifact) {
-    expect(builtExperienceIds).toEqual(publishedExperienceIds);
-  }
+  expect(builtExperienceIds).toEqual(expectedBuiltExperienceIds);
   expect(manifest.externalRuntimeUrls).toEqual([]);
 
   const pages = [
@@ -46,7 +51,7 @@ test('registry routes have metadata in preview and draft routes use the shared p
       id: experience.id,
       route: experience.route,
       metadata: experience.metadata,
-      built: isPreviewArtifact || experience.status === 'published',
+      built: expectedEnvironment === 'preview' || experience.status === 'published',
       previewPublicPath: experience.preview.publicPath,
     })),
   ];
@@ -69,7 +74,7 @@ test('registry routes have metadata in preview and draft routes use the shared p
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', ogImage);
   }
 
-  if (!isPreviewArtifact) {
+  if (expectedEnvironment === 'production') {
     const draftExperiences = catalog.filter(({ status }) => status !== 'published');
     await page.goto(new URL('/', localOrigin).href);
     for (const experience of draftExperiences) {

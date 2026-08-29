@@ -31,7 +31,13 @@ Sau thay đổi registry, chạy ít nhất:
 ```bash
 npm run validate
 npm run build
-npx playwright test tests/e2e/portal-registry.spec.js tests/e2e/routing-metadata.spec.js --project=desktop-chrome
+E2E_EXPECTED_ENV=preview npx playwright test tests/e2e/portal-registry.spec.js tests/e2e/routing-metadata.spec.js --project=desktop-chrome
 ```
 
 Trước khi phát hành, chạy `npm run build:release` và `npm run validate:dist`.
+Để kiểm tra explicit production matrix của route draft, dùng:
+
+```bash
+EXPERIENCE_BUILD_ENV=production npm run build
+E2E_EXPECTED_ENV=production npx playwright test tests/e2e/routing-metadata.spec.js --project=desktop-chrome
+```

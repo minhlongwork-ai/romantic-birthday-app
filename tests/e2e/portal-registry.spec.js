@@ -25,12 +25,7 @@ const vietnameseMonths = [
 test('the chooser renders the registry as a chronological, human-facing timeline', async ({
   baseURL,
   page,
-}, testInfo) => {
-  test.skip(
-    testInfo.project.name !== 'desktop-chrome',
-    'The registry-driven chooser contract is verified once in desktop Chrome.',
-  );
-
+}) => {
   await page.goto(new URL('../', baseURL).href);
 
   await expect(page.locator('.gift-card')).toHaveCount(orderedExperiences.length);
@@ -65,12 +60,7 @@ test('the chooser renders the registry as a chronological, human-facing timeline
 test('the chooser forwards only approved personalization to published cards', async ({
   baseURL,
   page,
-}, testInfo) => {
-  test.skip(
-    testInfo.project.name !== 'desktop-chrome',
-    'Personalization forwarding is verified once in desktop Chrome.',
-  );
-
+}) => {
   const chooserURL = new URL('../', baseURL);
   chooserURL.search = new URLSearchParams([
     ['to', 'Em Test'],
@@ -101,12 +91,7 @@ test('the chooser forwards only approved personalization to published cards', as
 test('a missing preview keeps the published card readable and actionable', async ({
   baseURL,
   page,
-}, testInfo) => {
-  test.skip(
-    testInfo.project.name !== 'desktop-chrome',
-    'The chooser image fallback is verified once in desktop Chrome.',
-  );
-
+}) => {
   const publishedExperience = orderedExperiences.find(({ status }) => status === 'published');
   if (!publishedExperience) throw new Error('Registry must contain a published experience.');
 

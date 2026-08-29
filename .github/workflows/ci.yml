@@ -49,6 +49,11 @@ jobs:
       - name: Run full Playwright matrix
         run: npm run test:e2e:run
 
+      - name: Verify production registry route matrix
+        run: |
+          EXPERIENCE_BUILD_ENV=production npm run build
+          E2E_EXPECTED_ENV=production npx playwright test tests/e2e/routing-metadata.spec.js --project=desktop-chrome
+
       - name: Upload QA evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -4,13 +4,13 @@ Một website tĩnh gồm cổng chọn thiệp và ba trải nghiệm độc l�
 
 - `/birthday/`: Memory Scrapbook sinh nhật được xây bằng Vite.
 - `/august/`: August Herbarium với ảnh tùy chọn và postcard hoa ép.
-- `/september/`: Một chút ngọt, một chút hoa — bánh tiramisu chanh, bó hồng kem
-  hồng phấn và chiếc nơ cuối cùng.
+- September hiện là thiệp draft **Một chút ngọt, một chút hoa**. Nó xuất hiện
+  trong preview timeline để review, nhưng chưa có direct URL production.
 
-Trang gốc hiển thị ba bìa thiệp để người nhận chọn. Các query `to`, `from` và
-`age` được giữ lại khi chuyển sang thiệp tương ứng. Nội dung album sinh nhật,
-nhạc nền và 21 kỷ niệm được quản lý trong `src/content/gift.json`; August
-Herbarium nằm riêng trong `apps/august/`.
+Trang gốc hiển thị timeline ba bìa thiệp. Các query `to`, `from` và `age` chỉ
+được giữ lại khi chuyển sang thiệp đã published; chúng không làm draft có thể
+mở. Nội dung album sinh nhật, nhạc nền và 21 kỷ niệm được quản lý trong
+`src/content/gift.json`; August Herbarium nằm riêng trong `apps/august/`.
 
 ## Chạy trên máy
 
@@ -49,8 +49,10 @@ Chỉnh `src/content/gift.json` — đây là nguồn dữ liệu duy nhất c�
 - `memories`: danh sách ảnh, mô tả thay thế, chú thích, chương và ngày tùy chọn.
 - `features`: bật/tắt các tính năng được hỗ trợ.
 
-URL production, canonical route, Open Graph và đích QR được quản lý riêng trong
-`src/content/site.json`. QR Birthday luôn trỏ tới `/birthday/`, không mang query
+Production origin và metadata chung của chooser nằm trong `src/content/site.json`;
+route, canonical URL, Open Graph và build của từng thiệp được suy ra từ
+`src/content/experiences.json`. Xem [quy trình thêm thiệp hàng tháng](docs/experience-registry.md)
+trước khi thêm record. QR Birthday luôn trỏ tới `/birthday/`, không mang query
 hoặc fragment cá nhân hóa.
 
 Sau mỗi lần sửa, chạy:
@@ -99,9 +101,12 @@ Query chỉ ghi đè nội dung lúc chạy, không sửa `gift.json`.
 
 ## Thẻ NFC cho món quà tháng Chín
 
-NFC chỉ là một cách mở quà tiện hơn, không phải điều kiện để tiếp tục. Ghi hai
-thẻ NDEF tương thích NTAG213 bằng đúng hai URL HTTPS cố định sau, sau khi bản
-HTTPS staging cuối cùng đã được người tặng duyệt:
+September hiện là `draft`: production trả shared 404 cho `/september/`, kể cả
+URL có query hoặc fragment. Không lập trình thẻ NFC hoặc gửi các URL bên dưới
+trước khi record registry được đổi sang `published` và bản HTTPS staging cuối
+cùng đã được người tặng duyệt. Khi đó NFC chỉ là một cách mở quà tiện hơn, không
+phải điều kiện để tiếp tục. Ghi hai thẻ NDEF tương thích NTAG213 bằng đúng hai
+URL HTTPS cố định sau:
 
 ```text
 https://romantic-birthday-app.vercel.app/september/#gift=sweet
@@ -148,14 +153,14 @@ dùng xóa dữ liệu trang.
 | `npm run dev` | Build và chạy cổng chọn cùng ba thiệp tại port 4183. |
 | `npm run dev:birthday` | Chạy riêng Vite development server của thiệp sinh nhật. |
 | `npm run build` | Build preview chooser, Birthday, August và September vào `dist/`; fixture September chỉ dùng để duyệt local. |
-| `npm run build:release` | Chạy approval gate September rồi mới build artifact có thể phát hành. |
+| `npm run build:release` | Chạy release gates của các record published rồi build artifact có thể phát hành. |
 | `npm run validate:september:release` | Chặn fixture hoặc nội dung/ảnh September chưa được người tặng duyệt. |
 | `npm run validate` | Kiểm tra config nguồn, nội dung, Open Graph và toàn bộ media. |
 | `npm run validate:dist` | Xác minh digest, MIME, route và giới hạn asset trong `dist/`. |
 | `npm run validate:remote -- URL` | HEAD mọi asset và GET asset critical của deployment. |
 | `npm run generate:qr` | Sinh `public/share-qr.svg` từ URL chia sẻ an toàn. |
 | `npm test` | Chạy unit test của Birthday, August và September. |
-| `npm run test:e2e` | Build production rồi chạy browser matrix Playwright trên `dist/`. |
+| `npm run test:e2e` | Build preview rồi chạy browser matrix Playwright trên `dist/`. |
 | `npm run test:e2e:run` | Chạy Playwright trên `dist/` đã build sẵn (dùng trong CI). |
 | `npm run optimize` | Tạo WebP, AVIF và các asset thương hiệu từ ảnh gốc. |
 
@@ -192,8 +197,9 @@ Workflow `.github/workflows/ci.yml` chỉ làm quality gate, không có quyền 
 5. giữ report, test result và build manifest trong 30 ngày.
 
 Vercel là nền tảng production duy nhất. Preview chạy `npm run build`; production
-chạy approval gate tương đương `npm run build:release` rồi publish `dist/`.
-Release chỉ được chấp nhận khi deployment
+chạy release gates tương đương `npm run build:release` rồi chỉ publish các record
+`published` trong registry. Draft vẫn hiện ảnh preview trên chooser, nhưng direct
+route của nó trả shared 404. Release chỉ được chấp nhận khi deployment
 `READY` có đúng Git commit SHA đã merge và vượt qua remote quality gates.
 
 Artifact sau build có cấu trúc:
@@ -203,7 +209,8 @@ dist/
   index.html
   birthday/
   august/
-  september/
+  experience-previews/
+  september/ (chỉ preview hoặc sau khi published)
 ```
 
 Service worker tại trang gốc chỉ dùng để gỡ cache của bản Birthday cũ. Thiệp
@@ -216,6 +223,8 @@ query `to`, `age`, `from`. Khi đổi domain chính thức, chỉ cập nhật `
 file này rồi chạy lại validate/build.
 
 `vercel.json` phục vụ custom 404, buộc root migration worker và Birthday service
-worker revalidate, đồng thời giữ bốn route canonical `/`, `/birthday/`, `/august/`,
-`/september/` hoạt động khi truy cập hoặc refresh trực tiếp. Không lập trình thẻ
-NFC vật lý trước khi có deployment HTTPS staging cuối cùng đã được duyệt.
+worker revalidate, đồng thời giữ `/` và mọi route published hoạt động khi truy cập
+hoặc refresh trực tiếp. Khi September còn draft, `/september/` (kể cả URL cá nhân
+hóa) trả shared 404; preview của nó vẫn nằm dưới `/experience-previews/`. Không
+lập trình thẻ NFC vật lý trước khi record published có deployment HTTPS staging
+cuối cùng đã được duyệt.
