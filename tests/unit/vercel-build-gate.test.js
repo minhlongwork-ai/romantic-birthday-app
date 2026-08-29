@@ -39,6 +39,7 @@ test("September gate and composite entry have all clean-checkout dependencies tr
     "apps/september/vite.config.js",
     "apps/september/src/core/personalization.mjs",
     "apps/september/src/ui/dom.js",
+    "apps/september/src/assets/source/background-warm-silk.jpeg",
     "apps/september/public/images/background-desktop.jpg",
     "apps/september/public/images/background-mobile.jpg",
   ];
