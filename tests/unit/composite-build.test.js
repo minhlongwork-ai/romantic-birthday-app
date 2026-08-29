@@ -181,11 +181,12 @@ test('production assembly excludes the draft route while retaining every chooser
       route === 'september' || url.startsWith('/september/')),
     false,
   );
-  for (const { id } of registry) {
+  for (const { id, preview } of registry) {
+    const previewOutput = preview.publicPath.replace(/^\/+/, '');
     assert.equal(
-      existsSync(join(distDir, 'experience-previews', `${id}.webp`)),
+      existsSync(join(distDir, previewOutput)),
       true,
-      `${id} chooser preview is missing from the production artifact`,
+      `${id} chooser preview ${preview.publicPath} is missing from the production artifact`,
     );
   }
 });

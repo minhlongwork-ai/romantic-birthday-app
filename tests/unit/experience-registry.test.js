@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import test from 'node:test';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import {
   groupExperiencesByYear,
@@ -90,6 +92,27 @@ test('rejects a regular file that is not a decodable preview image', async () =>
   await assertInvalid(records => {
     records.find(record => record.id === 'september').preview.source = 'package.json';
   }, 'september', 'preview.source');
+});
+
+test('rejects a truncated preview whose header still exposes intrinsic dimensions', async () => {
+  const rootDir = await mkdtemp(join(tmpdir(), 'experience-registry-'));
+  try {
+    const completeImage = await readFile(
+      new URL('../../public/og-preview.jpg', import.meta.url),
+    );
+    await writeFile(join(rootDir, 'truncated.jpg'), completeImage.subarray(0, 500));
+    const records = await recordsWith(catalog => {
+      const preview = catalog.find(record => record.id === 'september').preview;
+      preview.source = 'truncated.jpg';
+      preview.width = 1200;
+      preview.height = 630;
+    });
+
+    const errors = await validateExperienceRegistry(records, { rootDir });
+    assert.match(errors.join('\n'), /september\.preview\.source.*decode as an image/s);
+  } finally {
+    await rm(rootDir, { recursive: true, force: true });
+  }
 });
 
 test('rejects preview dimensions that do not match the source image', async () => {

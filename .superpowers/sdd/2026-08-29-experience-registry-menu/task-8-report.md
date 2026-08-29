@@ -154,3 +154,23 @@ content or route availability:
 - A final development build and `npm run validate:dist` restored and validated
   the normal three-route local-review artifact (177 assets).
 - `git diff --check` passed. No deployment was performed.
+
+## Residual final-review fix round
+
+- Preview validation now performs a full Sharp pixel decode with
+  `failOn: 'error'` after reading metadata, so an image with a readable header
+  but truncated/corrupt pixel data is rejected before its intrinsic dimensions
+  are accepted.
+- The regression fixture uses the first 500 bytes of the existing
+  `public/og-preview.jpg`: Sharp reports its `1200×630` metadata while full
+  decoding fails. The focused test was observed failing before the decode check
+  and passing after it.
+- The production composite assertion now resolves every expected chooser preview
+  from that record's declared `preview.publicPath`; it no longer reconstructs an
+  assumed `/experience-previews/${id}.webp` convention.
+- Focused registry/composite coverage passed 16/16.
+- A fresh `npm test` passed all 211 tests: 120 shared/Birthday, 39 August, and
+  52 September.
+- `npm run validate && npm run build && npm run validate:dist` passed; the final
+  development artifact contains 177 assets. The three existing MediaPipe size
+  warnings remain non-failing. No deployment was performed.

@@ -140,7 +140,9 @@ export async function validateExperienceRegistry(records, { rootDir = DEFAULT_RO
         addError(errors, id, 'preview.source', 'must be an existing repository image');
       } else {
         try {
-          const metadata = await sharp(resolve(rootDir, preview.source)).metadata();
+          const previewSource = resolve(rootDir, preview.source);
+          const metadata = await sharp(previewSource, { failOn: 'error' }).metadata();
+          await sharp(previewSource, { failOn: 'error' }).toBuffer();
           if (!Number.isInteger(metadata.width) || !Number.isInteger(metadata.height)) {
             addError(errors, id, 'preview.source', 'must decode as an image with intrinsic dimensions');
           } else {
