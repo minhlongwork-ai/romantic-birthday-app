@@ -13,12 +13,16 @@ async function enterBox(page, query = "") {
 }
 
 async function openGift(page, gift) {
+  await revealGift(page, gift);
+  await page.getByRole("button", { name: "Trở về hộp quà" }).click();
+}
+
+async function revealGift(page, gift) {
   await page.getByRole("button", { name: `Mở ngăn ${gift.group}` }).click();
   await page.getByRole("button", { name: "Mở không dùng NFC" }).click();
   await expect(page.getByRole("heading", { name: gift.product })).toBeVisible({
     timeout: 5_000,
   });
-  await page.getByRole("button", { name: "Trở về hộp quà" }).click();
 }
 
 async function openAllGifts(page) {
@@ -211,22 +215,75 @@ test("a personalized base URL keeps names while direct NFC uses generic names", 
   await directPage.close();
 });
 
-test("a reveal commits once, can be revisited, and history keeps progress", async ({ page }, testInfo) => {
+for (const order of [GIFTS, [...GIFTS].reverse()]) {
+  test(`${order.map(({ id }) => id).join(" then ")} commits once, revisits the exact history gift, and unlocks the game second`, async ({ page }, testInfo) => {
+    desktopChromeOnly(testInfo);
+    const [first, second] = order;
+    await enterBox(page);
+
+    await revealGift(page, first);
+    expect(await page.evaluate(() => history.state)).toMatchObject({
+      v: 1,
+      scene: "reveal",
+      giftId: first.id,
+    });
+    await expect.poll(() => page.evaluate(() => {
+      const value = JSON.parse(localStorage.getItem("september:nfc-progress:v1"));
+      return value?.foundGiftIds;
+    })).toEqual([first.id]);
+    await page.getByRole("button", { name: "Trở về hộp quà" }).click();
+    await expect(page.getByRole("button", { name: "Thắt nơ cho món quà" })).toHaveCount(0);
+
+    await page.locator(`[data-gift-id="${first.id}"]`).click();
+    await expect(page.locator(`section[data-scene="reveal"][data-gift-id="${first.id}"]`)).toBeVisible();
+    expect(await page.evaluate(() => history.state)).toMatchObject({
+      v: 1,
+      scene: "reveal",
+      giftId: first.id,
+    });
+    await expect.poll(() => page.evaluate(() => {
+      const value = JSON.parse(localStorage.getItem("september:nfc-progress:v1"));
+      return value?.foundGiftIds;
+    })).toEqual([first.id]);
+    await page.goBack();
+    await expect(page.locator('section[data-scene="box"]')).toBeVisible();
+    await page.goForward();
+    await expect(page.locator(`section[data-scene="reveal"][data-gift-id="${first.id}"]`)).toBeVisible();
+    await page.getByRole("button", { name: "Trở về hộp quà" }).click();
+
+    await revealGift(page, second);
+    expect(await page.evaluate(() => history.state)).toMatchObject({
+      v: 1,
+      scene: "reveal",
+      giftId: second.id,
+    });
+    await expect.poll(() => page.evaluate(() => {
+      const value = JSON.parse(localStorage.getItem("september:nfc-progress:v1"));
+      return value?.foundGiftIds;
+    })).toEqual(order.map(({ id }) => id));
+    await page.getByRole("button", { name: "Trở về hộp quà" }).click();
+    await expect(page.getByRole("button", { name: "Thắt nơ cho món quà" })).toBeVisible();
+  });
+}
+
+test("malformed reveal history recovers to a replace-only box entry", async ({ page }, testInfo) => {
   desktopChromeOnly(testInfo);
   await enterBox(page);
-  await page.getByRole("button", { name: "Mở ngăn Một chút hoa" }).click();
-  await page.getByRole("button", { name: "Mở không dùng NFC" }).click();
-  await expect(page.getByRole("heading", { name: GIFTS[1].product })).toBeVisible({ timeout: 5_000 });
-  await page.getByRole("button", { name: "Trở về hộp quà" }).click();
-  await expect(page.getByRole("button", { name: /Xem lại Bó hồng kem và hồng phấn/ })).toBeFocused();
+  const sessionToken = await page.evaluate(() => {
+    const token = history.state.sessionToken;
+    history.pushState({ v: 1, sessionToken: token, scene: "reveal", giftId: "moon" }, "", location.pathname);
+    history.pushState({ v: 1, sessionToken: token, scene: "box" }, "", location.pathname);
+    return token;
+  });
 
   await page.goBack();
-  await expect(page.locator('section[data-scene="reveal"][data-gift-id="bouquet"]')).toBeVisible();
-  await expect(page.getByRole("heading", { name: GIFTS[1].product })).toBeVisible();
-  await page.goBack();
-  await expect(page.getByRole("button", { name: /Xem lại Bó hồng kem và hồng phấn/ })).toBeVisible();
-  await page.goForward();
-  await expect(page.locator('section[data-scene="reveal"][data-gift-id="bouquet"]')).toBeVisible();
+  await expect(page.locator('section[data-scene="box"]')).toBeVisible();
+  expect(await page.evaluate(() => history.state)).toEqual({
+    v: 1,
+    sessionToken,
+    scene: "box",
+  });
+  await expect(page.locator('section[data-scene="reveal"]')).toHaveCount(0);
 });
 
 test("returning to the box restores only the opened compartment focus", async ({ page }, testInfo) => {
@@ -262,7 +319,7 @@ for (const { motion, revealDelay } of [
     await page.emulateMedia({ reducedMotion: motion });
     await enterBox(page);
     await page.getByRole("button", { name: "Mở ngăn Một chút ngọt" }).click();
-    await page.clock.pauseAt(await page.evaluate(() => Date.now()));
+    await page.clock.pauseAt(await page.evaluate(() => Date.now() + 60_000));
     await page.getByRole("button", { name: "Mở không dùng NFC" }).click();
 
     const product = page.locator(".reveal-product");

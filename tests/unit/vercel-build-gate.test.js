@@ -53,18 +53,26 @@ test("September gate and composite entry have all clean-checkout dependencies tr
 });
 
 test("Vercel production blocks the unapproved September fixture before building", () => {
-  const result = spawnSync(process.execPath, ["scripts/build-vercel.mjs"], {
+  const result = spawnSync("npm", ["run", "build:vercel"], {
     cwd: projectRoot,
     encoding: "utf8",
     env: { ...process.env, VERCEL_ENV: "production" },
   });
 
   assert.equal(result.status, 1);
-  assert.match(`${result.stdout}\n${result.stderr}`, /approved:true/u);
-  assert.match(`${result.stdout}\n${result.stderr}`, /development fixture/u);
+  const output = `${result.stdout}\n${result.stderr}`;
+  assert.match(output, /September release validation failed with 6 error\(s\):/u);
   assert.equal(
-    (`${result.stdout}\n${result.stderr}`.match(/development fixture/gu) ?? []).length,
+    (output.match(/must set approved:true for release\./gu) ?? []).length,
     2,
   );
-  assert.doesNotMatch(result.stdout, /vite v/u);
+  assert.equal(
+    (output.match(/is a development fixture and cannot ship\./gu) ?? []).length,
+    2,
+  );
+  assert.equal(
+    (output.match(/contains placeholder product content and cannot ship\./gu) ?? []).length,
+    2,
+  );
+  assert.doesNotMatch(output, /vite v\d|built in \d/u);
 });

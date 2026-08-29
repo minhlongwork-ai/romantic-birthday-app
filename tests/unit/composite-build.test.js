@@ -9,11 +9,19 @@ const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const distDir = join(projectRoot, 'dist');
 
 test('composite build emits hashed route bundles and a verifiable manifest', () => {
-  const result = spawnSync(process.execPath, ['scripts/build-composite.mjs'], {
+  const result = spawnSync('npm', ['run', 'build'], {
     cwd: projectRoot,
     encoding: 'utf8',
   });
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+
+  const preview = spawnSync('npm', ['run', 'build:vercel'], {
+    cwd: projectRoot,
+    encoding: 'utf8',
+    env: { ...process.env, VERCEL_ENV: 'preview' },
+  });
+  assert.equal(preview.status, 0, `${preview.stdout}\n${preview.stderr}`);
+  assert.match(preview.stdout, /sender approval gate is deferred to production/u);
 
   const manifestPath = join(distDir, 'build-manifest.json');
   assert.equal(existsSync(manifestPath), true);
@@ -29,6 +37,16 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
     ],
   );
   assert.deepEqual(manifest.externalRuntimeUrls, []);
+  const obsoleteSeptemberOutputs = [
+    ...['cleanser', 'moisturizer', 'lipstick'].flatMap(name =>
+      ['avif', 'jpg', 'webp'].map(extension => `/september/images/${name}.${extension}`)),
+    ...['new', 'waxing', 'full'].map(phase =>
+      `/september/images/source/phase-${phase}.jpg`),
+  ];
+  assert.deepEqual(
+    manifest.assets.filter(({ url }) => obsoleteSeptemberOutputs.includes(url)),
+    [],
+  );
 
   const codeAssets = manifest.assets.filter(({ contentType }) =>
     ['text/css', 'text/javascript'].includes(contentType),
