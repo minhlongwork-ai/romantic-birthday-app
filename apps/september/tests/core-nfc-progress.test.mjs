@@ -53,6 +53,28 @@ test("clears malformed, unknown-version, duplicate, unknown, and overlong progre
   }
 });
 
+test("clears otherwise-valid progress containing any extra persisted key", () => {
+  for (const extra of [
+    { personalization: { recipient: "Minh" } },
+    { query: "?to=Minh" },
+    { referrer: "https://example.test/" },
+    { media: "./images/cake.jpg" },
+    { unexpected: true },
+  ]) {
+    const storage = memoryStorage({
+      [NFC_PROGRESS_KEY]: JSON.stringify({
+        v: 1,
+        foundGiftIds: ["cake"],
+        expiresAt: NOW + 1,
+        ...extra,
+      }),
+    });
+
+    assert.deepEqual(readNfcProgress(storage, NOW), []);
+    assert.equal(storage.getItem(NFC_PROGRESS_KEY), null);
+  }
+});
+
 test("returns ordered progress when storage reads or writes fail", () => {
   const throwingStorage = {
     getItem: () => { throw new Error("read failed"); },

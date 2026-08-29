@@ -23,6 +23,16 @@ function assertSafeSeptemberManifest() {
     manifest.assets.filter(({ url }) => obsoleteSeptemberOutputs.includes(url)),
     [],
   );
+  const septemberRuntimeSource = manifest.assets
+    .filter(({ route, contentType }) =>
+      route === 'september'
+        && ['text/css', 'text/html', 'text/javascript', 'application/json'].includes(contentType))
+    .map(({ url }) => `${url}\n${readFileSync(join(distDir, url.replace(/^\//, '')), 'utf8')}`)
+    .join('\n');
+  assert.doesNotMatch(
+    septemberRuntimeSource,
+    /\b(?:lunar|moon|nasa|orbit|phase)(?:[A-Z_-]|\b)/iu,
+  );
   return manifest;
 }
 
@@ -71,6 +81,21 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
   assert.ok(manifest.assets.some(asset => asset.route === 'birthday' && asset.critical));
   assert.ok(manifest.assets.some(asset => asset.route === 'august' && asset.critical));
   assert.ok(manifest.assets.some(asset => asset.route === 'september' && asset.critical));
+  const septemberInitialUrls = manifest.initialAssetUrlsByRoute?.september;
+  assert.ok(Array.isArray(septemberInitialUrls));
+  assert.ok(septemberInitialUrls.includes('/september/index.html'));
+  assert.ok(septemberInitialUrls.some(url => /\/september\/assets\/.*\.css$/u.test(url)));
+  assert.ok(septemberInitialUrls.some(url => /\/september\/assets\/.*\.js$/u.test(url)));
+  assert.ok(septemberInitialUrls.some(url => /\/september\/assets\/.*\.woff2$/u.test(url)));
+  assert.ok(septemberInitialUrls.includes('/september/images/background-desktop.jpg'));
+  assert.equal(septemberInitialUrls.includes('/september/images/preview.webp'), false);
+  assert.deepEqual(
+    manifest.assets
+      .filter(asset => asset.route === 'september' && asset.critical)
+      .map(({ url }) => url)
+      .sort(),
+    septemberInitialUrls,
+  );
 
   for (const asset of manifest.assets) {
     const outputPath = join(distDir, asset.url.replace(/^\//, ''));

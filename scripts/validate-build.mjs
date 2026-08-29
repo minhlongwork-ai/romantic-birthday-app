@@ -6,6 +6,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { loadSiteConfig } from './site-config.mjs';
+import { analyzeRuntimeArtifacts } from './runtime-dependencies.mjs';
 
 const JAVASCRIPT_CONTENT_TYPES = new Set([
   'application/javascript',
@@ -111,8 +112,35 @@ export function validateBuildManifest(manifest, site) {
       errors.push(`${route.id} has no critical asset.`);
     }
   }
-  const septemberInitialBytes = assets
+  const initialAssetUrlsByRoute = manifest.initialAssetUrlsByRoute;
+  if (!initialAssetUrlsByRoute || typeof initialAssetUrlsByRoute !== 'object') {
+    errors.push('Manifest initial dependency closures are missing.');
+  }
+  for (const route of expectedRoutes(site)) {
+    const initialUrls = initialAssetUrlsByRoute?.[route.id];
+    if (!Array.isArray(initialUrls)) {
+      errors.push(`${route.id} initial dependency closure is missing.`);
+      continue;
+    }
+    if (new Set(initialUrls).size !== initialUrls.length) {
+      errors.push(`${route.id} initial dependency closure contains duplicates.`);
+    }
+    for (const url of initialUrls) {
+      if (!assets.some(asset => asset.url === url)) {
+        errors.push(`${route.id} initial dependency closure references missing asset ${url}.`);
+      }
+    }
+  }
+  const septemberInitialUrls = [...(initialAssetUrlsByRoute?.september || [])].sort();
+  const septemberCriticalUrls = assets
     .filter(asset => asset?.route === 'september' && asset?.critical === true)
+    .map(({ url }) => url)
+    .sort();
+  if (JSON.stringify(septemberInitialUrls) !== JSON.stringify(septemberCriticalUrls)) {
+    errors.push('September initial dependency closure must exactly match its critical asset flags.');
+  }
+  const septemberInitialBytes = assets
+    .filter(asset => septemberInitialUrls.includes(asset?.url))
     .reduce((total, asset) => total + (Number.isSafeInteger(asset.bytes) ? asset.bytes : 0), 0);
   if (septemberInitialBytes > 500 * 1024) {
     errors.push(`September initial transfer is ${septemberInitialBytes} bytes; limit is 500 KB.`);
@@ -129,6 +157,7 @@ export async function validateBuildOutput({
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
   const errors = validateBuildManifest(manifest, resolvedSite);
   let mediaPipeBytes = 0;
+  const runtimeArtifacts = [];
 
   for (const asset of manifest.assets || []) {
     if (!isSameOriginPath(asset.url)) continue;
@@ -141,6 +170,13 @@ export async function validateBuildOutput({
       if (digest !== asset.sha256) errors.push(`${asset.url} digest does not match disk.`);
       if (asset.url.endsWith('.map')) errors.push(`${asset.url} is a published source map.`);
       if (asset.url.includes('/vendor/mediapipe/')) mediaPipeBytes += fileStat.size;
+      runtimeArtifacts.push({
+        url: asset.url,
+        contentType: asset.contentType,
+        source: ['text/html', 'text/css', 'text/javascript'].includes(asset.contentType)
+          ? file.toString('utf8')
+          : undefined,
+      });
     } catch (error) {
       errors.push(`${asset.url} is missing from dist: ${error.message}`);
     }
@@ -157,6 +193,29 @@ export async function validateBuildOutput({
   }
   if (mediaPipeBytes > 18 * 1024 * 1024) {
     errors.push(`MediaPipe runtime is ${(mediaPipeBytes / 1024 / 1024).toFixed(2)} MiB; limit is 18 MiB.`);
+  }
+
+  const runtimeAnalysis = analyzeRuntimeArtifacts({
+    artifacts: runtimeArtifacts,
+    routes: expectedRoutes(resolvedSite),
+    siteOrigin: resolvedSite.origin,
+  });
+  if (
+    JSON.stringify(runtimeAnalysis.externalRuntimeUrls)
+      !== JSON.stringify(manifest.externalRuntimeUrls)
+  ) {
+    errors.push('Manifest external runtime URLs do not match the built artifacts.');
+  }
+  if (
+    JSON.stringify(runtimeAnalysis.initialAssetUrlsByRoute)
+      !== JSON.stringify(manifest.initialAssetUrlsByRoute)
+  ) {
+    errors.push('Manifest initial dependency closures do not match the built artifacts.');
+  }
+  if (runtimeAnalysis.missingRuntimeUrls.length > 0) {
+    errors.push(
+      `Built artifacts reference missing initial dependencies: ${runtimeAnalysis.missingRuntimeUrls.join(', ')}.`,
+    );
   }
 
   for (const route of expectedRoutes(resolvedSite)) {

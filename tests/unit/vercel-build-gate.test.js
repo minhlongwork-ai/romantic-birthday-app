@@ -22,6 +22,17 @@ test("Vercel invokes the environment-aware build gate from tracked sources", asy
     packageJson.scripts["validate:september:release"],
     "npm --prefix apps/september run validate:release",
   );
+  const septemberPackage = JSON.parse(
+    await readFile(new URL("../../apps/september/package.json", import.meta.url), "utf8"),
+  );
+  assert.equal(
+    septemberPackage.scripts["generate:manifests"],
+    "node scripts/generate-media-manifest.mjs && node scripts/generate-release-content.mjs",
+  );
+  assert.equal(
+    septemberPackage.scripts["check:manifests"],
+    "node scripts/generate-media-manifest.mjs --check && node scripts/generate-release-content.mjs --check",
+  );
   assert.match(packageJson.scripts.test, /npm run test:september/u);
   assert.equal(JSON.parse(vercelJson).buildCommand, "npm run build:vercel");
   assert.match(buildGate, /VERCEL_ENV === "production"/u);
@@ -35,6 +46,7 @@ test("Vercel invokes the environment-aware build gate from tracked sources", asy
 test("September gate and composite entry have all clean-checkout dependencies tracked", () => {
   const requiredFiles = [
     "apps/september/scripts/media-validator.mjs",
+    "apps/september/scripts/generate-media-manifest.mjs",
     "apps/september/index.html",
     "apps/september/vite.config.js",
     "apps/september/src/core/personalization.mjs",

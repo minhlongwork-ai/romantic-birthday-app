@@ -43,8 +43,8 @@ async function fileDigest(filePath) {
   return { bytes: metadata.size, sha256: sha256(bytes) };
 }
 
-async function outputRecord(gift, format, url) {
-  const filePath = path.join(publicDir, url.replace(/^\.\/images\//u, "images/"));
+async function outputRecord(gift, format, url, publicDirectory) {
+  const filePath = path.join(publicDirectory, url.replace(/^\.\/images\//u, "images/"));
   const digest = await fileDigest(filePath);
   const metadata = await sharp(filePath, { failOn: "error" }).metadata();
   return {
@@ -57,16 +57,20 @@ async function outputRecord(gift, format, url) {
   };
 }
 
-async function buildArtifacts({ release = false } = {}) {
-  assertSeptemberContent(SEPTEMBER_GIFTS, { release });
+async function buildArtifacts({
+  release = false,
+  gifts: sourceGifts = SEPTEMBER_GIFTS,
+  publicDirectory = publicDir,
+} = {}) {
+  assertSeptemberContent(sourceGifts, { release });
   const gifts = [];
   const mediaAssets = [];
 
-  for (const gift of SEPTEMBER_GIFTS) {
+  for (const gift of sourceGifts) {
     const outputs = await Promise.all([
-      outputRecord(gift, "avif", gift.media.avifSrc),
-      outputRecord(gift, "webp", gift.media.webpSrc),
-      outputRecord(gift, "jpeg", gift.media.jpegSrc),
+      outputRecord(gift, "avif", gift.media.avifSrc, publicDirectory),
+      outputRecord(gift, "webp", gift.media.webpSrc, publicDirectory),
+      outputRecord(gift, "jpeg", gift.media.jpegSrc, publicDirectory),
     ]);
     gifts.push({
       id: gift.id,
@@ -127,7 +131,7 @@ async function buildArtifacts({ release = false } = {}) {
     "release-content.json": canonicalJson({
       schemaVersion: 2,
       copyVersion: 3,
-      fixtureMode: true,
+      fixtureMode: sourceGifts.some((gift) => gift.fixture === true),
       gifts,
     }),
     "media-manifest.json": canonicalJson({ schemaVersion: 1, assets: mediaAssets }),

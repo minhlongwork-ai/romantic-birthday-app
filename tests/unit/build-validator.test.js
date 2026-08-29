@@ -7,6 +7,7 @@ import {
   validateNotFoundDocument,
   validateRemoteBuild,
 } from '../../scripts/validate-build.mjs';
+import { analyzeRuntimeArtifacts } from '../../scripts/runtime-dependencies.mjs';
 
 const site = {
   origin: 'https://romantic-birthday-app.vercel.app',
@@ -61,9 +62,100 @@ function validManifest() {
         critical: true,
       },
     ],
+    initialAssetUrlsByRoute: {
+      chooser: ['/assets/portal-Abcdef12.js'],
+      birthday: ['/birthday/assets/index-Abcdef12.css'],
+      august: ['/august/assets/index-Abcdef12.js'],
+      september: ['/september/assets/index-Abcdef12.js'],
+    },
     externalRuntimeUrls: [],
   };
 }
+
+test('built-artifact analysis derives the September initial dependency closure', () => {
+  const artifacts = [
+    {
+      url: '/september/index.html',
+      contentType: 'text/html',
+      source: [
+        '<link rel="stylesheet" href="./assets/index-Abcdef12.css">',
+        '<script type="module" src="./assets/index-Abcdef12.js"></script>',
+        '<meta property="og:image" content="/september/images/preview.webp">',
+      ].join(''),
+    },
+    {
+      url: '/september/assets/index-Abcdef12.css',
+      contentType: 'text/css',
+      source: [
+        '@font-face{src:url(./font-Abcdef12.woff2) format("woff2"),url(./font-Abcdef12.woff) format("woff")}',
+        'body{background:url(/september/images/background-desktop.jpg)}',
+        '@media(max-width:900px){body{background:url(/september/images/background-mobile.jpg)}}',
+      ].join(''),
+    },
+    {
+      url: '/september/assets/index-Abcdef12.js',
+      contentType: 'text/javascript',
+      source: 'console.log("ready");formatter.from"),";',
+    },
+    { url: '/september/assets/font-Abcdef12.woff2', contentType: 'font/woff2' },
+    { url: '/september/assets/font-Abcdef12.woff', contentType: 'font/woff' },
+    { url: '/september/images/background-desktop.jpg', contentType: 'image/jpeg' },
+    { url: '/september/images/background-mobile.jpg', contentType: 'image/jpeg' },
+    { url: '/september/images/preview.webp', contentType: 'image/webp' },
+  ];
+
+  const result = analyzeRuntimeArtifacts({
+    artifacts,
+    routes: validManifest().routes.filter(({ id }) => id === 'september'),
+    siteOrigin: site.origin,
+  });
+
+  assert.deepEqual(result.externalRuntimeUrls, []);
+  assert.deepEqual(result.missingRuntimeUrls, []);
+  assert.deepEqual(result.initialAssetUrlsByRoute.september, [
+    '/september/assets/font-Abcdef12.woff2',
+    '/september/assets/index-Abcdef12.css',
+    '/september/assets/index-Abcdef12.js',
+    '/september/images/background-desktop.jpg',
+    '/september/index.html',
+  ]);
+  assert.equal(
+    result.initialAssetUrlsByRoute.september.includes('/september/images/preview.webp'),
+    false,
+  );
+});
+
+test('built-artifact analysis detects injected third-party HTML, CSS, and JS URLs', () => {
+  const artifacts = [
+    {
+      url: '/september/index.html',
+      contentType: 'text/html',
+      source: '<script src="https://cdn.example.test/runtime.js"></script>',
+    },
+    {
+      url: '/september/assets/index-Abcdef12.css',
+      contentType: 'text/css',
+      source: '@media(max-width:1px){body{background:url(https://images.example.test/pixel.png)}}',
+    },
+    {
+      url: '/september/assets/index-Abcdef12.js',
+      contentType: 'text/javascript',
+      source: 'fetch("https://analytics.example.test/event")',
+    },
+  ];
+
+  const result = analyzeRuntimeArtifacts({
+    artifacts,
+    routes: validManifest().routes.filter(({ id }) => id === 'september'),
+    siteOrigin: site.origin,
+  });
+
+  assert.deepEqual(result.externalRuntimeUrls, [
+    'https://analytics.example.test/event',
+    'https://cdn.example.test/runtime.js',
+    'https://images.example.test/pixel.png',
+  ]);
+});
 
 test('build manifest contract accepts clean canonical route assets', () => {
   assert.deepEqual(validateBuildManifest(validManifest(), site), []);
@@ -114,6 +206,15 @@ test('build manifest enforces the September initial-transfer budget', () => {
   const errors = validateBuildManifest(manifest, site).join('\n');
   assert.match(errors, /September initial transfer/i);
   assert.match(errors, /500 KB/i);
+});
+
+test('build manifest requires September critical flags to match its dependency closure', () => {
+  const manifest = validManifest();
+  manifest.assets.find(asset => asset.route === 'september').critical = false;
+  manifest.initialAssetUrlsByRoute.september.push('/september/images/preview.webp');
+
+  const errors = validateBuildManifest(manifest, site).join('\n');
+  assert.match(errors, /September initial dependency closure/i);
 });
 
 test('build manifest keeps September assets inside the September namespace', () => {

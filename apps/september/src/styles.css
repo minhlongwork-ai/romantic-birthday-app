@@ -171,7 +171,8 @@ a:focus-visible {
 }
 
 .scene-title:focus {
-  outline: none;
+  outline: 3px solid var(--focus);
+  outline-offset: 0.35rem;
 }
 
 .scene-body {

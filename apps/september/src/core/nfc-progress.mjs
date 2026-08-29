@@ -23,13 +23,20 @@ function removeProgress(storage) {
 function parseStoredProgress(storage, now) {
   try {
     const parsed = JSON.parse(storage?.getItem(NFC_PROGRESS_KEY) ?? "null");
+    const validKeys = parsed !== null
+      && typeof parsed === "object"
+      && !Array.isArray(parsed)
+      && Object.keys(parsed).length === 3
+      && ["expiresAt", "foundGiftIds", "v"].every((key) =>
+        Object.hasOwn(parsed, key),
+      );
     const validIds = Array.isArray(parsed?.foundGiftIds)
       && new Set(parsed.foundGiftIds).size === parsed.foundGiftIds.length
       && parsed.foundGiftIds.every((id) => GIFT_IDS.includes(id));
     const validExpiry = Number.isSafeInteger(parsed?.expiresAt)
       && parsed.expiresAt > now
       && parsed.expiresAt <= now + NFC_PROGRESS_TTL_MS;
-    if (parsed?.v !== 1 || !validIds || !validExpiry) {
+    if (!validKeys || parsed.v !== 1 || !validIds || !validExpiry) {
       removeProgress(storage);
       return null;
     }

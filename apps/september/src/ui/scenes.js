@@ -1,5 +1,9 @@
 import { SEPTEMBER_GIFTS } from "../content/gifts.mjs";
-import { SEPTEMBER_COPY } from "../content/copy.mjs";
+import {
+  introNoteForGifts,
+  previewBadgeForGift,
+  SEPTEMBER_COPY,
+} from "../content/copy.mjs";
 import { RING_IDS } from "../core/puzzle.mjs";
 import { button, element, focusHeading, pictureForGift } from "./dom.js";
 import { mountPuzzleController } from "./puzzle-controller.js";
@@ -53,7 +57,7 @@ function createCompartment(gift, isOpened) {
     className: `compartment ${isOpened ? "is-opened" : "is-closed"}`,
     attributes: {
       "aria-label": label,
-      "aria-describedby": `${gift.id}-phase-copy`,
+      "aria-describedby": `${gift.id}-group-copy`,
     },
     dataset: { giftId: gift.id },
   });
@@ -62,7 +66,7 @@ function createCompartment(gift, isOpened) {
     element("span", {
       className: "compartment-group",
       text: gift.groupLabel,
-      attributes: { id: `${gift.id}-phase-copy` },
+      attributes: { id: `${gift.id}-group-copy` },
     }),
     element("span", {
       className: "compartment-status",
@@ -85,13 +89,18 @@ export function mountIntro(root, context) {
   stage.append(
     element(
       "div",
-      { className: "intro-orbit", attributes: { "aria-hidden": "true" } },
+      { className: "intro-gifts", attributes: { "aria-hidden": "true" } },
       ...SEPTEMBER_GIFTS.map((gift) => createGiftSeal(gift)),
     ),
     element(
       "div",
       { className: "intro-note" },
-      element("p", { text: `${SEPTEMBER_COPY.demoBadge} · Dành cho ${context.personalization.recipient}` }),
+      element("p", {
+        text: introNoteForGifts(
+          SEPTEMBER_GIFTS,
+          context.personalization.recipient,
+        ),
+      }),
       start,
     ),
   );
@@ -213,7 +222,12 @@ function createRevealProduct(gift) {
     "div",
     { className: "product-copy" },
     element("p", { className: "product-group", text: gift.groupLabel }),
-    element("span", { className: "demo-badge", text: SEPTEMBER_COPY.demoBadge }),
+    previewBadgeForGift(gift)
+      ? element("span", {
+        className: "demo-badge",
+        text: previewBadgeForGift(gift),
+      })
+      : null,
     productName,
     element("p", { className: "product-variant", text: gift.variant }),
     element("p", { className: "product-reason", text: gift.reason }),

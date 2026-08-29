@@ -16,6 +16,7 @@ import { dirname, extname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { applySiteMetadata } from './site-metadata.mjs';
+import { analyzeRuntimeArtifacts } from './runtime-dependencies.mjs';
 import { loadSiteConfig } from './site-config.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -260,7 +261,8 @@ for (const route of routeBuilds) {
 const outputFiles = (await listFiles(distDir))
   .map(pathname => pathname.split(sep).join('/'))
   .filter(pathname => pathname !== 'build-manifest.json');
-const assets = [];
+const assetDrafts = [];
+const runtimeArtifacts = [];
 for (const pathname of outputFiles) {
   if (pathname.endsWith('.map')) {
     throw new Error(`Source map cannot be published: /${pathname}`);
@@ -269,21 +271,47 @@ for (const pathname of outputFiles) {
   const source = await readFile(absolutePath);
   const url = `/${pathname}`;
   const route = routeForUrl(url);
-  assets.push({
+  const contentType = contentTypeFor(pathname);
+  assetDrafts.push({
     route,
     url,
     sha256: createHash('sha256').update(source).digest('hex'),
     bytes: (await stat(absolutePath)).size,
-    contentType: contentTypeFor(pathname),
-    critical: isCriticalAsset(url, route, entryAssets),
+    contentType,
   });
+  if (['text/html', 'text/css', 'text/javascript'].includes(contentType)) {
+    runtimeArtifacts.push({ url, contentType, source: source.toString('utf8') });
+  } else {
+    runtimeArtifacts.push({ url, contentType });
+  }
 }
+
+const runtimeAnalysis = analyzeRuntimeArtifacts({
+  artifacts: runtimeArtifacts,
+  routes: routeBuilds,
+  siteOrigin: site.origin,
+});
+if (runtimeAnalysis.missingRuntimeUrls.length > 0) {
+  throw new Error(
+    `Initial runtime dependency is missing from dist: ${runtimeAnalysis.missingRuntimeUrls.join(', ')}`,
+  );
+}
+const septemberInitialUrls = new Set(
+  runtimeAnalysis.initialAssetUrlsByRoute.september,
+);
+const assets = assetDrafts.map((asset) => ({
+  ...asset,
+  critical: asset.route === 'september'
+    ? septemberInitialUrls.has(asset.url)
+    : isCriticalAsset(asset.url, asset.route, entryAssets),
+}));
 
 const buildManifest = {
   buildSha: await getBuildSha(),
   routes: routeBuilds.map(({ id, path, index }) => ({ id, path, index })),
   assets,
-  externalRuntimeUrls: [],
+  externalRuntimeUrls: runtimeAnalysis.externalRuntimeUrls,
+  initialAssetUrlsByRoute: runtimeAnalysis.initialAssetUrlsByRoute,
 };
 await writeFile(
   resolve(distDir, 'build-manifest.json'),

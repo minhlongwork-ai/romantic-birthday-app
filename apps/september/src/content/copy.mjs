@@ -1,5 +1,5 @@
 export const SEPTEMBER_COPY = Object.freeze({
-  kicker: "Một chút ngọt, một chút hoa · Bản xem thử",
+  kicker: "Một chút ngọt, một chút hoa",
   introTitle: "Một chút ngọt, một chút hoa — anh chọn riêng cho em.",
   introBody: "Cả hai đều là của em. Em chỉ cần chọn món mình muốn mở trước.",
   introCta: "Bắt đầu",
@@ -34,3 +34,14 @@ export const SEPTEMBER_COPY = Object.freeze({
 
 export const SEPTEMBER_ENDING_TEMPLATE =
   "{{recipient}}, mong em thích hai món quà nhỏ này. {{sender}} chỉ muốn thấy em vui thôi.";
+
+export function previewBadgeForGift(gift) {
+  return gift?.fixture === true ? SEPTEMBER_COPY.demoBadge : null;
+}
+
+export function introNoteForGifts(gifts, recipient) {
+  const prefix = Array.isArray(gifts) && gifts.some((gift) => gift?.fixture === true)
+    ? `${SEPTEMBER_COPY.demoBadge} · `
+    : "";
+  return `${prefix}Dành cho ${recipient}`;
+}

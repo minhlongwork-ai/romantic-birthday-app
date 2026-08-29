@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
 
 const GIFTS = [
-  { id: "cake", group: "Một chút ngọt", product: "Bánh tiramisu chanh — bản xem thử" },
-  { id: "bouquet", group: "Một chút hoa", product: "Bó hồng kem và hồng phấn — bản xem thử" },
+  { id: "cake", group: "Một chút ngọt", product: "Bánh tiramisu chanh" },
+  { id: "bouquet", group: "Một chút hoa", product: "Bó hồng kem và hồng phấn" },
 ];
 
 async function enterBox(page, query = "") {
@@ -75,7 +75,7 @@ test("an NFC sweet fragment opens cake and is cleaned immediately", async ({ pag
   await page.goto("/september/#gift=sweet");
   await expect(page).toHaveURL(/\/september\/$/u);
   await expect(page.locator('section[data-scene="reveal"][data-gift-id="cake"]')).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Bánh tiramisu chanh — bản xem thử" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bánh tiramisu chanh" })).toBeVisible();
 });
 
 test("manual fallback opens the same bouquet reveal", async ({ page }) => {
@@ -90,7 +90,7 @@ test("an NFC bloom fragment opens bouquet and is cleaned immediately", async ({ 
   await page.goto("/september/#gift=bloom");
   await expect(page).toHaveURL(/\/september\/$/u);
   await expect(page.locator('section[data-scene="reveal"][data-gift-id="bouquet"]')).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Bó hồng kem và hồng phấn — bản xem thử" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bó hồng kem và hồng phấn" })).toBeVisible();
 });
 
 test("malformed NFC fragments are cleaned and return to intro", async ({ page }) => {
@@ -348,6 +348,27 @@ test("keyboard focus receives a visible computed treatment", async ({ page }, te
     };
   });
   expect(focusTreatment.focusVisible).toBe(true);
+  expect(focusTreatment.outlineStyle).not.toBe("none");
+  expect(focusTreatment.outlineWidth).toBeGreaterThanOrEqual(3);
+  expect(focusTreatment.outlineColor).not.toBe("rgba(0, 0, 0, 0)");
+});
+
+test("programmatically focused scene headings receive a visible computed treatment", async ({ page }, testInfo) => {
+  desktopChromeOnly(testInfo);
+  await page.goto("/september/");
+  const heading = page.getByRole("heading", {
+    name: "Một chút ngọt, một chút hoa — anh chọn riêng cho em.",
+  });
+  await expect(heading).toBeFocused();
+
+  const focusTreatment = await heading.evaluate((control) => {
+    const style = getComputedStyle(control);
+    return {
+      outlineColor: style.outlineColor,
+      outlineStyle: style.outlineStyle,
+      outlineWidth: Number.parseFloat(style.outlineWidth),
+    };
+  });
   expect(focusTreatment.outlineStyle).not.toBe("none");
   expect(focusTreatment.outlineWidth).toBeGreaterThanOrEqual(3);
   expect(focusTreatment.outlineColor).not.toBe("rgba(0, 0, 0, 0)");
@@ -776,7 +797,7 @@ test("an image decoded in the document remains usable after the network drops", 
   await enterBox(page);
   await page.getByRole("button", { name: "Mở ngăn Một chút ngọt" }).click();
   await page.getByRole("button", { name: "Mở không dùng NFC" }).click();
-  const image = page.getByRole("img", { name: "Bánh kem chanh nhiều lớp với kem tươi và lát chanh trong bản xem thử" });
+  const image = page.getByRole("img", { name: "Bánh kem chanh nhiều lớp với kem tươi và lát chanh" });
   await expect(image).toBeVisible({ timeout: 5_000 });
   await expect.poll(() => image.evaluate((element) => element.complete && element.naturalWidth > 0)).toBe(true);
   await context.setOffline(true);

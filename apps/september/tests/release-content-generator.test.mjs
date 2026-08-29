@@ -13,6 +13,7 @@ import path from "node:path";
 import test from "node:test";
 
 import * as releaseGenerator from "../scripts/generate-release-content.mjs";
+import { SEPTEMBER_GIFTS } from "../src/content/gifts.mjs";
 
 const outputNames = [
   "runtime-media.mjs",
@@ -24,6 +25,20 @@ const artifacts = Object.fromEntries(
   outputNames.map((name) => [name, `new:${name}\n`]),
 );
 const fileSystem = { mkdir, rename, rm, writeFile };
+
+function productionGifts() {
+  return structuredClone(SEPTEMBER_GIFTS).map((gift) => ({
+    ...gift,
+    approved: true,
+    fixture: false,
+    variant: gift.id === "cake"
+      ? "Bánh 18 cm · kem mascarpone chanh"
+      : "Hồng kem và hồng phấn · giấy gói màu ngà",
+    reason: gift.id === "cake"
+      ? "Anh chọn vị chanh tươi để chiếc bánh ngọt vừa đủ."
+      : "Anh chọn những màu hoa dịu dàng mà em thích.",
+  }));
+}
 
 async function fixture(t) {
   const root = await mkdtemp(path.join(os.tmpdir(), "september-release-"));
@@ -102,4 +117,19 @@ test("a directory publish failure rolls back every destination and removes trans
   await assertDestinationIsUnchanged(destinationDir);
   await assertMissing(temporaryDir);
   await assertMissing(backupDir);
+});
+
+test("release artifacts derive fixture mode and omit preview copy for approved gifts", async () => {
+  const generated = await releaseGenerator.buildArtifacts({
+    release: true,
+    gifts: productionGifts(),
+  });
+  const content = JSON.parse(generated["release-content.json"]);
+
+  assert.equal(content.fixtureMode, false);
+  assert.ok(content.gifts.every((gift) => gift.fixture === false));
+  assert.doesNotMatch(
+    generated["release-content.json"],
+    /bản xem thử|Ảnh Pexels|chỉ để minh họa/iu,
+  );
 });

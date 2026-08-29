@@ -27,12 +27,4 @@ export const SEPTEMBER_ASSET_SOURCES = Object.freeze({
       licenseUrl: "https://www.pexels.com/license/",
     }),
   }),
-  phases: Object.freeze({
-    "new-moon":
-      "https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005048/phase_new.1933_print.jpg",
-    "waxing-moon":
-      "https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005048/phase_first_quarter.2091_print.jpg",
-    "full-moon":
-      "https://svs.gsfc.nasa.gov/vis/a000000/a005000/a005048/phase_full.1571_print.jpg",
-  }),
 });

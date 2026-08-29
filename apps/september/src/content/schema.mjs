@@ -23,7 +23,7 @@ const APPROVED_THEME_BY_GIFT = Object.freeze({
 });
 
 const DEVELOPMENT_PLACEHOLDER_PATTERN =
-  /(?:Sản phẩm mẫu|Sản phẩm minh họa|Màu mẫu|DEMO-|Ảnh Pexels|dung tích chờ duyệt|đang chờ người tặng hoàn thiện|chỉ để minh họa)/u;
+  /(?:Sản phẩm mẫu|Sản phẩm minh họa|Màu mẫu|DEMO-|Ảnh Pexels|bản xem thử|dung tích chờ duyệt|đang chờ người tặng hoàn thiện|chỉ để minh họa)/iu;
 
 function isNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
@@ -135,7 +135,15 @@ export function validateSeptemberContent(gifts, { release = false } = {}) {
         errors.push(`gifts[${index}] is a development fixture and cannot ship.`);
       }
       if (
-        [gift?.productName, gift?.variant, gift?.reason].some(
+        [
+          gift?.groupLabel,
+          gift?.clue,
+          gift?.productName,
+          gift?.variant,
+          gift?.reason,
+          gift?.personalMessage,
+          gift?.media?.alt,
+        ].some(
           (value) =>
             typeof value === "string"
             && DEVELOPMENT_PLACEHOLDER_PATTERN.test(value),
