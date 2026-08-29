@@ -1,0 +1,111 @@
+[
+  {
+    "id": "birthday",
+    "year": 2026,
+    "month": 5,
+    "kind": "Album kỷ niệm",
+    "title": "Thiệp sinh nhật",
+    "description": "Mở album kỷ niệm, thổi nến và khám phá món quà nhỏ giữa bầu trời sao.",
+    "route": "/birthday/",
+    "status": "published",
+    "actionLabel": "Mở thiệp sinh nhật",
+    "preview": {
+      "source": "public/images/swarovski-dancing-swan-5514421.webp",
+      "publicPath": "/experience-previews/birthday.webp",
+      "alt": "Dây chuyền thiên nga trắng lấp lánh trên nền nhung xanh đêm",
+      "width": 1536,
+      "height": 1024
+    },
+    "metadata": {
+      "title": "Một cuốn album dành cho em",
+      "description": "Một cuốn album sinh nhật nhỏ, được làm riêng cho một người đặc biệt.",
+      "ogTitle": "Một cuốn album sinh nhật dành cho em",
+      "ogDescription": "Một cuốn album sinh nhật nhỏ, được làm riêng bằng những kỷ niệm.",
+      "ogImage": "/birthday/og-preview.jpg"
+    },
+    "build": {
+      "config": "vite.config.js",
+      "destination": "birthday",
+      "validation": {
+        "development": ["scripts/validate-gift.mjs"],
+        "release": ["scripts/validate-gift.mjs"]
+      },
+      "postBuild": [
+        { "script": "scripts/finalize-service-worker.mjs", "args": ["{stagingDir}"] }
+      ],
+      "copies": []
+    }
+  },
+  {
+    "id": "august",
+    "year": 2026,
+    "month": 8,
+    "kind": "Vườn hoa tháng Tám",
+    "title": "Thiệp tháng Tám",
+    "description": "Chọn một lời chúc, giữ khoảnh khắc cùng bó hoa và làm postcard của riêng em.",
+    "route": "/august/",
+    "status": "published",
+    "actionLabel": "Mở thiệp tháng Tám",
+    "preview": {
+      "source": "apps/august/public/images/flower-atelier.webp",
+      "publicPath": "/experience-previews/august.webp",
+      "alt": "Bình hoa trắng và hồng bên khung cửa sổ ngày mưa",
+      "width": 1536,
+      "height": 1024
+    },
+    "metadata": {
+      "title": "Tháng tám ở lại",
+      "description": "Một lá thư tháng tám, một bó hoa thật và một khoảnh khắc có thể được giữ lại.",
+      "ogTitle": "Tháng tám ở lại",
+      "ogDescription": "Mở thư, chọn một lời chúc và tạo trang hoa ép của riêng em.",
+      "ogImage": "/birthday/og-preview.jpg"
+    },
+    "build": {
+      "config": "apps/august/vite.config.js",
+      "destination": "august",
+      "validation": {
+        "development": ["apps/august/scripts/validate.mjs"],
+        "release": ["apps/august/scripts/validate.mjs"]
+      },
+      "postBuild": [],
+      "copies": [
+        { "mode": "tree", "source": "apps/august/public", "destination": "august/public" }
+      ]
+    }
+  },
+  {
+    "id": "september",
+    "year": 2026,
+    "month": 9,
+    "kind": "Hộp quà hai món",
+    "title": "Một chút ngọt, một chút hoa",
+    "description": "Chạm vào bánh và hoa theo thứ tự em chọn, rồi thắt chiếc nơ cuối cùng.",
+    "route": "/september/",
+    "status": "draft",
+    "actionLabel": "Mở hộp quà tháng Chín",
+    "preview": {
+      "source": "apps/september/public/images/preview.webp",
+      "publicPath": "/experience-previews/september.webp",
+      "alt": "Bánh kem chanh và bó hồng kem hồng phấn trên nền lụa nâu ấm",
+      "width": 1200,
+      "height": 630
+    },
+    "metadata": {
+      "title": "Một chút ngọt, một chút hoa",
+      "description": "Hai món quà nhỏ — bánh tiramisu chanh và một bó hoa — được chuẩn bị riêng cho em.",
+      "ogTitle": "Một chút ngọt, một chút hoa",
+      "ogDescription": "Chạm vào hai món quà theo thứ tự em chọn và thắt chiếc nơ cuối cùng.",
+      "ogImage": "/september/images/preview.webp"
+    },
+    "build": {
+      "config": "apps/september/vite.config.js",
+      "destination": "september",
+      "validation": {
+        "development": ["apps/september/scripts/validate.mjs"],
+        "release": ["apps/september/scripts/validate.mjs", "--release"]
+      },
+      "postBuild": [],
+      "copies": []
+    }
+  }
+]
