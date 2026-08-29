@@ -17,6 +17,13 @@ import { fileURLToPath } from 'node:url';
 
 import { applySiteMetadata } from './site-metadata.mjs';
 import { analyzeRuntimeArtifacts } from './runtime-dependencies.mjs';
+import {
+  createExperiencePreviewCopies,
+  createExperienceRouteBuilds,
+  findExperienceForUrl,
+  resolveBuildEnvironment,
+} from './experience-builds.mjs';
+import { loadExperienceRegistry } from './experience-registry.mjs';
 import { loadSiteConfig } from './site-config.mjs';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -25,7 +32,15 @@ const distDir = resolve(projectRoot, 'dist');
 const viteBin = resolve(projectRoot, 'node_modules/vite/bin/vite.js');
 const emittedPaths = new Set();
 const site = await loadSiteConfig();
-
+const experiences = await loadExperienceRegistry();
+const environment = resolveBuildEnvironment();
+const paths = { projectRoot, stagingDir, distDir };
+const experienceRouteBuilds = createExperienceRouteBuilds({
+  records: experiences,
+  environment,
+  paths,
+});
+const previewCopies = createExperiencePreviewCopies({ records: experiences, paths });
 const routeBuilds = Object.freeze([
   {
     id: 'chooser',
@@ -35,30 +50,7 @@ const routeBuilds = Object.freeze([
     destination: distDir,
     index: '/index.html',
   },
-  {
-    id: 'birthday',
-    path: site.routes.birthday,
-    config: resolve(projectRoot, 'vite.config.js'),
-    output: resolve(stagingDir, 'birthday'),
-    destination: resolve(distDir, 'birthday'),
-    index: '/birthday/index.html',
-  },
-  {
-    id: 'august',
-    path: site.routes.august,
-    config: resolve(projectRoot, 'apps/august/vite.config.js'),
-    output: resolve(stagingDir, 'august'),
-    destination: resolve(distDir, 'august'),
-    index: '/august/index.html',
-  },
-  {
-    id: 'september',
-    path: site.routes.september,
-    config: resolve(projectRoot, 'apps/september/vite.config.js'),
-    output: resolve(stagingDir, 'september'),
-    destination: resolve(distDir, 'september'),
-    index: '/september/index.html',
-  },
+  ...experienceRouteBuilds,
 ]);
 
 function run(command, args, cwd = projectRoot) {
@@ -138,10 +130,7 @@ function contentTypeFor(pathname) {
 }
 
 function routeForUrl(url) {
-  if (url.startsWith('/birthday/')) return 'birthday';
-  if (url.startsWith('/august/')) return 'august';
-  if (url.startsWith('/september/')) return 'september';
-  return 'chooser';
+  return findExperienceForUrl(url, experiences)?.id ?? 'chooser';
 }
 
 function isCriticalAsset(url, routeId, entryAssets) {
@@ -191,20 +180,16 @@ async function getBuildSha() {
     : `local-${createHash('sha256').update(String(Date.now())).digest('hex').slice(0, 12)}`;
 }
 
-await Promise.all([
-  access(resolve(projectRoot, 'portal/index.html')),
-  access(resolve(projectRoot, 'apps/august/index.html')),
-  access(resolve(projectRoot, 'apps/september/index.html')),
-]);
+await access(resolve(projectRoot, 'portal/index.html'));
 await rm(stagingDir, { recursive: true, force: true });
 await rm(distDir, { recursive: true, force: true });
 await mkdir(stagingDir, { recursive: true });
 await mkdir(distDir, { recursive: true });
 
 await run(process.execPath, ['scripts/generate-share-qr.mjs']);
-await run(process.execPath, ['scripts/validate-gift.mjs']);
-await run(process.execPath, ['apps/august/scripts/validate.mjs']);
-await run(process.execPath, ['apps/september/scripts/validate.mjs']);
+for (const route of experienceRouteBuilds) {
+  await run(process.execPath, route.validationArgv);
+}
 
 for (const route of routeBuilds) {
   await run(process.execPath, [
@@ -218,19 +203,27 @@ for (const route of routeBuilds) {
   ]);
 }
 
-await run(process.execPath, [
-  'scripts/finalize-service-worker.mjs',
-  resolve(stagingDir, 'birthday'),
-]);
-await rm(resolve(stagingDir, 'birthday/.vite'), { recursive: true, force: true });
+for (const route of experienceRouteBuilds) {
+  for (const hook of route.postBuild) {
+    await run(process.execPath, [hook.script, ...hook.args]);
+  }
+  await rm(resolve(route.output, '.vite'), { recursive: true, force: true });
+}
 
 for (const route of routeBuilds) {
   await copyTree(route.output, route.destination);
 }
-await copyTree(
-  resolve(projectRoot, 'apps/august/public'),
-  resolve(distDir, 'august/public'),
-);
+for (const route of experienceRouteBuilds) {
+  for (const copy of route.copies) {
+    if (copy.mode !== 'tree') {
+      throw new Error(`Unsupported copy mode for ${route.id}: ${copy.mode}`);
+    }
+    await copyTree(copy.source, copy.destination);
+  }
+}
+for (const preview of previewCopies) {
+  await copyStandalone(preview.source, preview.publicPath);
+}
 await copyStandalone(
   resolve(projectRoot, 'public/images/swarovski-dancing-swan-5514421.webp'),
   'chooser-birthday.webp',
@@ -296,19 +289,29 @@ if (runtimeAnalysis.missingRuntimeUrls.length > 0) {
     `Initial runtime dependency is missing from dist: ${runtimeAnalysis.missingRuntimeUrls.join(', ')}`,
   );
 }
+const septemberExperience = experiences.find(({ id }) => id === 'september');
 const septemberInitialUrls = new Set(
-  runtimeAnalysis.initialAssetUrlsByRoute.september,
+  runtimeAnalysis.initialAssetUrlsByRoute[septemberExperience?.id] ?? [],
 );
 const assets = assetDrafts.map((asset) => ({
   ...asset,
-  critical: asset.route === 'september'
+  critical: asset.route === septemberExperience?.id
     ? septemberInitialUrls.has(asset.url)
     : isCriticalAsset(asset.url, asset.route, entryAssets),
 }));
+const builtExperienceIds = new Set(experienceRouteBuilds.map(({ id }) => id));
 
 const buildManifest = {
   buildSha: await getBuildSha(),
   routes: routeBuilds.map(({ id, path, index }) => ({ id, path, index })),
+  catalog: experiences.map(record => ({
+    id: record.id,
+    year: record.year,
+    month: record.month,
+    route: record.route,
+    built: builtExperienceIds.has(record.id),
+    previewPublicPath: record.preview.publicPath,
+  })),
   assets,
   externalRuntimeUrls: runtimeAnalysis.externalRuntimeUrls,
   initialAssetUrlsByRoute: runtimeAnalysis.initialAssetUrlsByRoute,
@@ -321,4 +324,6 @@ await writeFile(
 await run(process.execPath, ['scripts/validate-build.mjs']);
 
 await rm(stagingDir, { recursive: true, force: true });
-console.log('Composite Vite site built with hashed chooser, Birthday, August, and September bundles.');
+console.log(
+  `Composite Vite site built for ${environment} with ${experienceRouteBuilds.length} experience route(s).`,
+);

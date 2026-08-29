@@ -42,7 +42,43 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
     encoding: 'utf8',
   });
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
-  assertSafeSeptemberManifest();
+  const developmentManifest = assertSafeSeptemberManifest();
+  assert.deepEqual(developmentManifest.catalog, [
+    {
+      id: 'birthday',
+      year: 2026,
+      month: 5,
+      route: '/birthday/',
+      built: true,
+      previewPublicPath: '/experience-previews/birthday.webp',
+    },
+    {
+      id: 'august',
+      year: 2026,
+      month: 8,
+      route: '/august/',
+      built: true,
+      previewPublicPath: '/experience-previews/august.webp',
+    },
+    {
+      id: 'september',
+      year: 2026,
+      month: 9,
+      route: '/september/',
+      built: true,
+      previewPublicPath: '/experience-previews/september.webp',
+    },
+  ]);
+  for (const pathname of [
+    'birthday/index.html',
+    'august/index.html',
+    'september/index.html',
+    'experience-previews/birthday.webp',
+    'experience-previews/august.webp',
+    'experience-previews/september.webp',
+  ]) {
+    assert.equal(existsSync(join(distDir, pathname)), true, `${pathname} is missing from dist`);
+  }
 
   const preview = spawnSync('npm', ['run', 'build:vercel'], {
     cwd: projectRoot,
@@ -125,5 +161,54 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
     const html = readFileSync(join(distDir, route.index.replace(/^\//, '')), 'utf8');
     assert.doesNotMatch(html, /%SITE_[A-Z_]+%|github\.io/);
     assert.match(html, /https:\/\/romantic-birthday-app\.vercel\.app/);
+  }
+});
+
+test('production assembly excludes the draft route while retaining every chooser preview', () => {
+  const result = spawnSync(process.execPath, ['scripts/build-composite.mjs'], {
+    cwd: projectRoot,
+    encoding: 'utf8',
+    env: { ...process.env, EXPERIENCE_BUILD_ENV: 'production' },
+  });
+
+  // Task 6 makes validate-build status-aware. Until then, Task 5 verifies the
+  // real production artifacts written immediately before that legacy gate.
+  if (result.status !== 0) {
+    assert.match(`${result.stdout}\n${result.stderr}`, /Manifest routes do not match/iu);
+  }
+
+  const manifest = JSON.parse(readFileSync(join(distDir, 'build-manifest.json'), 'utf8'));
+  assert.deepEqual(
+    manifest.routes.map(({ id, path }) => [id, path]),
+    [
+      ['chooser', '/'],
+      ['birthday', '/birthday/'],
+      ['august', '/august/'],
+    ],
+  );
+  assert.deepEqual(
+    manifest.catalog.map(({ id, built }) => [id, built]),
+    [
+      ['birthday', true],
+      ['august', true],
+      ['september', false],
+    ],
+  );
+  assert.deepEqual(manifest.externalRuntimeUrls, []);
+  assert.equal(existsSync(join(distDir, 'birthday/index.html')), true);
+  assert.equal(existsSync(join(distDir, 'august/index.html')), true);
+  assert.equal(existsSync(join(distDir, 'september/index.html')), false);
+  assert.equal(existsSync(join(distDir, 'september')), false);
+  assert.equal(
+    manifest.assets.some(({ route, url }) =>
+      route === 'september' || url.startsWith('/september/')),
+    false,
+  );
+  for (const id of ['birthday', 'august', 'september']) {
+    assert.equal(
+      existsSync(join(distDir, 'experience-previews', `${id}.webp`)),
+      true,
+      `${id} chooser preview is missing from the production artifact`,
+    );
   }
 });
