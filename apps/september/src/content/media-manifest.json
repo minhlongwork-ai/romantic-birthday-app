@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "images": {
+    "cake": {
+      "source": "./images/cake.jpg",
+      "width": 800,
+      "height": 800,
+      "files": {
+        "avif": {
+          "path": "./images/cake.avif",
+          "sha256": "389cc3be45e8c0a82fe56868a0dce9165bd4e9db9133740fadf08f6f27647a22",
+          "bytes": 33424
+        },
+        "webp": {
+          "path": "./images/cake.webp",
+          "sha256": "d52fbcd314a94d6afdd4547e0ba7ad1c948c547c3d325b13cd38e880bd3c0f17",
+          "bytes": 50282
+        },
+        "jpeg": {
+          "path": "./images/cake.jpg",
+          "sha256": "1df88f7fc9e12523939ab6cc8138d6d52b02d2bf9af3cb6588c8682fa8fd1146",
+          "bytes": 100552
+        }
+      }
+    },
+    "bouquet": {
+      "source": "./images/bouquet.jpg",
+      "width": 800,
+      "height": 800,
+      "files": {
+        "avif": {
+          "path": "./images/bouquet.avif",
+          "sha256": "afa9362c24a252256a80aa47c7f633363bb20ca280e636f99fe14e29fe964e24",
+          "bytes": 21717
+        },
+        "webp": {
+          "path": "./images/bouquet.webp",
+          "sha256": "b3be19db9a362f7234646540c046ed12d019fe4a8b9baf6f628e0132745dc4ec",
+          "bytes": 37622
+        },
+        "jpeg": {
+          "path": "./images/bouquet.jpg",
+          "sha256": "20c609b11410c354adee15434ccc891803a4c632d28db88a1b8d5d8e26aeed3f",
+          "bytes": 79191
+        }
+      }
+    }
+  }
+}
