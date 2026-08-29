@@ -29,7 +29,7 @@ export function formatVietnameseMonth(month) {
   return VIETNAMESE_MONTHS[month - 1] ?? `Tháng ${month}`;
 }
 
-function renderExperienceCard(record) {
+function renderExperienceCard(record, { isPriority = false } = {}) {
   const id = escapeHtml(record.id);
   const descriptionId = `${id}-description`;
   const cardClass = `gift-card gift-card-${id}`;
@@ -40,7 +40,7 @@ function renderExperienceCard(record) {
         alt="${escapeHtml(record.preview.alt)}"
         width="${escapeHtml(record.preview.width)}"
         height="${escapeHtml(record.preview.height)}"
-        loading="lazy"
+        ${isPriority ? 'fetchpriority="high"' : 'loading="lazy"'}
       />
       <span class="media-fallback" aria-hidden="true">${escapeHtml(record.title)}</span>
     </figure>`;
@@ -75,11 +75,15 @@ function renderExperienceCard(record) {
 }
 
 export function renderExperienceCatalog(records) {
+  const priorityExperienceId = [...records].find(record => record.status === 'published')?.id;
+
   return groupExperiencesByYear(records).map(({ year, experiences }) => `
     <section class="experience-year" aria-labelledby="experience-year-${escapeHtml(year)}">
       <h2 id="experience-year-${escapeHtml(year)}" class="experience-year-title">${escapeHtml(year)}</h2>
       <div class="gift-options">
-        ${experiences.map(renderExperienceCard).join('')}
+        ${experiences.map(record => renderExperienceCard(record, {
+          isPriority: record.id === priorityExperienceId,
+        })).join('')}
       </div>
     </section>
   `).join('');

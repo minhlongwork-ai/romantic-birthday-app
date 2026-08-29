@@ -27,6 +27,14 @@ test('draft content has no visible status or interaction', async () => {
   assert.doesNotMatch(september, /gift-action/);
 });
 
+test('the first published card keeps the above-fold image loading priority', async () => {
+  const html = renderExperienceCatalog(await loadExperienceRegistry());
+  const birthday = html.slice(html.indexOf('gift-card-birthday'), html.indexOf('gift-card-august'));
+
+  assert.match(birthday, /src="\/experience-previews\/birthday\.webp"[\s\S]*fetchpriority="high"/);
+  assert.doesNotMatch(birthday, /loading="lazy"/);
+});
+
 test('catalog escapes record text and attributes', () => {
   const html = renderExperienceCatalog([{
     id: 'memory',
