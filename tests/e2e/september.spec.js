@@ -262,6 +262,7 @@ for (const { motion, revealDelay } of [
     await page.emulateMedia({ reducedMotion: motion });
     await enterBox(page);
     await page.getByRole("button", { name: "Mở ngăn Một chút ngọt" }).click();
+    await page.clock.pauseAt(await page.evaluate(() => Date.now()));
     await page.getByRole("button", { name: "Mở không dùng NFC" }).click();
 
     const product = page.locator(".reveal-product");
@@ -537,6 +538,49 @@ test("mobile intro CTA stays in the first viewport without horizontal overflow",
       scrollWidth: document.documentElement.scrollWidth,
     }));
     expect(dimensions.scrollWidth).toBe(dimensions.clientWidth);
+    await cta.click();
+    await expect(page.locator(".compartment")).toHaveCount(2);
+  }
+});
+
+test("mobile layout remains usable at 200% zoom", async ({ page }, testInfo) => {
+  desktopChromeOnly(testInfo);
+  await page.setViewportSize({ width: 640, height: 1_136 });
+  await page.goto("/september/");
+  await page.evaluate(() => {
+    document.documentElement.style.zoom = "2";
+  });
+
+  const cta = page.getByRole("button", { name: "Bắt đầu" });
+  await expect(cta).toBeVisible();
+  const dimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.scrollWidth).toBe(dimensions.clientWidth);
+});
+
+test("ribbon pointer targets stay large without disabling touch outside the puzzle", async ({ page }, testInfo) => {
+  desktopChromeOnly(testInfo);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await enterPuzzle(page);
+
+  const metrics = await page.locator(".ribbon-puzzle").evaluate((puzzle) => ({
+    touchAction: getComputedStyle(puzzle).touchAction,
+    wrapperTouchAction: getComputedStyle(puzzle.parentElement).touchAction,
+    hitStroke: Number.parseFloat(
+      getComputedStyle(puzzle.querySelector(".ring-hit-target")).strokeWidth,
+    ),
+  }));
+  expect(metrics.touchAction).toBe("none");
+  expect(metrics.wrapperTouchAction).not.toBe("none");
+  expect(metrics.hitStroke).toBeGreaterThanOrEqual(44);
+
+  for (const control of await page.locator(".button-ribbon").all()) {
+    const box = await control.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    expect(box.width).toBeGreaterThanOrEqual(44);
   }
 });
 

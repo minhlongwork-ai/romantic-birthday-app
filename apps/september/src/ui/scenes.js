@@ -27,7 +27,6 @@ function sceneFrame(id, title, body) {
       attributes: { "aria-labelledby": `${id}-title` },
       dataset: { scene: id },
     },
-    element("div", { className: "ambient-moon", attributes: { "aria-hidden": "true" } }),
     copy,
     stage,
   );
