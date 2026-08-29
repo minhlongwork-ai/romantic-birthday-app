@@ -7,6 +7,24 @@ import { fileURLToPath } from 'node:url';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const distDir = join(projectRoot, 'dist');
+const obsoleteSeptemberOutputs = [
+  ...['cleanser', 'moisturizer', 'lipstick'].flatMap(name =>
+    ['avif', 'jpg', 'webp'].map(extension => `/september/images/${name}.${extension}`)),
+  ...['new', 'waxing', 'full'].map(phase =>
+    `/september/images/source/phase-${phase}.jpg`),
+];
+
+function assertSafeSeptemberManifest() {
+  const manifestPath = join(distDir, 'build-manifest.json');
+  assert.equal(existsSync(manifestPath), true);
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  assert.deepEqual(manifest.externalRuntimeUrls, []);
+  assert.deepEqual(
+    manifest.assets.filter(({ url }) => obsoleteSeptemberOutputs.includes(url)),
+    [],
+  );
+  return manifest;
+}
 
 test('composite build emits hashed route bundles and a verifiable manifest', () => {
   const result = spawnSync('npm', ['run', 'build'], {
@@ -14,6 +32,7 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
     encoding: 'utf8',
   });
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assertSafeSeptemberManifest();
 
   const preview = spawnSync('npm', ['run', 'build:vercel'], {
     cwd: projectRoot,
@@ -23,9 +42,7 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
   assert.equal(preview.status, 0, `${preview.stdout}\n${preview.stderr}`);
   assert.match(preview.stdout, /sender approval gate is deferred to production/u);
 
-  const manifestPath = join(distDir, 'build-manifest.json');
-  assert.equal(existsSync(manifestPath), true);
-  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  const manifest = assertSafeSeptemberManifest();
   assert.match(manifest.buildSha, /^[a-f0-9]{7,40}$|^local-[a-f0-9]{12}$/);
   assert.deepEqual(
     manifest.routes.map(({ id, path }) => [id, path]),
@@ -36,18 +53,6 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
       ['september', '/september/'],
     ],
   );
-  assert.deepEqual(manifest.externalRuntimeUrls, []);
-  const obsoleteSeptemberOutputs = [
-    ...['cleanser', 'moisturizer', 'lipstick'].flatMap(name =>
-      ['avif', 'jpg', 'webp'].map(extension => `/september/images/${name}.${extension}`)),
-    ...['new', 'waxing', 'full'].map(phase =>
-      `/september/images/source/phase-${phase}.jpg`),
-  ];
-  assert.deepEqual(
-    manifest.assets.filter(({ url }) => obsoleteSeptemberOutputs.includes(url)),
-    [],
-  );
-
   const codeAssets = manifest.assets.filter(({ contentType }) =>
     ['text/css', 'text/javascript'].includes(contentType),
   ).filter(({ url }) => url.includes('/assets/'));

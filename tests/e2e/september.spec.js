@@ -262,7 +262,11 @@ for (const order of [GIFTS, [...GIFTS].reverse()]) {
       return value?.foundGiftIds;
     })).toEqual(order.map(({ id }) => id));
     await page.getByRole("button", { name: "Trở về hộp quà" }).click();
-    await expect(page.getByRole("button", { name: "Thắt nơ cho món quà" })).toBeVisible();
+    const gameEntry = page.getByRole("button", { name: "Thắt nơ cho món quà" });
+    await expect(gameEntry).toBeVisible();
+    await gameEntry.click();
+    await expect(page.locator('section[data-scene="game"]')).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Thắt nơ cho món quà" })).toBeFocused();
   });
 }
 
@@ -270,6 +274,12 @@ test("malformed reveal history recovers to a replace-only box entry", async ({ p
   desktopChromeOnly(testInfo);
   await enterBox(page);
   const sessionToken = await page.evaluate(() => {
+    const nativeReplaceState = history.replaceState.bind(history);
+    window.__septemberReplaceTrace = [];
+    history.replaceState = (state, unused, url) => {
+      window.__septemberReplaceTrace.push({ state, url: String(url) });
+      return nativeReplaceState(state, unused, url);
+    };
     const token = history.state.sessionToken;
     history.pushState({ v: 1, sessionToken: token, scene: "reveal", giftId: "moon" }, "", location.pathname);
     history.pushState({ v: 1, sessionToken: token, scene: "box" }, "", location.pathname);
@@ -283,6 +293,10 @@ test("malformed reveal history recovers to a replace-only box entry", async ({ p
     sessionToken,
     scene: "box",
   });
+  expect(await page.evaluate(() => window.__septemberReplaceTrace)).toEqual([{
+    state: { v: 1, sessionToken, scene: "box" },
+    url: "/september/",
+  }]);
   await expect(page.locator('section[data-scene="reveal"]')).toHaveCount(0);
 });
 
@@ -309,6 +323,29 @@ test("returning to the box restores only the opened compartment focus", async ({
   await expect.poll(() => page.evaluate(() => window.__septemberFocusTrace)).not.toContain("box-title");
 });
 
+test("keyboard focus receives a visible computed treatment", async ({ page }, testInfo) => {
+  desktopChromeOnly(testInfo);
+  await page.goto("/september/");
+  const start = page.getByRole("button", { name: "Bắt đầu" });
+  await expect(page.getByRole("heading", { name: GIFTS[0].group, exact: false })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(start).toBeFocused();
+
+  const focusTreatment = await start.evaluate((control) => {
+    const style = getComputedStyle(control);
+    return {
+      focusVisible: control.matches(":focus-visible"),
+      outlineColor: style.outlineColor,
+      outlineStyle: style.outlineStyle,
+      outlineWidth: Number.parseFloat(style.outlineWidth),
+    };
+  });
+  expect(focusTreatment.focusVisible).toBe(true);
+  expect(focusTreatment.outlineStyle).not.toBe("none");
+  expect(focusTreatment.outlineWidth).toBeGreaterThanOrEqual(3);
+  expect(focusTreatment.outlineColor).not.toBe("rgba(0, 0, 0, 0)");
+});
+
 for (const { motion, revealDelay } of [
   { motion: "no-preference", revealDelay: 1_900 },
   { motion: "reduce", revealDelay: 150 },
@@ -320,6 +357,18 @@ for (const { motion, revealDelay } of [
     await enterBox(page);
     await page.getByRole("button", { name: "Mở ngăn Một chút ngọt" }).click();
     await page.clock.pauseAt(await page.evaluate(() => Date.now() + 60_000));
+    await page.evaluate(() => {
+      const nativeSetItem = Storage.prototype.setItem;
+      window.__septemberProgressWrites = [];
+      Storage.prototype.setItem = function setItem(key, value) {
+        if (key === "september:nfc-progress:v1") {
+          window.__septemberProgressWrites.push(JSON.parse(value));
+        }
+        return nativeSetItem.call(this, key, value);
+      };
+    });
+    const progressBeforeReveal = await page.evaluate(() =>
+      localStorage.getItem("september:nfc-progress:v1"));
     await page.getByRole("button", { name: "Mở không dùng NFC" }).click();
 
     const product = page.locator(".reveal-product");
@@ -328,11 +377,19 @@ for (const { motion, revealDelay } of [
     expect(await product.evaluate((node) => node.hidden)).toBe(true);
     await expect(product).toHaveAttribute("hidden", "", { timeout: 0 });
     expect(await productHeading.count()).toBe(0);
+    expect(await page.evaluate(() => localStorage.getItem("september:nfc-progress:v1")))
+      .toBe(progressBeforeReveal);
+    expect(await page.evaluate(() => window.__septemberProgressWrites)).toEqual([]);
 
     await page.clock.runFor(revealDelay);
     await expect(product).toBeVisible();
     await expect(product).not.toHaveAttribute("hidden", "");
     await expect(productHeading).toBeVisible();
+    await expect.poll(() => page.evaluate(() => window.__septemberProgressWrites))
+      .toEqual([expect.objectContaining({ foundGiftIds: ["cake"] })]);
+    expect(await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("september:nfc-progress:v1"))))
+      .toEqual(expect.objectContaining({ foundGiftIds: ["cake"] }));
   });
 }
 
@@ -377,12 +434,7 @@ test("reset clears NFC progress only after replay confirmation", async ({ page }
 test("the ribbon puzzle can be solved with visible buttons", async ({ page }, testInfo) => {
   desktopChromeOnly(testInfo);
   await enterPuzzle(page);
-
-  for (const ring of ["dải nơ ngoài", "dải nơ trong"]) {
-    for (let step = 0; step < 3; step += 1) {
-      await page.getByRole("button", { name: `Xoay ${ring} sang trái` }).click();
-    }
-  }
+  await solvePuzzleWithButtons(page);
 
   await expect(page.locator('section[data-scene="ending"]')).toBeVisible({ timeout: 3_000 });
   await expect(page.locator(".bow-flourish")).toHaveCount(1);
@@ -625,31 +677,41 @@ test("mobile layout remains usable at 200% zoom", async ({ page }, testInfo) => 
 
 test("ribbon pointer targets stay large without disabling touch outside the puzzle", async ({ page }, testInfo) => {
   desktopChromeOnly(testInfo);
-  await page.setViewportSize({ width: 320, height: 568 });
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await enterPuzzle(page);
+  for (const viewport of [
+    { width: 320, height: 568 },
+    { width: 375, height: 667 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/september/");
+    await page.evaluate(() => localStorage.removeItem("september:nfc-progress:v1"));
+    await enterPuzzle(page);
 
-  const metrics = await page.locator(".ribbon-puzzle").evaluate((puzzle) => {
-    const cssPixelsPerSvgUnit = puzzle.getBoundingClientRect().width / puzzle.viewBox.baseVal.width;
-    return {
-      touchAction: getComputedStyle(puzzle).touchAction,
-      wrapperTouchAction: getComputedStyle(puzzle.parentElement).touchAction,
-      renderedHitThicknesses: [...puzzle.querySelectorAll(".ring-hit-target")].map(
-        (target) => Number.parseFloat(getComputedStyle(target).strokeWidth) * cssPixelsPerSvgUnit,
-      ),
-    };
-  });
-  expect(metrics.touchAction).toBe("none");
-  expect(metrics.wrapperTouchAction).not.toBe("none");
-  for (const thickness of metrics.renderedHitThicknesses) {
-    expect(thickness).toBeGreaterThanOrEqual(44);
-  }
+    const metrics = await page.locator(".ribbon-puzzle").evaluate((puzzle) => {
+      const cssPixelsPerSvgUnit = puzzle.getBoundingClientRect().width / puzzle.viewBox.baseVal.width;
+      return {
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        touchAction: getComputedStyle(puzzle).touchAction,
+        wrapperTouchAction: getComputedStyle(puzzle.parentElement).touchAction,
+        renderedHitThicknesses: [...puzzle.querySelectorAll(".ring-hit-target")].map(
+          (target) => Number.parseFloat(getComputedStyle(target).strokeWidth) * cssPixelsPerSvgUnit,
+        ),
+      };
+    });
+    expect(metrics.scrollWidth).toBe(metrics.clientWidth);
+    expect(metrics.touchAction).toBe("none");
+    expect(metrics.wrapperTouchAction).not.toBe("none");
+    for (const thickness of metrics.renderedHitThicknesses) {
+      expect(thickness).toBeGreaterThanOrEqual(44);
+    }
 
-  for (const control of await page.locator(".button-ribbon").all()) {
-    const box = await control.boundingBox();
-    expect(box).not.toBeNull();
-    expect(box.height).toBeGreaterThanOrEqual(44);
-    expect(box.width).toBeGreaterThanOrEqual(44);
+    for (const control of await page.locator(".button-ribbon").all()) {
+      const box = await control.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box.height).toBeGreaterThanOrEqual(44);
+      expect(box.width).toBeGreaterThanOrEqual(44);
+    }
   }
 });
 
