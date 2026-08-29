@@ -16,6 +16,57 @@ Artifacts are retained for 30 days. Manual production checks should be recorded
 under the matching Vercel deployment with the deployment ID, Git SHA, route
 smoke results, metadata result, runtime-error comparison window, and approver.
 
+## September release gate
+
+Vercel uses `npm run build:vercel`: previews keep the development fixture for
+sender review, while production applies the same gate as `npm run build:release`.
+September cannot reach production while any gift is a fixture, lacks
+`approved:true`, or has stale media digests. Before release, the sender replaces
+the exact cake description and bouquet description, final owned or licensed JPEG
+sources, final reasons and personal messages, and sets every record to
+`fixture:false` and `approved:true`. Regenerate derivatives and the media
+manifest, then approve a reviewed staging artifact from a clean commit.
+
+## September NFC handoff
+
+Physical programming waits for that final reviewed HTTPS deployment. Program
+NTAG213-compatible NDEF tags with these exact fixed, non-secret URLs only:
+
+```text
+https://romantic-birthday-app.vercel.app/september/#gift=sweet
+https://romantic-birthday-app.vercel.app/september/#gift=bloom
+```
+
+The first tag belongs to the lemon tiramisu cake and the second to the cream and
+blush rose bouquet. Do not place a tag directly on metal or foil; use a laminated
+or moisture-resistant paper hang tag for the cake, keep both tags reachable after
+opening, and label their placement “Chạm phần trên iPhone vào đây”.
+
+Device smoke requires at least one iPhone XS or later. With the screen on, hold
+the top of the phone close to each tag, tap the system notification, and confirm
+Safari opens the matching fragment. Test both discovery orders, screen-lock
+recovery, and **Mở không dùng NFC**; manual opening must remain a complete
+fallback. The website never requests NFC permission or reads raw NFC data.
+
+The only persisted NFC state is anonymous two-gift progress, retained for at
+most 24 hours. It contains no name, query, URL, photo, or referrer, expires and
+is removed automatically, and the experience continues in memory if storage is
+unavailable. Do not include personalized values in NFC URLs or release evidence.
+
+Immediately after deploy and again after 30 minutes, smoke `/`, `/birthday/`,
+`/august/`, `/september/`, one personalized September URL, and the image-error
+fallback. Revert the commit containing both the September route and chooser card
+for non-2xx responses, wrong canonical metadata, a broken chooser, blocking
+runtime errors, or a reveal failure with no usable text fallback. Never record
+personalization query values in release evidence.
+
+Before sender approval, run the AT10 usability check with five new mobile users
+who have not seen the design. At least four must explain the goal within 10
+seconds; median puzzle completion must stay within 20–60 seconds; nobody may be
+stuck longer than 90 seconds; and median beauty/satisfaction must be at least
+4/5. If any threshold fails, revise and repeat with five different users. Store
+only aggregate timing and ratings, never names or personalized URLs.
+
 ## Runtime error fingerprints
 
 Runtime errors are compared using:

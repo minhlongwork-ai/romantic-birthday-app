@@ -16,6 +16,17 @@ test('metadata values resolve from site.json without route-specific URL literals
   assert.equal(values.canonicalUrl, 'https://romantic-birthday-app.vercel.app/birthday/');
   assert.equal(values.ogImageUrl, 'https://romantic-birthday-app.vercel.app/birthday/og-preview.jpg');
   assert.equal(values.title, 'Một cuốn album dành cho em');
+
+  const september = createMetadataValues(site, 'september');
+  assert.equal(
+    september.canonicalUrl,
+    'https://romantic-birthday-app.vercel.app/september/',
+  );
+  assert.equal(
+    september.ogImageUrl,
+    'https://romantic-birthday-app.vercel.app/september/images/preview.webp',
+  );
+  assert.equal(september.title, 'Một chút ngọt, một chút hoa');
 });
 
 test('metadata placeholders are completely resolved for every route', () => {
@@ -29,7 +40,7 @@ test('metadata placeholders are completely resolved for every route', () => {
     '<link rel="canonical" href="%SITE_CANONICAL_URL%">',
   ].join('');
 
-  for (const routeId of ['chooser', 'birthday', 'august']) {
+  for (const routeId of ['chooser', 'birthday', 'august', 'september']) {
     const html = applySiteMetadata(template, site, routeId);
     assert.doesNotMatch(html, /%SITE_[A-Z_]+%/);
     assert.match(html, new RegExp(site.origin.replaceAll('.', '\\.')));

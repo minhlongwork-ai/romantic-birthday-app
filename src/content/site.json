@@ -3,18 +3,20 @@
   "routes": {
     "chooser": "/",
     "birthday": "/birthday/",
-    "august": "/august/"
+    "august": "/august/",
+    "september": "/september/"
   },
   "shareTargets": {
     "birthday": "/birthday/",
-    "august": "/august/"
+    "august": "/august/",
+    "september": "/september/"
   },
   "pages": {
     "chooser": {
       "title": "Chọn tấm thiệp dành cho em",
-      "description": "Chọn một trong hai tấm thiệp được chuẩn bị riêng cho em.",
+      "description": "Chọn một trong ba tấm thiệp được chuẩn bị riêng cho em.",
       "ogTitle": "Chọn tấm thiệp dành cho em",
-      "ogDescription": "Hai tấm thiệp, hai câu chuyện được chuẩn bị riêng cho em.",
+      "ogDescription": "Ba tấm thiệp, ba câu chuyện được chuẩn bị riêng cho em.",
       "ogImage": "/birthday/og-preview.jpg"
     },
     "birthday": {
@@ -30,6 +32,13 @@
       "ogTitle": "Tháng tám ở lại",
       "ogDescription": "Mở thư, chọn một lời chúc và tạo trang hoa ép của riêng em.",
       "ogImage": "/birthday/og-preview.jpg"
+    },
+    "september": {
+      "title": "Một chút ngọt, một chút hoa",
+      "description": "Hai món quà nhỏ — bánh tiramisu chanh và một bó hoa — được chuẩn bị riêng cho em.",
+      "ogTitle": "Một chút ngọt, một chút hoa",
+      "ogDescription": "Chạm vào hai món quà theo thứ tự em chọn và thắt chiếc nơ cuối cùng.",
+      "ogImage": "/september/images/preview.webp"
     }
   }
 }
