@@ -20,7 +20,7 @@
     "generate:qr": "node scripts/generate-share-qr.mjs",
     "optimize": "npm run optimize:images",
     "optimize:images": "node scripts/optimize-images.mjs",
-    "test:birthday": "node --test tests/unit/*.test.js",
+    "test:birthday": "node --test --test-concurrency=1 tests/unit/*.test.js",
     "test:august": "npm --prefix apps/august test",
     "test:september": "npm --prefix apps/september test",
     "validate:september:release": "npm --prefix apps/september run validate:release",
