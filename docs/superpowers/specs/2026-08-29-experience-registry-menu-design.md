@@ -51,7 +51,9 @@ Tạo `src/content/experiences.json`. Mỗi record có cấu trúc logic sau:
   "preview": {
     "source": "apps/september/public/images/preview.webp",
     "publicPath": "/experience-previews/september.webp",
-    "alt": "Bánh tiramisu chanh và bó hồng kem trong studio ấm"
+    "alt": "Bánh tiramisu chanh và bó hồng kem trong studio ấm",
+    "width": 1200,
+    "height": 630
   },
   "metadata": {
     "title": "Một chút ngọt, một chút hoa",
@@ -60,7 +62,13 @@ Tạo `src/content/experiences.json`. Mỗi record có cấu trúc logic sau:
   },
   "build": {
     "config": "apps/september/vite.config.js",
-    "destination": "september"
+    "destination": "september",
+    "validation": {
+      "development": ["apps/september/scripts/validate.mjs"],
+      "release": ["apps/september/scripts/validate.mjs", "--release"]
+    },
+    "postBuild": [],
+    "copies": []
   }
 }
 ```
@@ -80,8 +88,12 @@ Mỗi record phải thỏa mãn:
 - `title`, `description`, `actionLabel` và preview alt là chuỗi không rỗng có giới hạn độ dài.
 - Preview source, preview public path, OG image, Vite config và destination đều là đường dẫn nội bộ an toàn.
 - `preview.source` phải tồn tại trong repository; `preview.publicPath` phải nằm dưới `/experience-previews/` và là duy nhất.
+- `preview.width` và `preview.height` là số nguyên dương đúng với intrinsic dimensions của ảnh.
 - `build.config` phải tồn tại và nằm trong repository.
 - `destination` không được trùng với record khác và không được thoát khỏi `dist`.
+- `build.validation.development` và `build.validation.release` là argv arrays chạy bằng Node; phần tử đầu là script nội bộ tồn tại trong repository.
+- `build.postBuild` chỉ chứa script nội bộ và argv tĩnh; token `{stagingDir}` được thay bằng output tạm của đúng app.
+- `build.copies` chỉ chứa cặp source/destination nội bộ đã validate và không được ghi đè output của record khác.
 
 Validator từ chối ID, route, destination hoặc cặp năm-tháng trùng nhau. Build không được âm thầm bỏ qua record lỗi.
 
@@ -103,6 +115,8 @@ selectBuildExperiences(records, environment)
 ```
 
 `selectBuildExperiences` trả tất cả record trong development/preview và chỉ record `published` trong production.
+
+Validation command, post-build hook và copy rule đặc thù của từng app cũng nằm trong record. Vì vậy thêm tháng mới không cần thêm `if (id === ...)` vào composite builder.
 
 ### `portal/experience-catalog.mjs`
 
