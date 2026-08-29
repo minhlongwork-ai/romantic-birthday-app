@@ -140,6 +140,21 @@ test("an NFC reveal remains usable when storage is denied", async ({ page }) => 
   await expect(page.getByRole("heading", { name: GIFTS[1].product })).toBeVisible();
 });
 
+test("manual reveal remains usable when the localStorage getter is denied", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      get() {
+        throw new DOMException("Denied", "SecurityError");
+      },
+    });
+  });
+  await enterBox(page);
+  await page.getByRole("button", { name: "Mở ngăn Một chút ngọt" }).click();
+  await page.getByRole("button", { name: "Mở không dùng NFC" }).click();
+  await expect(page.getByRole("heading", { name: GIFTS[0].product })).toBeVisible();
+});
+
 test("expired NFC progress is removed before the intro opens", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("september:nfc-progress:v1", JSON.stringify({

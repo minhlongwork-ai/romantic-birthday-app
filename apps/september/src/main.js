@@ -37,7 +37,11 @@ if (!(root instanceof HTMLElement) || !(liveRegion instanceof HTMLElement)) {
 const personalization = parsePersonalization(window.location.search);
 const nfcGiftId = parseNfcGiftFragment(window.location.hash);
 const cleanUrl = window.location.pathname;
-const persistedOrder = readNfcProgress(window.localStorage);
+let nfcStorage = null;
+try {
+  nfcStorage = window.localStorage;
+} catch {}
+const persistedOrder = readNfcProgress(nfcStorage);
 let sessionToken = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
 let state = createExperienceState({ openedGiftIds: persistedOrder });
 if (nfcGiftId) {
@@ -127,7 +131,7 @@ function closeReveal(giftId) {
 
 function commitGift(giftId) {
   state = commitOpenedGift(state, giftId);
-  recordNfcGift(window.localStorage, giftId, state.openOrder);
+  recordNfcGift(nfcStorage, giftId, state.openOrder);
 }
 
 function updatePuzzle(detents) {
@@ -149,7 +153,7 @@ function recoverToBox() {
 function restart() {
   cleanupScene();
   sessionToken = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
-  clearNfcProgress(window.localStorage);
+  clearNfcProgress(nfcStorage);
   state = createExperienceState();
   pushHistory("intro");
   render();

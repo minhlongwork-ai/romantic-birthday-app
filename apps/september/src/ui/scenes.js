@@ -34,14 +34,6 @@ function sceneFrame(id, title, body) {
   return { section, stage, heading };
 }
 
-function progressLabel(openedCount) {
-  return openedCount === 0
-    ? "Hai món quà vẫn đang chờ em."
-    : openedCount === 2
-      ? "Cả hai món quà đã được mở."
-      : `${openedCount} trong 2 món quà đã được mở.`;
-}
-
 function createGiftSeal(gift) {
   return element(
     "span",
