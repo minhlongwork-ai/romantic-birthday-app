@@ -324,6 +324,62 @@ test('dynamic workshop and camera imports stay out of the September initial clos
   ]);
 });
 
+test('compact Rollup static imports and re-exports stay in the eager closure', () => {
+  const artifacts = [
+    {
+      url: '/september/index.html',
+      contentType: 'text/html',
+      source: '<script type="module" src="./assets/index-Abcdef12.js"></script>',
+    },
+    {
+      url: '/september/assets/index-Abcdef12.js',
+      contentType: 'text/javascript',
+      source: [
+        'import{mount}from"./compact-entry-A.js";',
+        'export{copy}from"./compact-copy-B.js";',
+        'import("./lazy-camera-C.js");',
+      ].join('\n'),
+    },
+    {
+      url: '/september/assets/compact-entry-A.js',
+      contentType: 'text/javascript',
+      source: 'export{shared}from"./compact-shared-D.js";',
+    },
+    {
+      url: '/september/assets/compact-copy-B.js',
+      contentType: 'text/javascript',
+      source: 'export const copy = true;',
+    },
+    {
+      url: '/september/assets/compact-shared-D.js',
+      contentType: 'text/javascript',
+      source: 'export const shared = true;',
+    },
+    {
+      url: '/september/assets/lazy-camera-C.js',
+      contentType: 'text/javascript',
+      source: 'export const lazy = true;',
+    },
+  ];
+
+  const result = analyzeRuntimeArtifacts({
+    artifacts,
+    routes: validManifest().routes.filter(({ id }) => id === 'september'),
+    siteOrigin: site.origin,
+  });
+
+  assert.deepEqual(result.initialAssetUrlsByRoute.september, [
+    '/september/assets/compact-copy-B.js',
+    '/september/assets/compact-entry-A.js',
+    '/september/assets/compact-shared-D.js',
+    '/september/assets/index-Abcdef12.js',
+    '/september/index.html',
+  ]);
+  assert.deepEqual(result.lazyAssetUrlsByRoute.september, [
+    '/september/assets/lazy-camera-C.js',
+  ]);
+});
+
 test('built-artifact analysis detects injected third-party HTML, CSS, and JS URLs', () => {
   const artifacts = [
     {

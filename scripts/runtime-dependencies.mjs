@@ -145,14 +145,118 @@ function cssRuntimeReferences(source, { modernFontFormats = true } = {}) {
   return references;
 }
 
+function isJavaScriptIdentifierCharacter(character) {
+  return /[A-Za-z0-9_$]/u.test(character ?? "");
+}
+
+function skipJavaScriptTrivia(source, index) {
+  let cursor = index;
+  while (cursor < source.length) {
+    if (/\s/u.test(source[cursor])) {
+      cursor += 1;
+      continue;
+    }
+    if (source.startsWith("//", cursor)) {
+      const lineEnd = source.indexOf("\n", cursor + 2);
+      cursor = lineEnd < 0 ? source.length : lineEnd + 1;
+      continue;
+    }
+    if (source.startsWith("/*", cursor)) {
+      const commentEnd = source.indexOf("*/", cursor + 2);
+      cursor = commentEnd < 0 ? source.length : commentEnd + 2;
+      continue;
+    }
+    break;
+  }
+  return cursor;
+}
+
+function readJavaScriptString(source, index) {
+  const quote = source[index];
+  let value = "";
+  let cursor = index + 1;
+  while (cursor < source.length) {
+    const character = source[cursor];
+    if (character === "\\") {
+      if (cursor + 1 < source.length) value += source[cursor + 1];
+      cursor += 2;
+      continue;
+    }
+    if (character === quote) return { value, end: cursor + 1 };
+    value += character;
+    cursor += 1;
+  }
+  return { value: "", end: source.length };
+}
+
+function staticJavaScriptModuleReferences(source) {
+  const text = String(source ?? "");
+  const references = [];
+  let index = 0;
+  while (index < text.length) {
+    if (text.startsWith("//", index)) {
+      index = skipJavaScriptTrivia(text, index);
+      continue;
+    }
+    if (text.startsWith("/*", index)) {
+      index = skipJavaScriptTrivia(text, index);
+      continue;
+    }
+    if (["\"", "'", "`"].includes(text[index])) {
+      index = readJavaScriptString(text, index).end;
+      continue;
+    }
+    const statement = ["import", "export"].find(keyword =>
+      text.startsWith(keyword, index)
+        && !isJavaScriptIdentifierCharacter(text[index - 1])
+        && !isJavaScriptIdentifierCharacter(text[index + keyword.length]));
+    if (!statement) {
+      index += 1;
+      continue;
+    }
+    let cursor = skipJavaScriptTrivia(text, index + statement.length);
+    if (statement === "import" && text[cursor] === "(") {
+      index = cursor + 1;
+      continue;
+    }
+    if (statement === "import" && ["\"", "'"].includes(text[cursor])) {
+      const string = readJavaScriptString(text, cursor);
+      if (string.value) references.push(string.value);
+      index = string.end;
+      continue;
+    }
+    while (cursor < text.length && text[cursor] !== ";") {
+      cursor = skipJavaScriptTrivia(text, cursor);
+      if (["\"", "'", "`"].includes(text[cursor])) {
+        cursor = readJavaScriptString(text, cursor).end;
+        continue;
+      }
+      if (
+        text.startsWith("from", cursor)
+        && !isJavaScriptIdentifierCharacter(text[cursor - 1])
+        && !isJavaScriptIdentifierCharacter(text[cursor + 4])
+      ) {
+        const specifierStart = skipJavaScriptTrivia(text, cursor + 4);
+        if (["\"", "'"].includes(text[specifierStart])) {
+          const string = readJavaScriptString(text, specifierStart);
+          if (string.value) references.push(string.value);
+          cursor = string.end;
+          break;
+        }
+      }
+      cursor += 1;
+    }
+    index = cursor + 1;
+  }
+  return references;
+}
+
 function javascriptModuleReferences(source) {
   const text = String(source ?? "");
   return {
-    eager: [...text.matchAll(
-      /\bimport\s+(?:[\s\S]*?\s+from\s+)?["']([^"']+)["']/gu,
-    )].map((match) => match[1]),
+    eager: staticJavaScriptModuleReferences(text),
     lazy: [...text.matchAll(
-    /\bimport\s*\(\s*["']([^"']+)["']/gu,
+      /\bimport\s*\(\s*["']([^"']+)["']/gu,
     )].map((match) => match[1]),
   };
 }
