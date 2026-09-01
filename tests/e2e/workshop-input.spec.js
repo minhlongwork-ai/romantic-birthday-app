@@ -62,6 +62,9 @@ async function buildHarness() {
     const rightButton = document.querySelector('#right');
     window.__workshopClock = 0;
     window.__workshopCommands = [];
+    window.__workshopBridgeClicks = [];
+    bridgeButton.setPointerCapture = () => {};
+    bridgeButton.releasePointerCapture = () => {};
     window.__workshopInput = createWorkshopInput({
       stage,
       bridgeButton,
@@ -71,6 +74,9 @@ async function buildHarness() {
       onCommand: type => window.__workshopCommands.push(type),
     });
     window.__workshopInput.startTouch();
+    bridgeButton.addEventListener('click', event => {
+      window.__workshopBridgeClicks.push({ detail: event.detail, isTrusted: event.isTrusted });
+    });
   `);
   await build({
     configFile: false,
@@ -124,6 +130,40 @@ test("a real browser ignores a native click after an early primary bridge pointe
     });
 
     expect(commands).toEqual([]);
+  } finally {
+    await server.close();
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("a real early mouse release outside the bridge leaves one trusted keyboard confirmation available", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop-chrome", "Run the pointer regression once in Chromium.");
+  const fixture = await buildHarness();
+  const server = await serve(fixture.outDir);
+  try {
+    await page.goto(server.url);
+    await page.waitForFunction(() => Boolean(window.__workshopInput));
+
+    const bridge = page.locator("#bridge");
+    const bounds = await bridge.boundingBox();
+    if (!bounds) throw new Error("Bridge control is not visible in the workshop input fixture.");
+
+    await page.mouse.move(bounds.x + (bounds.width / 2), bounds.y + (bounds.height / 2));
+    await page.mouse.down();
+    await page.evaluate(() => {
+      window.__workshopClock = 300;
+    });
+    await page.mouse.move(bounds.x + bounds.width + 80, bounds.y + (bounds.height / 2));
+    await page.mouse.up();
+    await bridge.focus();
+    await page.keyboard.press("Enter");
+
+    const result = await page.evaluate(() => ({
+      commands: window.__workshopCommands,
+      clicks: window.__workshopBridgeClicks,
+    }));
+    expect(result.commands).toEqual(["BRIDGE_CONFIRMED"]);
+    expect(result.clicks.at(-1)).toEqual({ detail: 0, isTrusted: true });
   } finally {
     await server.close();
     await rm(fixture.root, { recursive: true, force: true });

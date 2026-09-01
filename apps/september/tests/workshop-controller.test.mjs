@@ -102,12 +102,33 @@ function createFakeElement(tagName, ownerDocument) {
 }
 
 function createFakeDocument() {
+  const listeners = new Map();
   const document = {
     hidden: false,
     createElement(tagName) {
       return createFakeElement(tagName, document);
     },
-    addEventListener() {},
+    addEventListener(type, listener, options = {}) {
+      if (!listeners.has(type)) listeners.set(type, new Set());
+      listeners.get(type).add(listener);
+      options.signal?.addEventListener?.("abort", () => {
+        listeners.get(type)?.delete(listener);
+      }, { once: true });
+    },
+    dispatch(type, properties = {}) {
+      const event = {
+        type,
+        pointerId: 1,
+        clientX: 50,
+        clientY: 50,
+        preventDefault() {
+          this.defaultPrevented = true;
+        },
+        ...properties,
+      };
+      for (const listener of listeners.get(type) ?? []) listener(event);
+      return event;
+    },
   };
   return document;
 }
@@ -169,6 +190,38 @@ test("a synthesized click after an early primary bridge pointer release cannot c
   bridgeButton.dispatch("click", { detail: 0 });
 
   assert.deepEqual(commands, []);
+  input.dispose();
+});
+
+test("a document pointer release frees primary bridge ownership for a keyboard confirmation", async () => {
+  const document = createFakeDocument();
+  const stage = createFakeElement("div", document);
+  const bridgeButton = createFakeElement("button", document);
+  const leftButton = createFakeElement("button", document);
+  const rightButton = createFakeElement("button", document);
+  const commands = [];
+  let now = 0;
+  const input = createWorkshopInput({
+    stage,
+    bridgeButton,
+    leftButton,
+    rightButton,
+    documentTarget: document,
+    windowTarget: { addEventListener() {} },
+    now: () => now,
+    onCommand(type) {
+      commands.push(type);
+    },
+  });
+
+  input.startTouch();
+  bridgeButton.dispatch("pointerdown", { pointerId: 7, clientX: 90, clientY: 90 });
+  now = 300;
+  document.dispatch("pointerup", { pointerId: 7, clientX: 390, clientY: 90 });
+  await Promise.resolve();
+  bridgeButton.dispatch("click", { detail: 0 });
+
+  assert.deepEqual(commands, ["BRIDGE_CONFIRMED"]);
   input.dispose();
 });
 

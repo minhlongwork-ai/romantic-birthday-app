@@ -125,6 +125,9 @@ export function createWorkshopInput(options = {}) {
     activeBridgePointerId = null;
     bridgePointerOwned = false;
     clearPointerControl();
+    queueMicrotask(() => {
+      if (activeBridgePointerId === null) bridgeClickSuppressed = false;
+    });
   };
 
   const resetForkPointer = (eventName = "cleanup") => {
@@ -179,26 +182,30 @@ export function createWorkshopInput(options = {}) {
     });
   }, { signal });
 
-  bridgeButton.addEventListener("pointerup", (event) => {
+  const finishBridgePointer = (event, eventName = event.type) => {
     if (disposed || event.pointerId !== activeBridgePointerId) return;
-    event.preventDefault();
-    applyBridge({
-      now: clock(),
-      event: "pointerup",
-      pointerId: event.pointerId,
-      x: event.clientX,
-      y: event.clientY,
-      inZone: inStage(event, stage),
-    });
-    bridgeButton.releasePointerCapture?.(event.pointerId);
-    resetBridgePointer();
-  }, { signal });
+    if (eventName === "pointerup") {
+      event.preventDefault?.();
+      applyBridge({
+        now: clock(),
+        event: "pointerup",
+        pointerId: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+        inZone: inStage(event, stage),
+      });
+      bridgeButton.releasePointerCapture?.(event.pointerId);
+    } else {
+      bridgeClickSuppressed = true;
+    }
+    resetBridgePointer(eventName);
+  };
+
+  bridgeButton.addEventListener("pointerup", finishBridgePointer, { signal });
 
   for (const eventName of ["pointercancel", "lostpointercapture"]) {
     bridgeButton.addEventListener(eventName, (event) => {
-      if (disposed || event.pointerId !== activeBridgePointerId) return;
-      bridgeClickSuppressed = true;
-      resetBridgePointer(eventName);
+      finishBridgePointer(event, eventName);
     }, { signal });
   }
 
@@ -255,7 +262,16 @@ export function createWorkshopInput(options = {}) {
     resetBridgePointer("blur");
     resetForkPointer("blur");
   };
-  windowTarget?.addEventListener?.("blur", handleBlur, { signal });
+  const pointerResetTargets = new Set([documentTarget, windowTarget]);
+  for (const target of pointerResetTargets) {
+    target?.addEventListener?.("pointerup", finishBridgePointer, { signal });
+    for (const eventName of ["pointercancel", "lostpointercapture"]) {
+      target?.addEventListener?.(eventName, (event) => {
+        finishBridgePointer(event, eventName);
+      }, { signal });
+    }
+    target?.addEventListener?.("blur", handleBlur, { signal });
+  }
   documentTarget?.addEventListener?.("visibilitychange", () => {
     if (documentTarget.hidden) {
       stopCamera("document-hidden");
