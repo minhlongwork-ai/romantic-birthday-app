@@ -6,6 +6,7 @@ import { mountWorkshop } from "../src/ui/workshop-controller.js";
 import { createWorkshopInput } from "../src/ui/workshop-input.js";
 
 const controllerPath = new URL("../src/ui/workshop-controller.js", import.meta.url);
+const stylesPath = new URL("../src/styles.css", import.meta.url);
 
 function createFakeElement(tagName, ownerDocument) {
   const attributes = new Map();
@@ -169,4 +170,46 @@ test("a synthesized click after an early primary bridge pointer release cannot c
 
   assert.deepEqual(commands, []);
   input.dispose();
+});
+
+test("a resolved camera start waits for the no-hand timeout before offering touch", async () => {
+  const document = createFakeDocument();
+  const stage = createFakeElement("div", document);
+  const bridgeButton = createFakeElement("button", document);
+  const leftButton = createFakeElement("button", document);
+  const rightButton = createFakeElement("button", document);
+  const notices = [];
+  const input = createWorkshopInput({
+    stage,
+    bridgeButton,
+    leftButton,
+    rightButton,
+    documentTarget: document,
+    windowTarget: { addEventListener() {} },
+    loadCameraSession: async () => ({
+      createCameraSession() {
+        return {
+          start: async () => {},
+          stop() {},
+        };
+      },
+    }),
+    onCameraNotice(notice) {
+      notices.push(notice);
+    },
+  });
+
+  await input.startCamera();
+
+  assert.deepEqual(notices, [{ reason: "starting", label: "", touchPrimary: false }]);
+  input.dispose();
+});
+
+test("reduced motion keeps the workshop paper shadow from interpolating position", async () => {
+  const styles = await readFile(stylesPath, "utf8");
+
+  assert.match(
+    styles,
+    /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.workshop-paper-shadow\s*,[\s\S]*?\{[\s\S]*?transition:\s*opacity\s+150ms/u,
+  );
 });

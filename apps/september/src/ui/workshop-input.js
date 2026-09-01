@@ -308,8 +308,6 @@ export function createWorkshopInput(options = {}) {
         await camera.start();
       } catch (error) {
         if (!disposed) offerTouch(error?.name ?? "camera-unavailable");
-      } finally {
-        if (!cameraHadUsableHand) offerTouch("camera-unavailable");
       }
     })();
     return cameraPromise;

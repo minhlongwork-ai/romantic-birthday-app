@@ -1574,6 +1574,7 @@ a:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .workshop-render-host.paper-shadow::after,
+  .workshop-paper-shadow,
   .workshop-action,
   .workshop-envelope::after {
     transition: opacity 150ms ease !important;
