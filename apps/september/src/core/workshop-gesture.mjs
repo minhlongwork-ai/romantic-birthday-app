@@ -181,6 +181,9 @@ export function advanceBridgeGate(previousGate, sample = {}) {
   }
 
   if (gate.activePointerId !== null) {
+    if (sample.pointerId !== undefined && sample.pointerId !== gate.activePointerId) {
+      return { gate, command: null };
+    }
     if (event === "pointerup") {
       const matchingPointer = sample.pointerId !== undefined
         && sample.pointerId === gate.activePointerId;
@@ -201,9 +204,6 @@ export function advanceBridgeGate(previousGate, sample = {}) {
         return finishBridge(gate, now);
       }
       return { gate: resetBridge(gate), command: null };
-    }
-    if (sample.pointerId !== undefined && sample.pointerId !== gate.activePointerId) {
-      return { gate, command: null };
     }
     if (event === "pointermove") {
       if (sample.inZone === false) {
@@ -340,6 +340,9 @@ export function advanceForkGate(previousGate, sample = {}) {
   }
 
   if (gate.activePointerId !== null) {
+    if (sample.pointerId !== undefined && sample.pointerId !== gate.activePointerId) {
+      return { gate, command: null };
+    }
     if (event === "pointerup") {
       const matchingPointer = sample.pointerId !== undefined
         && sample.pointerId === gate.activePointerId;
@@ -354,9 +357,6 @@ export function advanceForkGate(previousGate, sample = {}) {
         return finishFork({ ...gate, lastSampleAt: now }, now);
       }
       return { gate: resetForkDwell(gate), command: null };
-    }
-    if (sample.pointerId !== undefined && sample.pointerId !== gate.activePointerId) {
-      return { gate, command: null };
     }
     if (event !== "pointermove") return { gate, command: null };
   } else if (event) {

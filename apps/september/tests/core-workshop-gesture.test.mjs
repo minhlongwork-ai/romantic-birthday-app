@@ -172,7 +172,7 @@ test("bridge pointer-up requires the primary id and a valid final hold sample", 
   ({ gate } = advanceBridgeGate(gate, { now: 100, event: "pointermove", pointerId: 1, x: 100, y: 20 }));
   const mismatched = advanceBridgeGate(gate, { now: 500, event: "pointerup", pointerId: 2, x: 100, y: 20 });
   assert.equal(mismatched.command, null);
-  assert.equal(mismatched.gate.activePointerId, null);
+  assert.equal(mismatched.gate.activePointerId, 1);
 
   ({ gate } = advanceBridgeGate(createBridgeGate(), { now: 0, event: "pointerdown", pointerId: 1, x: 100, y: 20 }));
   const idless = advanceBridgeGate(gate, { now: 500, event: "pointerup", x: 100, y: 20 });
@@ -192,6 +192,37 @@ test("bridge pointer-up requires the primary id and a valid final hold sample", 
   ({ gate } = advanceBridgeGate(createBridgeGate(), { now: 0, event: "pointerdown", pointerId: 1, x: 100, y: 20, inZone: true }));
   const valid = advanceBridgeGate(gate, { now: 500, event: "pointerup", pointerId: 1, x: 100, y: 20, inZone: true });
   assert.equal(valid.command, "BRIDGE_CONFIRMED");
+});
+
+test("bridge secondary pointer-up preserves the primary hold gate", () => {
+  let gate = createBridgeGate();
+  ({ gate } = advanceBridgeGate(gate, {
+    now: 0,
+    event: "pointerdown",
+    pointerId: 1,
+    x: 100,
+    y: 20,
+    inZone: true,
+  }));
+  ({ gate } = advanceBridgeGate(gate, {
+    now: 100,
+    event: "pointermove",
+    pointerId: 1,
+    x: 100,
+    y: 20,
+    inZone: true,
+  }));
+  const before = structuredClone(gate);
+  const secondary = advanceBridgeGate(gate, {
+    now: 200,
+    event: "pointerup",
+    pointerId: 2,
+    x: 100 + POINTER_HOLD_TOLERANCE_PX + 20,
+    y: 20,
+    inZone: false,
+  });
+  assert.equal(secondary.command, null);
+  assert.deepEqual(secondary.gate, before);
 });
 
 test("fork drag never chooses on early up, cancel, loss of capture, or a secondary pointer", () => {
@@ -235,7 +266,7 @@ test("fork pointer-up requires the primary id and the final position to keep the
   ({ gate } = advance(gate, { now: 10, x: 230, event: "pointermove", pointerId: 1 }));
   const mismatched = advance(gate, { now: 360, x: 230, event: "pointerup", pointerId: 2 });
   assert.equal(mismatched.command, null);
-  assert.equal(mismatched.gate.activePointerId, null);
+  assert.equal(mismatched.gate.activePointerId, 1);
 
   ({ gate } = advance(createForkGate({ stageWidth: 300 }), { now: 0, x: 150, event: "pointerdown", pointerId: 1 }));
   ({ gate } = advance(gate, { now: 10, x: 230, event: "pointermove", pointerId: 1 }));
@@ -260,6 +291,21 @@ test("fork pointer-up requires the primary id and the final position to keep the
   const invalid = advance(gate, { now: 360, x: undefined, event: "pointerup", pointerId: 1 });
   assert.equal(invalid.command, null);
   assert.equal(invalid.gate.activePointerId, null);
+});
+
+test("fork secondary pointer-up preserves the primary side dwell", () => {
+  let gate = createForkGate({ stageWidth: 300 });
+  ({ gate } = advance(gate, { now: 0, x: 150, event: "pointerdown", pointerId: 1 }));
+  ({ gate } = advance(gate, { now: 10, x: 230, event: "pointermove", pointerId: 1 }));
+  const before = structuredClone(gate);
+  const secondary = advance(gate, {
+    now: 200,
+    x: 70,
+    event: "pointerup",
+    pointerId: 2,
+  });
+  assert.equal(secondary.command, null);
+  assert.deepEqual(secondary.gate, before);
 });
 
 test("fork threshold boundaries and neutral hysteresis prevent direction flicker", () => {
