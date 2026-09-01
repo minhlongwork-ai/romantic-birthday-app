@@ -213,6 +213,36 @@ test("a late reveal completion after dispose cannot commit or attach a card", as
   assert.equal(harness.root.querySelectorAll("[data-product-card]").length, 0);
 });
 
+test("dispose clears a synchronously mounted reveal before its awaited commit", async () => {
+  const runtime = await loadMainRuntime();
+  let revealDisposals = 0;
+  const harness = createHarness({
+    revealMount: (mountRoot) => {
+      const card = createProductCard();
+      mountRoot.replaceChildren(card);
+      return {
+        card,
+        dispose() {
+          revealDisposals += 1;
+        },
+      };
+    },
+  });
+  const app = createApp(runtime, harness, "session-sync-dispose");
+  readyWorkshop(app);
+  harness.pushes.length = 0;
+
+  const request = app.requestGiftReveal({ giftId: "cake", transaction: 70 });
+  app.dispose();
+  assert.equal(harness.root.querySelectorAll("[data-product-card]").length, 0);
+
+  assert.equal(await request, false);
+  assert.deepEqual(app.state.openOrder, []);
+  assert.equal(harness.pushes.length, 0);
+  assert.equal(revealDisposals, 1);
+  assert.equal(harness.root.querySelectorAll("[data-product-card]").length, 0);
+});
+
 test("a late reveal completion after Back cannot overtake the restored workshop", async () => {
   const runtime = await loadMainRuntime();
   let finishMount;

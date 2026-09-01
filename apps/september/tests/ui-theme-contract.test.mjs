@@ -28,7 +28,7 @@ test("September runtime UI contains only the paper-and-brass workshop vocabulary
   );
   assert.doesNotMatch(
     source,
-    /(?:\.blind-box|\.game-entry-wrap|\.reveal-sequence|\.gift-messages|\.gift-message|\.bow-flourish)/u,
+    /(?:\.blind-box|\.game-entry-wrap|\.reveal-sequence|\.gift-messages|\.gift-message|\.bow-flourish|\.gift-seal\.has-photo|\.compartment:hover|\.gift-silhouette|\.gift-teaser-image)/u,
   );
   assert.match(source, /workshop-stage/u);
   assert.match(source, /paper-shadow/u);

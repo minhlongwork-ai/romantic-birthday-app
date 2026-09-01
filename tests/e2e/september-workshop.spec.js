@@ -16,8 +16,13 @@ test("September removes personalization from the visible URL before the workshop
   await page.goto("/september/?to=Minh&from=Long&age=29");
 
   await expect(page).toHaveURL(/\/september\/$/u);
+  await expect(page.locator('section[data-scene="intro"]')).toBeVisible();
   await expect(page.getByRole("heading", { name: "Một xưởng nhỏ đang chờ em." })).toBeVisible();
+  await expect(page.locator("[data-product-card]")).toHaveCount(0);
   await expect(page.locator("body")).not.toContainText("29");
+  const accessibilitySnapshot = await page.locator("body").ariaSnapshot();
+  expect(accessibilitySnapshot).toContain("Một xưởng nhỏ đang chờ em.");
+  expect(accessibilitySnapshot).not.toContain("29");
 
   const { historyState, replaces, visibleAddress } = await page.evaluate(() => ({
     historyState: window.history.state,

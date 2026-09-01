@@ -65,6 +65,8 @@ export function createSeptemberExperienceApp(options = {}) {
   let cleanupScene = noOp;
   let activeScene = { kind: "initial" };
   let pendingReveal = null;
+  let tentativeRevealMount = null;
+  const disposedRevealMounts = new WeakSet();
   let focusGiftId = null;
   let liveTimer = null;
   let started = false;
@@ -136,6 +138,24 @@ export function createSeptemberExperienceApp(options = {}) {
     pendingReveal = null;
   }
 
+  function disposeRevealMount(mounted) {
+    if (!mounted || (typeof mounted !== "object" && typeof mounted !== "function")) return;
+    if (disposedRevealMounts.has(mounted)) return;
+    disposedRevealMounts.add(mounted);
+    try {
+      mounted.dispose?.();
+    } catch {}
+  }
+
+  function cancelPendingReveal({ clearRoot = false } = {}) {
+    const attempt = pendingReveal;
+    const ownsTransition = ownsRevealTransition(attempt);
+    invalidatePendingReveal();
+    disposeRevealMount(tentativeRevealMount);
+    tentativeRevealMount = null;
+    if (clearRoot && ownsTransition) root?.replaceChildren?.();
+  }
+
   function createRevealMountRoot(attempt) {
     return Object.freeze({
       get dataset() {
@@ -157,7 +177,7 @@ export function createSeptemberExperienceApp(options = {}) {
   }
 
   function installScene(kind, mount) {
-    invalidatePendingReveal();
+    cancelPendingReveal();
     const previousCleanup = cleanupScene;
     cleanupScene = noOp;
     previousCleanup();
@@ -200,9 +220,8 @@ export function createSeptemberExperienceApp(options = {}) {
   }
 
   function abandonRevealMount(mounted, attempt) {
-    try {
-      mounted?.dispose?.();
-    } catch {}
+    disposeRevealMount(mounted);
+    if (tentativeRevealMount === mounted) tentativeRevealMount = null;
     if (!ownsRevealTransition(attempt)) return false;
     invalidatePendingReveal();
     state = { ...state, scene: "workshop", activeGiftId: null };
@@ -225,6 +244,7 @@ export function createSeptemberExperienceApp(options = {}) {
     }
     state = { ...state, scene: "reveal", activeGiftId: giftId };
     pushHistory("reveal");
+    tentativeRevealMount = null;
     cleanupScene = once(mounted.dispose);
     activeScene = { kind: "reveal", giftId };
     invalidatePendingReveal();
@@ -246,10 +266,15 @@ export function createSeptemberExperienceApp(options = {}) {
     let mounted = null;
     try {
       const revealMount = mount ?? mounts.reveal;
-      mounted = await revealMount(
+      const mountResult = revealMount(
         createRevealMountRoot(attempt),
         sceneContext({ giftId, transaction }),
       );
+      if (mountResult && typeof mountResult.then !== "function") {
+        tentativeRevealMount = mountResult;
+      }
+      mounted = await mountResult;
+      if (ownsRevealTransition(attempt)) tentativeRevealMount = mounted;
     } catch {
       return abandonRevealMount(null, attempt);
     }
@@ -266,7 +291,7 @@ export function createSeptemberExperienceApp(options = {}) {
     if (!mounts[scene]) return false;
     if (scene === "reveal" && !state.activeGiftId) return false;
     if (scene === "ending" && deriveWorkshopPhase(state) !== "complete") return false;
-    invalidatePendingReveal();
+    cancelPendingReveal();
     state = {
       ...state,
       scene,
@@ -300,7 +325,7 @@ export function createSeptemberExperienceApp(options = {}) {
   }
 
   function restart() {
-    invalidatePendingReveal();
+    cancelPendingReveal();
     const previousCleanup = cleanupScene;
     cleanupScene = noOp;
     previousCleanup();
@@ -315,7 +340,7 @@ export function createSeptemberExperienceApp(options = {}) {
   }
 
   function handlePopState(event) {
-    invalidatePendingReveal();
+    cancelPendingReveal();
     const previousGiftId = state.activeGiftId;
     const target = resolveHistoryTarget(event?.state, { sessionToken, state });
     if (target.scene === "intro" && target.replace) {
@@ -339,7 +364,7 @@ export function createSeptemberExperienceApp(options = {}) {
   }
 
   function dispose() {
-    invalidatePendingReveal();
+    cancelPendingReveal({ clearRoot: true });
     const previousCleanup = cleanupScene;
     cleanupScene = noOp;
     previousCleanup();
