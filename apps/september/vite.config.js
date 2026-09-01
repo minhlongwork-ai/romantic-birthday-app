@@ -13,6 +13,11 @@ export default defineConfig({
   plugins: [createSiteMetadataPlugin(site, "september")],
   build: {
     target: "es2022",
+    modulePreload: {
+      resolveDependencies(_filename, deps) {
+        return deps.filter((dependency) => !dependency.includes("september-camera-"));
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks(id) {

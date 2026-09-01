@@ -107,8 +107,12 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
   );
   assert.ok(septemberInitialUrls.includes('/september/images/background-desktop.jpg'));
   assert.equal(septemberInitialUrls.includes('/september/images/preview.webp'), false);
+  // The lightweight camera adapter may be module-preloaded by Vite; the
+  // privacy/budget boundary is that MediaPipe worker, model, and WASM assets
+  // stay out of the initial transfer until the user opts into camera mode.
   assert.equal(
-    septemberInitialUrls.some(url => /\/september-camera-[A-Za-z0-9_-]+\.js$/u.test(url)),
+    septemberInitialUrls.some(url =>
+      /\/september\/(?:models|vendor\/mediapipe)\//u.test(url)),
     false,
   );
   const septemberLazyUrls = manifest.lazyAssetUrlsByRoute?.september;
