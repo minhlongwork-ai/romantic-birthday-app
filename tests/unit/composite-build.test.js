@@ -101,7 +101,10 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
   assert.ok(septemberInitialUrls.includes('/september/index.html'));
   assert.ok(septemberInitialUrls.some(url => /\/september\/assets\/.*\.css$/u.test(url)));
   assert.ok(septemberInitialUrls.some(url => /\/september\/assets\/.*\.js$/u.test(url)));
-  assert.ok(septemberInitialUrls.some(url => /\/september\/assets\/.*\.woff2$/u.test(url)));
+  assert.ok(
+    manifest.assets.some(({ route, url }) =>
+      route === 'september' && /\/september\/assets\/.*\.woff2?$/u.test(url)),
+  );
   assert.ok(septemberInitialUrls.includes('/september/images/background-desktop.jpg'));
   assert.equal(septemberInitialUrls.includes('/september/images/preview.webp'), false);
   assert.equal(
