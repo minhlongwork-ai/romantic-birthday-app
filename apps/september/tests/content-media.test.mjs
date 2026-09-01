@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 
 import sharp from "sharp";
 
+import { SEPTEMBER_ASSET_SOURCES } from "../src/content/assets.mjs";
 import { SEPTEMBER_GIFTS } from "../src/content/gifts.mjs";
 import {
   createSeptemberMediaManifest,
@@ -24,6 +25,8 @@ import {
 const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const publicDir = path.join(appRoot, "public");
 const manifestPath = path.join(appRoot, "src", "content", "media-manifest.json");
+const generatedManifestPath = path.join(appRoot, "src", "generated", "media-manifest.json");
+const generatedReleaseContentPath = path.join(appRoot, "src", "generated", "release-content.json");
 
 async function temporaryPublic(t) {
   const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "september-media-"));
@@ -139,6 +142,63 @@ test("the checked-in manifest matches every current product encoding", async () 
       manifest,
     }),
     [],
+  );
+});
+
+test("generated records join only the verified demo sources, provenance, and picture encodings", async () => {
+  const [generatedManifestSource, generatedReleaseSource] = await Promise.all([
+    readFile(generatedManifestPath, "utf8"),
+    readFile(generatedReleaseContentPath, "utf8"),
+  ]);
+  const generatedManifest = JSON.parse(generatedManifestSource);
+  const generatedRelease = JSON.parse(generatedReleaseSource);
+
+  assert.deepEqual(
+    generatedManifest.assets.map(({ assetId, sourcePath, provenance, alt, outputs }) => ({
+      assetId,
+      sourcePath,
+      provenance,
+      alt,
+      formats: outputs.map(({ format }) => format),
+      urls: outputs.map(({ url }) => url),
+      digests: outputs.map(({ sha256 }) => sha256),
+    })),
+    SEPTEMBER_GIFTS.map((gift) => {
+      const source = SEPTEMBER_ASSET_SOURCES.products[gift.id];
+      return {
+        assetId: gift.productAssetId,
+        sourcePath: source.sourcePath,
+        provenance: {
+          kind: "pexels",
+          creator: source.creator,
+          pageUrl: source.pageUrl,
+          sourceUrl: source.sourceUrl,
+          licenseUrl: source.licenseUrl,
+        },
+        alt: gift.media.alt,
+        formats: ["avif", "webp", "jpeg"],
+        urls: [gift.media.avifSrc, gift.media.webpSrc, gift.media.jpegSrc],
+        digests: generatedManifest.assets
+          .find(({ assetId }) => assetId === gift.productAssetId)
+          .outputs.map(({ sha256 }) => sha256),
+      };
+    }),
+  );
+  assert.deepEqual(
+    generatedRelease.gifts.map(({ id, approved, fixture, media }) => ({
+      id,
+      approved,
+      fixture,
+      assetId: media.assetId,
+      sources: [media.avifSrc, media.webpSrc, media.jpegSrc],
+    })),
+    SEPTEMBER_GIFTS.map((gift) => ({
+      id: gift.id,
+      approved: false,
+      fixture: true,
+      assetId: gift.productAssetId,
+      sources: [gift.media.avifSrc, gift.media.webpSrc, gift.media.jpegSrc],
+    })),
   );
 });
 

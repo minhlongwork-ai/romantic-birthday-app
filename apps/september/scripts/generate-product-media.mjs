@@ -40,23 +40,44 @@ function productCrop(id, width, height) {
     .resize(width, height, { fit: "cover", position: "attention" });
 }
 
+function workshopPreviewOverlay() {
+  return Buffer.from(`
+    <svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+      <rect width="1200" height="630" fill="#291c17" opacity="0.46"/>
+      <rect y="365" width="1200" height="265" fill="#5e3828" opacity="0.72"/>
+      <g stroke="#c5966f" stroke-width="3" opacity="0.2">
+        <path d="M0 410H1200M0 475H1200M0 545H1200M0 603H1200"/>
+      </g>
+      <ellipse cx="600" cy="501" rx="350" ry="55" fill="#1e130f" opacity="0.35"/>
+      <g transform="translate(355 145)">
+        <path d="M15 72 245 0l230 72v276H15Z" fill="#d8c1a0"/>
+        <path d="M15 72 245 248 475 72" fill="#f2dfbd"/>
+        <path d="m15 348 174-178 56 78 56-78 174 178" fill="#cba780"/>
+        <path d="m15 72 230 176L475 72" fill="none" stroke="#8c654c" stroke-width="7" stroke-linejoin="round"/>
+        <circle cx="245" cy="248" r="31" fill="#b5884b"/>
+        <circle cx="245" cy="248" r="19" fill="none" stroke="#f0d39b" stroke-width="4"/>
+      </g>
+      <g fill="#d7b57a" opacity="0.9">
+        <path d="M950 135h72l26 145h-124Z"/>
+        <path d="M984 95h7v42h-7z"/>
+      </g>
+      <circle cx="987" cy="125" r="73" fill="#efc77b" opacity="0.17"/>
+      <path d="M142 495c44-42 115-46 171-9l-29 44c-37-24-85-20-112 7Z" fill="#f2e4cc" opacity="0.72"/>
+    </svg>
+  `);
+}
+
 async function generateOutputs(outputDir) {
   await mkdir(outputDir, { recursive: true });
   await Promise.all(
     productIds.map((id) => encodeAll(productCrop(id, 800, 800), outputDir, id)),
   );
 
-  const [cake, bouquet] = await Promise.all(
-    productIds.map((id) => productCrop(id, 430, 430).png().toBuffer()),
-  );
   const preview = sharp(path.join(sourceDir, "background-warm-silk.jpeg"))
     .rotate()
     .resize(1200, 630, { fit: "cover", position: "attention" })
-    .modulate({ brightness: 0.58 })
-    .composite([
-      { input: cake, left: 95, top: 100 },
-      { input: bouquet, left: 675, top: 100 },
-    ]);
+    .modulate({ brightness: 0.64, saturation: 0.7 })
+    .composite([{ input: workshopPreviewOverlay(), top: 0, left: 0 }]);
   await encodeAll(preview, outputDir, "preview");
 }
 
