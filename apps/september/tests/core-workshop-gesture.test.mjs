@@ -166,6 +166,34 @@ test("bridge pointer ownership ignores secondary pointers and cancellation event
   assert.equal(gate.activePointerId, null);
 });
 
+test("bridge pointer-up requires the primary id and a valid final hold sample", () => {
+  let gate = createBridgeGate();
+  ({ gate } = advanceBridgeGate(gate, { now: 0, event: "pointerdown", pointerId: 1, x: 100, y: 20 }));
+  ({ gate } = advanceBridgeGate(gate, { now: 100, event: "pointermove", pointerId: 1, x: 100, y: 20 }));
+  const mismatched = advanceBridgeGate(gate, { now: 500, event: "pointerup", pointerId: 2, x: 100, y: 20 });
+  assert.equal(mismatched.command, null);
+  assert.equal(mismatched.gate.activePointerId, null);
+
+  ({ gate } = advanceBridgeGate(createBridgeGate(), { now: 0, event: "pointerdown", pointerId: 1, x: 100, y: 20 }));
+  const idless = advanceBridgeGate(gate, { now: 500, event: "pointerup", x: 100, y: 20 });
+  assert.equal(idless.command, null);
+  assert.equal(idless.gate.activePointerId, null);
+
+  ({ gate } = advanceBridgeGate(createBridgeGate(), { now: 0, event: "pointerdown", pointerId: 1, x: 100, y: 20 }));
+  const outOfZone = advanceBridgeGate(gate, { now: 500, event: "pointerup", pointerId: 1, x: 100, y: 20, inZone: false });
+  assert.equal(outOfZone.command, null);
+  assert.equal(outOfZone.gate.activePointerId, null);
+
+  ({ gate } = advanceBridgeGate(createBridgeGate(), { now: 0, event: "pointerdown", pointerId: 1, x: 100, y: 20 }));
+  const moved = advanceBridgeGate(gate, { now: 500, event: "pointerup", pointerId: 1, x: 100 + POINTER_HOLD_TOLERANCE_PX + 1, y: 20 });
+  assert.equal(moved.command, null);
+  assert.equal(moved.gate.activePointerId, null);
+
+  ({ gate } = advanceBridgeGate(createBridgeGate(), { now: 0, event: "pointerdown", pointerId: 1, x: 100, y: 20, inZone: true }));
+  const valid = advanceBridgeGate(gate, { now: 500, event: "pointerup", pointerId: 1, x: 100, y: 20, inZone: true });
+  assert.equal(valid.command, "BRIDGE_CONFIRMED");
+});
+
 test("fork drag never chooses on early up, cancel, loss of capture, or a secondary pointer", () => {
   let gate = createForkGate({ stageWidth: 300 });
   ({ gate } = advance(gate, { now: 0, x: 150, event: "pointerdown", pointerId: 1 }));
@@ -199,6 +227,39 @@ test("fork pointer-up at the dwell boundary may confirm, but early release reset
   ({ gate } = advance(gate, { now: 100, x: 150, event: "pointerdown", pointerId: 1 }));
   ({ gate } = advance(gate, { now: 110, x: 230, event: "pointermove", pointerId: 1 }));
   assert.equal(advance(gate, { now: 110 + BRANCH_DWELL_MS, x: 230, event: "pointerup", pointerId: 1 }).command, "CHOOSE_RIGHT");
+});
+
+test("fork pointer-up requires the primary id and the final position to keep the side", () => {
+  let gate = createForkGate({ stageWidth: 300 });
+  ({ gate } = advance(gate, { now: 0, x: 150, event: "pointerdown", pointerId: 1 }));
+  ({ gate } = advance(gate, { now: 10, x: 230, event: "pointermove", pointerId: 1 }));
+  const mismatched = advance(gate, { now: 360, x: 230, event: "pointerup", pointerId: 2 });
+  assert.equal(mismatched.command, null);
+  assert.equal(mismatched.gate.activePointerId, null);
+
+  ({ gate } = advance(createForkGate({ stageWidth: 300 }), { now: 0, x: 150, event: "pointerdown", pointerId: 1 }));
+  ({ gate } = advance(gate, { now: 10, x: 230, event: "pointermove", pointerId: 1 }));
+  const idless = advance(gate, { now: 360, x: 230, event: "pointerup" });
+  assert.equal(idless.command, null);
+  assert.equal(idless.gate.activePointerId, null);
+
+  ({ gate } = advance(createForkGate({ stageWidth: 300 }), { now: 0, x: 150, event: "pointerdown", pointerId: 1 }));
+  ({ gate } = advance(gate, { now: 10, x: 230, event: "pointermove", pointerId: 1 }));
+  const neutral = advance(gate, { now: 360, x: 150, event: "pointerup", pointerId: 1 });
+  assert.equal(neutral.command, null);
+  assert.equal(neutral.gate.activePointerId, null);
+
+  ({ gate } = advance(createForkGate({ stageWidth: 300 }), { now: 0, x: 150, event: "pointerdown", pointerId: 1 }));
+  ({ gate } = advance(gate, { now: 10, x: 230, event: "pointermove", pointerId: 1 }));
+  const opposite = advance(gate, { now: 360, x: 70, event: "pointerup", pointerId: 1 });
+  assert.equal(opposite.command, null);
+  assert.equal(opposite.gate.activePointerId, null);
+
+  ({ gate } = advance(createForkGate({ stageWidth: 300 }), { now: 0, x: 150, event: "pointerdown", pointerId: 1 }));
+  ({ gate } = advance(gate, { now: 10, x: 230, event: "pointermove", pointerId: 1 }));
+  const invalid = advance(gate, { now: 360, x: undefined, event: "pointerup", pointerId: 1 });
+  assert.equal(invalid.command, null);
+  assert.equal(invalid.gate.activePointerId, null);
 });
 
 test("fork threshold boundaries and neutral hysteresis prevent direction flicker", () => {
@@ -248,4 +309,50 @@ test("fork blur and cleanup reset pointer ownership without commanding", () => {
   assert.equal(blurred.command, null);
   assert.equal(blurred.gate.activePointerId, null);
   assert.equal(advanceForkGate(blurred.gate, { now: 500, x: 230 }).command, null);
+});
+
+test("pointercancel, lost capture, and cleanup each reset the active fork pointer", () => {
+  for (const event of ["pointercancel", "lostpointercapture", "cleanup"]) {
+    let gate = createForkGate({ stageWidth: 300 });
+    ({ gate } = advance(gate, { now: 0, x: 150, event: "pointerdown", pointerId: 1 }));
+    ({ gate } = advance(gate, { now: 50, x: 230, event: "pointermove", pointerId: 1 }));
+    const result = advance(gate, { now: 100, x: 230, event, pointerId: 1 });
+    assert.equal(result.command, null);
+    assert.equal(result.gate.activePointerId, null);
+    assert.equal(result.gate.side, null);
+  }
+});
+
+test("advance and reset never mutate their input gate", () => {
+  let gate = createForkGate({ stageWidth: 300 });
+  const original = structuredClone(gate);
+  const advanced = advance(gate, { now: 0, x: 150, event: "pointerdown", pointerId: 1 });
+  assert.deepEqual(gate, original);
+  const reset = resetPointerGate(gate);
+  assert.deepEqual(gate, original);
+  assert.notEqual(advanced.gate, gate);
+  assert.notEqual(reset, gate);
+
+  const bridge = createBridgeGate();
+  const bridgeOriginal = structuredClone(bridge);
+  const bridgeAdvanced = advanceBridgeGate(bridge, {
+    now: 0,
+    event: "pointerdown",
+    pointerId: 1,
+    x: 10,
+    y: 10,
+  });
+  assert.deepEqual(bridge, bridgeOriginal);
+  assert.deepEqual(resetPointerGate(bridge), {
+    ...bridgeOriginal,
+    activePointerId: null,
+    dwellStartedAt: null,
+    lastSampleAt: null,
+    dropoutStartedAt: null,
+    side: null,
+    pointerStartX: null,
+    pointerStartY: null,
+    locked: false,
+  });
+  assert.notEqual(bridgeAdvanced.gate, bridge);
 });
