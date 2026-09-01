@@ -13,6 +13,7 @@ import {
   createForkGate,
   derivePalmOpenness,
   resetPointerGate,
+  sanitizeCameraSample,
 } from "../src/core/workshop-gesture.mjs";
 
 const POINTS = 21;
@@ -77,6 +78,41 @@ test("derivePalmOpenness requires exactly 21 normalized landmarks", () => {
     () => derivePalmOpenness(Array.from({ length: 21 }, () => point(2, 0.5))),
     /normalized landmark/,
   );
+});
+
+test("sanitizeCameraSample passes only normalized worker gesture data to input adapters", () => {
+  assert.deepEqual(sanitizeCameraSample({
+    generation: 4,
+    sequence: 2,
+    timestampMs: 120,
+    tracking: true,
+    palmX: 0.25,
+    palmY: 0.75,
+    openness: 0.9,
+    landmarks: canonicalHand(),
+    bitmap: "not allowed",
+  }), {
+    generation: 4,
+    sequence: 2,
+    timestampMs: 120,
+    tracking: true,
+    palmX: 0.25,
+    palmY: 0.75,
+    openness: 0.9,
+  });
+  assert.equal(sanitizeCameraSample({ tracking: true, palmX: 2 }), null);
+  assert.deepEqual(sanitizeCameraSample({
+    generation: 4,
+    sequence: 3,
+    timestampMs: 121,
+    tracking: false,
+    rawFrame: "not allowed",
+  }), {
+    generation: 4,
+    sequence: 3,
+    timestampMs: 121,
+    tracking: false,
+  });
 });
 
 test("open and closed synthetic hands separate at the calibrated threshold", () => {

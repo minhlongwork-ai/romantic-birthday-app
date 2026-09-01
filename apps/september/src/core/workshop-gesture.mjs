@@ -100,6 +100,29 @@ export function derivePalmOpenness(landmarks) {
   return fingerValues.reduce((sum, value) => sum + value, 0) / fingerValues.length;
 }
 
+/**
+ * Drops every camera-only field before a worker result reaches the workshop
+ * input adapters.  The returned value is deliberately limited to the gesture
+ * contract, so raw landmarks and frames cannot cross this boundary.
+ */
+export function sanitizeCameraSample(sample) {
+  if (!sample || typeof sample !== "object") return null;
+  const { generation, sequence, timestampMs, tracking } = sample;
+  if (!Number.isInteger(generation) || generation < 0
+    || !Number.isInteger(sequence) || sequence < 0
+    || !isFiniteNumber(timestampMs) || typeof tracking !== "boolean") {
+    return null;
+  }
+  if (!tracking) return { generation, sequence, timestampMs, tracking: false };
+  const { palmX, palmY, openness } = sample;
+  if (!isFiniteNumber(palmX) || palmX < 0 || palmX > 1
+    || !isFiniteNumber(palmY) || palmY < 0 || palmY > 1
+    || !isFiniteNumber(openness) || openness < 0 || openness > 1) {
+    return null;
+  }
+  return { generation, sequence, timestampMs, tracking, palmX, palmY, openness };
+}
+
 function validNow(now) {
   return isFiniteNumber(now) ? now : null;
 }
