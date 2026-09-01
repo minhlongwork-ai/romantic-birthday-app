@@ -60,6 +60,15 @@ function createFakeElement(tagName, ownerDocument) {
     getAttribute(name) {
       return attributes.get(name) ?? null;
     },
+    scrollIntoView(options) {
+      node.scrollOptions = options;
+    },
+    focus(options) {
+      node.focusOptions = options;
+      if (node.tagName === "BUTTON" || node.getAttribute("tabindex") !== null) {
+        ownerDocument.activeElement = node;
+      }
+    },
     addEventListener(type, listener, options = {}) {
       if (!listeners.has(type)) listeners.set(type, new Set());
       listeners.get(type).add(listener);
@@ -105,6 +114,7 @@ function createFakeDocument() {
   const listeners = new Map();
   const document = {
     hidden: false,
+    activeElement: null,
     createElement(tagName) {
       return createFakeElement(tagName, document);
     },
@@ -163,6 +173,28 @@ test("mountWorkshop exposes an idempotent SceneMount disposer", () => {
   mounted.dispose();
   mounted.dispose();
   assert.equal(root.children.length, 0);
+});
+
+test("mountWorkshop makes the heading focused by its helper programmatically focusable", () => {
+  const originalRequestAnimationFrame = globalThis.requestAnimationFrame;
+  globalThis.requestAnimationFrame = (callback) => {
+    callback();
+    return 0;
+  };
+  try {
+    const document = createFakeDocument();
+    const root = createFakeElement("main", document);
+    const mounted = mountWorkshop(root, fakeWorkshopContext());
+    const heading = root.querySelector("h2");
+
+    assert.equal(heading?.getAttribute("tabindex"), "-1");
+    assert.equal(document.activeElement, heading);
+    assert.deepEqual(heading?.focusOptions, { preventScroll: true });
+    mounted.dispose();
+  } finally {
+    if (originalRequestAnimationFrame === undefined) delete globalThis.requestAnimationFrame;
+    else globalThis.requestAnimationFrame = originalRequestAnimationFrame;
+  }
 });
 
 test("a synthesized click after an early primary bridge pointer release cannot confirm", () => {

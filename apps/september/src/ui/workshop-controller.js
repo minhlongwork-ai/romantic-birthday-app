@@ -97,7 +97,7 @@ export function createWorkshopController(options = {}) {
   const invitationTitle = createElement(root, "h2", {
     className: "workshop-title",
     text: SEPTEMBER_COPY.invitationTitle,
-    attributes: { id: "workshop-invitation-title" },
+    attributes: { id: "workshop-invitation-title", tabindex: "-1" },
   });
   const invitationPrivacy = createElement(root, "p", {
     className: "workshop-note",
