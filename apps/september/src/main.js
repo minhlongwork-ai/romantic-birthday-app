@@ -37,7 +37,7 @@ try {
 } catch {}
 const persistedOrder = readNfcProgress(nfcStorage);
 let sessionToken = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
-let state = createExperienceState({ openedGiftIds: persistedOrder });
+let state = createExperienceState({ openedGiftIds: persistedOrder, legacy: true });
 if (nfcGiftId) {
   state = { ...state, scene: "reveal", activeGiftId: nfcGiftId };
 }
@@ -148,7 +148,7 @@ function restart() {
   cleanupScene();
   sessionToken = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
   clearNfcProgress(nfcStorage);
-  state = createExperienceState();
+  state = createExperienceState({ legacy: true });
   pushHistory("intro");
   render();
   announce("Hộp quà đã bắt đầu lại.");

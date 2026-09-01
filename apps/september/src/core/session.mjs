@@ -30,14 +30,18 @@ function legacyDeliveryOrder(openOrder) {
   return [...openOrder, ...GIFT_IDS.filter((giftId) => !openOrder.includes(giftId))];
 }
 
-export function createExperienceState({ openedGiftIds = [] } = {}) {
+export function createExperienceState({ openedGiftIds = [], legacy = false } = {}) {
   const safeOrder = uniqueKnownGiftIds(openedGiftIds);
   // This adapter lets the legacy NFC scene stay importable until Task 9 removes it.
-  const deliveryOrder = safeOrder.length > 0 ? legacyDeliveryOrder(safeOrder) : [];
+  const deliveryOrder = legacy
+    ? legacyDeliveryOrder(safeOrder)
+    : safeOrder.length > 0
+      ? legacyDeliveryOrder(safeOrder)
+      : [];
   const state = {
     scene: "intro",
     deliveryOrder,
-    deliveredCount: safeOrder.length,
+    deliveredCount: legacy ? deliveryOrder.length : safeOrder.length,
     openedGiftIds: new Set(safeOrder),
     openOrder: [...safeOrder],
     activeGiftId: null,
@@ -46,7 +50,7 @@ export function createExperienceState({ openedGiftIds = [] } = {}) {
     completionMode: null,
   };
 
-  return safeOrder.length > 0
+  return deliveryOrder.length > 0
     ? { ...state, workshopPhase: deriveWorkshopPhase(state) }
     : state;
 }

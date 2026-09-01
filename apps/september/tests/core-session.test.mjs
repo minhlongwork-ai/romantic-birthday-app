@@ -51,6 +51,14 @@ test("fresh workshop state owns the v2 delivery fields without sharing puzzle de
   assert.notEqual(state.puzzleDetents, INITIAL_DETENTS);
 });
 
+test("the retained v1 runtime can still commit its first gift", () => {
+  const legacyState = createExperienceState({ legacy: true });
+  const opened = commitOpenedGift(legacyState, "bouquet");
+
+  assert.deepEqual(opened.openOrder, ["bouquet"]);
+  assert.deepEqual(opened.openedGiftIds, new Set(["bouquet"]));
+});
+
 test("cannot open a gift before its closed envelope is ready", () => {
   const selected = selectWorkshopBranch(createExperienceState(), "left");
 
