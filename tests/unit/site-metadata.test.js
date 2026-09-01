@@ -26,12 +26,12 @@ test('metadata values resolve from registry-derived site config without route-sp
   assert.equal(september.title, 'Một chút ngọt, một chút hoa');
   assert.equal(
     september.description,
-    'Hai món quà nhỏ — bánh tiramisu chanh và một bó hoa — được chuẩn bị riêng cho em.',
+    'Một hộp quà nhỏ với hai bất ngờ, được chuẩn bị riêng cho em.',
   );
   assert.equal(september.ogTitle, 'Một chút ngọt, một chút hoa');
   assert.equal(
     september.ogDescription,
-    'Chạm vào hai món quà theo thứ tự em chọn và thắt chiếc nơ cuối cùng.',
+    'Mở hộp theo thứ tự em chọn và khám phá điều anh gửi gắm.',
   );
 });
 
