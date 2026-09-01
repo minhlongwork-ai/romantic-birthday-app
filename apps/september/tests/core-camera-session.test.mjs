@@ -145,6 +145,27 @@ test("late getUserMedia resolution after stop releases tracks and cannot start a
   assert.equal(workerFactory.mock.calls.length, 0);
 });
 
+test("a document hidden before deferred media resolves releases the stream without creating a worker", async () => {
+  const deferred = createDeferred();
+  const documentTarget = { ...createEventTarget(), hidden: false };
+  const track = fakeTrack();
+  const workerFactory = mock.fn(() => new FakeWorker());
+  const session = createCameraSession({
+    getUserMedia: () => deferred.promise,
+    workerFactory,
+    createVideo: fakeVideo,
+    documentTarget,
+  });
+  const starting = session.start();
+
+  documentTarget.hidden = true;
+  deferred.resolve(fakeStream(track));
+
+  await assert.rejects(starting, { name: "AbortError" });
+  assert.equal(track.stop.mock.calls.length, 1);
+  assert.equal(workerFactory.mock.calls.length, 0);
+});
+
 test("one busy inference drops newer frames and stale worker samples are ignored", async () => {
   const worker = new FakeWorker();
   const scheduler = new FakeFrameScheduler();

@@ -381,6 +381,10 @@ export function createCameraSession(options = {}) {
           if (documentTarget.hidden) end(candidate, "document-hidden");
         }, candidate.removers);
         addListener(windowTarget, "pagehide", () => end(candidate, "pagehide"), candidate.removers);
+        if (documentTarget?.hidden) {
+          end(candidate, "document-hidden");
+          throw abortError("document-hidden");
+        }
         try {
           await candidate.video.play?.();
         } catch {
