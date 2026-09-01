@@ -93,13 +93,9 @@ async function buildArtifacts({
     ]);
     gifts.push({
       id: gift.id,
-      groupId: gift.groupId,
-      groupLabel: gift.groupLabel,
-      clue: gift.clue,
       productName: gift.productName,
       variant: gift.variant,
-      reason: gift.reason,
-      personalMessage: gift.personalMessage,
+      message: gift.message,
       approved: gift.approved,
       fixture: gift.fixture,
       media: {

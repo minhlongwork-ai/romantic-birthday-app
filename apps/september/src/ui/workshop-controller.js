@@ -1,9 +1,7 @@
 import { SEPTEMBER_COPY } from "../content/copy.mjs";
-import { reduceWorkshopState } from "../core/session.mjs";
 import { createWorkshopInput } from "./workshop-input.js";
 
 const ENVELOPE_OPEN_MS = 420;
-const WORKSHOP_INTRO_TITLE = "Một xưởng nhỏ đang chờ em.";
 
 function createElement(root, tagName, options = {}, ...children) {
   const document = root?.ownerDocument ?? globalThis.document;
@@ -55,13 +53,20 @@ function deliveryIndex(phase) {
  * limited to a ready identifier at the envelope handoff boundary.
  */
 export function createWorkshopController(options = {}) {
-  const { root, reducedMotion = false, dispatch = () => {}, requestGiftReveal = () => {}, announce = () => {} } = options;
+  const {
+    root,
+    reducedMotion = false,
+    continueWorkshop = () => null,
+    requestGiftReveal = () => {},
+    openLetter = () => {},
+    announce = () => {},
+    focusGiftId = null,
+  } = options;
   if (!root?.replaceChildren) throw new TypeError("Workshop controller requires a DOM root.");
 
   const abortController = new AbortController();
   const { signal } = abortController;
   let state = options.state ?? { workshopPhase: "invitation", deliveryOrder: [], deliveredCount: 0 };
-  let started = state.workshopPhase !== "invitation";
   let interactionSelected = state.workshopPhase !== "invitation";
   let disposed = false;
   let renderer = null;
@@ -73,25 +78,9 @@ export function createWorkshopController(options = {}) {
 
   const section = createElement(root, "section", {
     className: "scene scene-workshop",
-    attributes: { "aria-labelledby": "workshop-title" },
+    attributes: { "aria-labelledby": "workshop-invitation-title" },
     dataset: { scene: "workshop" },
   });
-  const introCopy = createElement(
-    root,
-    "header",
-    { className: "scene-copy workshop-intro" },
-    createElement(root, "p", { className: "scene-kicker", text: "Dành cho em" }),
-    createElement(root, "h1", {
-      className: "scene-title",
-      text: WORKSHOP_INTRO_TITLE,
-      attributes: { id: "workshop-title", tabindex: "-1" },
-    }),
-    createElement(root, "p", { className: "scene-body", text: SEPTEMBER_COPY.introBody }),
-  );
-  const startButton = createButton(root, SEPTEMBER_COPY.introCta, {
-    className: "workshop-start",
-  });
-  introCopy.append(startButton);
 
   const stage = createElement(root, "div", {
     className: "scene-stage workshop-stage",
@@ -163,6 +152,24 @@ export function createWorkshopController(options = {}) {
     { className: "workshop-envelope-controls" },
     envelope,
   );
+  const continueButton = createButton(root, SEPTEMBER_COPY.continueCta, {
+    className: "workshop-continue",
+  });
+  const continueControls = createElement(
+    root,
+    "div",
+    { className: "workshop-control-group workshop-continue-controls" },
+    continueButton,
+  );
+  const letterButton = createButton(root, SEPTEMBER_COPY.letterCta, {
+    className: "workshop-letter",
+  });
+  const letterControls = createElement(
+    root,
+    "div",
+    { className: "workshop-control-group workshop-letter-controls" },
+    letterButton,
+  );
   paperSurface.append(
     invitationTitle,
     invitationPrivacy,
@@ -171,9 +178,11 @@ export function createWorkshopController(options = {}) {
     bridgeControls,
     forkControls,
     envelopeControls,
+    continueControls,
+    letterControls,
   );
   stage.append(visualHost, paperSurface);
-  section.append(introCopy, stage);
+  section.append(stage);
   root.replaceChildren(section);
 
   const setCameraNotice = ({ label = "", touchPrimary = false }) => {
@@ -255,37 +264,28 @@ export function createWorkshopController(options = {}) {
   const renderPhase = () => {
     const phase = state.workshopPhase;
     section.dataset.workshopPhase = phase;
-    introCopy.hidden = started;
-    paperSurface.hidden = !started;
     invitationActions.hidden = phase !== "invitation";
     bridgeControls.hidden = phase !== "bridge" && !(phase === "invitation" && interactionSelected);
     forkControls.hidden = phase !== "fork";
     envelopeControls.hidden = phase !== "first-envelope-ready" && phase !== "second-envelope-ready";
     envelope.disabled = envelopeControls.hidden;
+    continueControls.hidden = phase !== "between-gifts";
+    continueButton.disabled = continueControls.hidden;
+    letterControls.hidden = phase !== "complete";
+    letterButton.disabled = letterControls.hidden;
     renderer?.setPhase?.(phase);
     if (isDeliveryPhase(phase)) beginDelivery();
   };
 
   function applyWorkshopAction(type) {
     if (disposed) return;
-    const action = { type };
-    const localNext = reduceWorkshopState(state, action);
-    if (localNext === state) return;
-    state = localNext;
-    const externalNext = dispatch(action);
-    if (externalNext && typeof externalNext === "object") state = externalNext;
+    const externalNext = continueWorkshop(type);
+    if (!externalNext || typeof externalNext !== "object" || externalNext === state) return;
+    state = externalNext;
     if (type === "CHOOSE_LEFT" || type === "CHOOSE_RIGHT") input.stop("branch-locked");
     renderPhase();
   }
 
-  const startWorkshop = () => {
-    if (disposed || started) return;
-    started = true;
-    renderPhase();
-    void ensureRenderer();
-  };
-
-  startButton.addEventListener("click", startWorkshop, { signal });
   cameraButton.addEventListener("click", () => {
     interactionSelected = true;
     renderPhase();
@@ -313,10 +313,34 @@ export function createWorkshopController(options = {}) {
     };
     envelopeTimer = globalThis.setTimeout(finish, reducedMotion ? 150 : ENVELOPE_OPEN_MS);
   }, { signal });
+  continueButton.addEventListener("click", () => {
+    if (disposed || continueButton.disabled) return;
+    applyWorkshopAction("DELIVERY_READY");
+  }, { signal });
+  letterButton.addEventListener("click", () => {
+    if (disposed || letterButton.disabled) return;
+    openLetter();
+  }, { signal });
 
   renderPhase();
-  if (started) void ensureRenderer();
-  focusWorkshopHeading(section);
+  void ensureRenderer();
+  const stableControl = state.workshopPhase === "between-gifts"
+    ? continueButton
+    : state.workshopPhase === "complete"
+      ? letterButton
+      : state.workshopPhase === "first-envelope-ready" || state.workshopPhase === "second-envelope-ready"
+        ? envelope
+        : null;
+  if (focusGiftId && stableControl && !stableControl.disabled) {
+    const focusControl = () => {
+      stableControl.scrollIntoView?.({ block: "nearest", inline: "nearest", behavior: "auto" });
+      stableControl.focus?.({ preventScroll: true });
+    };
+    if (typeof globalThis.requestAnimationFrame === "function") globalThis.requestAnimationFrame(focusControl);
+    else globalThis.setTimeout(focusControl, 0);
+  } else {
+    focusWorkshopHeading(section);
+  }
 
   return Object.freeze({
     dispose() {
@@ -341,9 +365,11 @@ export function mountWorkshop(root, context) {
     root,
     state: context.state,
     reducedMotion: context.reducedMotion,
-    dispatch: context.dispatchWorkshop,
+    continueWorkshop: context.continueWorkshop,
     requestGiftReveal: context.requestGiftReveal,
+    openLetter: context.openLetter,
     announce: context.announce,
+    focusGiftId: context.focusGiftId,
   });
   return { dispose: () => controller.dispose() };
 }

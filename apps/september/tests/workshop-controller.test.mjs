@@ -146,11 +146,12 @@ function fakeWorkshopContext() {
 test("workshop controller keeps gift DOM secret until a sealed envelope is ready", async () => {
   const source = await readFile(controllerPath, "utf8");
 
-  assert.match(source, /Một xưởng nhỏ đang chờ em/u);
   assert.match(source, /workshop-stage/u);
   assert.match(source, /paper-shadow/u);
   assert.match(source, /first-envelope-ready/u);
-  assert.doesNotMatch(source, /localStorage|navigator\.share/u);
+  assert.match(source, /continueWorkshop/u);
+  assert.match(source, /requestGiftReveal/u);
+  assert.doesNotMatch(source, /localStorage|navigator\.share|workshop-start|WORKSHOP_INTRO_TITLE|dispatchWorkshop/u);
 });
 
 test("mountWorkshop exposes an idempotent SceneMount disposer", () => {

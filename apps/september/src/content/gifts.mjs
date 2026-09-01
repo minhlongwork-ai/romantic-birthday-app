@@ -1,6 +1,5 @@
 import {
   SEPTEMBER_COPY,
-  SEPTEMBER_ENDING_TEMPLATE,
   SEPTEMBER_FINAL_LETTER,
 } from "./copy.mjs";
 import { SEPTEMBER_GIFT_DEFINITIONS } from "./gift-definitions.mjs";
@@ -16,19 +15,15 @@ export const SEPTEMBER_GIFTS = Object.freeze(
   SEPTEMBER_GIFT_DEFINITIONS.map((definition) =>
     Object.freeze({
       id: definition.id,
-      groupId: definition.groupId,
-      groupLabel: definition.groupLabel,
-      clue: definition.clue,
       productAssetId: definition.productAssetId,
       productName: definition.productName,
       variant: definition.variant,
       media: mediaFor(definition.id, definition.alt),
-      reason: definition.reason,
-      personalMessage: SEPTEMBER_COPY.wishes[definition.personalMessageKey],
+      message: SEPTEMBER_COPY.wishes[definition.messageKey],
       approved: definition.approved,
       fixture: definition.fixture,
     }),
   ),
 );
 
-export { SEPTEMBER_COPY, SEPTEMBER_ENDING_TEMPLATE, SEPTEMBER_FINAL_LETTER };
+export { SEPTEMBER_COPY, SEPTEMBER_FINAL_LETTER };

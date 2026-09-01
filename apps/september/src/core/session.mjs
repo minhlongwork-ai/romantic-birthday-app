@@ -1,7 +1,5 @@
-import { INITIAL_DETENTS } from "./puzzle.mjs";
-
 export const GIFT_IDS = Object.freeze(["cake", "bouquet"]);
-export const COMPLETION_MODES = Object.freeze(["solved", "skipped"]);
+
 export const WORKSHOP_PHASES = Object.freeze([
   "invitation",
   "bridge",
@@ -19,40 +17,25 @@ const DELIVERY_ORDER_BY_SIDE = Object.freeze({
   right: Object.freeze(["bouquet", "cake"]),
 });
 
-function uniqueKnownGiftIds(giftIds) {
-  if (!Array.isArray(giftIds)) return [];
-  return giftIds.filter(
-    (giftId, index) => GIFT_IDS.includes(giftId) && giftIds.indexOf(giftId) === index,
+function hasKnownState(state) {
+  return Boolean(
+    state
+      && Array.isArray(state.deliveryOrder)
+      && Number.isInteger(state.deliveredCount)
+      && state.openedGiftIds instanceof Set,
   );
 }
 
-function legacyDeliveryOrder(openOrder) {
-  return [...openOrder, ...GIFT_IDS.filter((giftId) => !openOrder.includes(giftId))];
-}
-
-export function createExperienceState({ openedGiftIds = [], legacy = false } = {}) {
-  const safeOrder = uniqueKnownGiftIds(openedGiftIds);
-  // This adapter lets the legacy NFC scene stay importable until Task 9 removes it.
-  const deliveryOrder = legacy
-    ? legacyDeliveryOrder(safeOrder)
-    : safeOrder.length > 0
-      ? legacyDeliveryOrder(safeOrder)
-      : [];
-  const state = {
+export function createExperienceState() {
+  return {
     scene: "intro",
-    deliveryOrder,
-    deliveredCount: legacy ? deliveryOrder.length : safeOrder.length,
-    openedGiftIds: new Set(safeOrder),
-    openOrder: [...safeOrder],
+    deliveryOrder: [],
+    deliveredCount: 0,
+    openedGiftIds: new Set(),
+    openOrder: [],
     activeGiftId: null,
     workshopPhase: "invitation",
-    puzzleDetents: { ...INITIAL_DETENTS },
-    completionMode: null,
   };
-
-  return deliveryOrder.length > 0
-    ? { ...state, workshopPhase: deriveWorkshopPhase(state) }
-    : state;
 }
 
 export function deriveWorkshopPhase(state) {
@@ -142,41 +125,9 @@ export function reduceWorkshopState(state, action) {
       return selectWorkshopBranch(state, "right");
     case "DELIVERY_READY":
       return markDeliveryReady(state);
-    case "GIFT_MOUNTED":
-      return commitOpenedGift(state, action.giftId);
     default:
       return state;
   }
-}
-
-function hasAllGifts(openedGiftIds) {
-  return GIFT_IDS.every((giftId) => openedGiftIds?.has(giftId));
-}
-
-function resolveV1HistoryTarget(entry, { sessionToken, openedGiftIds }) {
-  if (entry.sessionToken !== sessionToken) return { scene: "intro", replace: true };
-
-  if (entry.scene === "intro" || entry.scene === "box") {
-    return { scene: entry.scene, replace: false };
-  }
-  if (entry.scene === "reveal") {
-    return GIFT_IDS.includes(entry.giftId)
-      ? { scene: "reveal", giftId: entry.giftId, replace: false }
-      : { scene: "box", replace: true };
-  }
-  if (entry.scene === "game") {
-    return hasAllGifts(openedGiftIds)
-      ? { scene: "game", replace: false }
-      : { scene: "box", replace: true };
-  }
-  if (entry.scene === "ending") {
-    if (!hasAllGifts(openedGiftIds)) return { scene: "box", replace: true };
-    if (!COMPLETION_MODES.includes(entry.completionMode)) {
-      return { scene: "game", replace: true };
-    }
-    return { scene: "ending", completionMode: entry.completionMode, replace: false };
-  }
-  return { scene: "intro", replace: true };
 }
 
 function deliveredAndOpened(state, giftId) {
@@ -184,11 +135,11 @@ function deliveredAndOpened(state, giftId) {
     && state.openedGiftIds?.has(giftId);
 }
 
-function resolveV2HistoryTarget(entry, { sessionToken, state }) {
-  if (entry.sessionToken !== sessionToken) return { scene: "intro", replace: true };
-  if (!state || !Array.isArray(state.deliveryOrder) || !(state.openedGiftIds instanceof Set)) {
-    return { scene: "workshop", replace: true };
+export function resolveHistoryTarget(entry, { sessionToken, state } = {}) {
+  if (entry?.v !== 2 || entry.sessionToken !== sessionToken) {
+    return { scene: "intro", replace: true };
   }
+  if (!hasKnownState(state)) return { scene: "workshop", replace: true };
   if (entry.scene === "intro") return { scene: "intro", replace: false };
   if (entry.scene === "workshop") return { scene: "workshop", replace: false };
   if (entry.scene === "reveal") {
@@ -202,10 +153,4 @@ function resolveV2HistoryTarget(entry, { sessionToken, state }) {
       : { scene: "workshop", replace: true };
   }
   return { scene: "workshop", replace: true };
-}
-
-export function resolveHistoryTarget(entry, context = {}) {
-  if (entry?.v === 1) return resolveV1HistoryTarget(entry, context);
-  if (entry?.v === 2) return resolveV2HistoryTarget(entry, context);
-  return { scene: "intro", replace: true };
 }

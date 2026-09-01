@@ -9,7 +9,6 @@ import {
   resolveHistoryTarget,
   selectWorkshopBranch,
 } from "../src/core/session.mjs";
-import { INITIAL_DETENTS } from "../src/core/puzzle.mjs";
 
 test("the workshop locks a deterministic order and keeps a sealed first envelope secret", () => {
   const selected = selectWorkshopBranch(createExperienceState(), "left");
@@ -34,7 +33,7 @@ test("the alternate branch locks bouquet before cake", () => {
   assert.equal(selectWorkshopBranch(selected, "left"), selected);
 });
 
-test("fresh workshop state owns the v2 delivery fields without sharing puzzle detents", () => {
+test("fresh workshop state owns only the v2 delivery fields", () => {
   const state = createExperienceState();
 
   assert.deepEqual(state, {
@@ -45,18 +44,7 @@ test("fresh workshop state owns the v2 delivery fields without sharing puzzle de
     openOrder: [],
     activeGiftId: null,
     workshopPhase: "invitation",
-    puzzleDetents: { ...INITIAL_DETENTS },
-    completionMode: null,
   });
-  assert.notEqual(state.puzzleDetents, INITIAL_DETENTS);
-});
-
-test("the retained v1 runtime can still commit its first gift", () => {
-  const legacyState = createExperienceState({ legacy: true });
-  const opened = commitOpenedGift(legacyState, "bouquet");
-
-  assert.deepEqual(opened.openOrder, ["bouquet"]);
-  assert.deepEqual(opened.openedGiftIds, new Set(["bouquet"]));
 });
 
 test("cannot open a gift before its closed envelope is ready", () => {
@@ -81,7 +69,7 @@ test("refuses to commit an unknown gift identifier without changing state", () =
   assert.deepEqual(ready.openOrder, []);
 });
 
-test("a stale proposed reveal leaves the v2 state and history intent unchanged", () => {
+test("history rejects an unopened reveal and restores its sealed workshop state", () => {
   const state = markDeliveryReady(selectWorkshopBranch(createExperienceState(), "left"));
   const before = {
     deliveredCount: state.deliveredCount,
@@ -157,32 +145,12 @@ test("v2 accepts completion only after both deliveries and reveals", () => {
   );
 });
 
-test("retains v1 history recovery while legacy scenes still emit it", () => {
-  const allGifts = new Set(["cake", "bouquet"]);
-  const baseEntry = { v: 1, sessionToken: "session-a", scene: "ending" };
-
+test("v1 history entries cannot revive removed NFC or puzzle scenes", () => {
   assert.deepEqual(
-    resolveHistoryTarget({ ...baseEntry, completionMode: "solved" }, {
+    resolveHistoryTarget({ v: 1, sessionToken: "session-a", scene: "reveal", giftId: "cake" }, {
       sessionToken: "session-a",
-      openedGiftIds: new Set(["cake"]),
-      completionMode: "solved",
+      state: createExperienceState(),
     }),
-    { scene: "box", replace: true },
-  );
-  assert.deepEqual(
-    resolveHistoryTarget(baseEntry, {
-      sessionToken: "session-a",
-      openedGiftIds: allGifts,
-      completionMode: "solved",
-    }),
-    { scene: "game", replace: true },
-  );
-  assert.deepEqual(
-    resolveHistoryTarget({ ...baseEntry, completionMode: "skipped" }, {
-      sessionToken: "session-a",
-      openedGiftIds: allGifts,
-      completionMode: null,
-    }),
-    { scene: "ending", completionMode: "skipped", replace: false },
+    { scene: "intro", replace: true },
   );
 });

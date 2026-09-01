@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  introNoteForGifts,
   previewBadgeForGift,
   SEPTEMBER_FINAL_LETTER,
 } from "../src/content/copy.mjs";
@@ -19,20 +18,24 @@ function productionGifts() {
     variant: gift.id === "cake"
       ? "Bánh 18 cm · kem mascarpone chanh"
       : "Hồng kem và hồng phấn · giấy gói màu ngà",
-    reason: gift.id === "cake"
-      ? "Anh chọn vị chanh tươi để chiếc bánh ngọt vừa đủ."
-      : "Anh chọn những màu hoa dịu dàng mà em thích.",
   }));
 }
 
-test("development content contains the exact Sweet & Bloom gifts", () => {
+test("development content contains only the two sealed workshop gift records", () => {
   assert.deepEqual(
-    SEPTEMBER_GIFTS.map(({ id, groupId, productName }) => ({ id, groupId, productName })),
+    SEPTEMBER_GIFTS.map(({ id, productName }) => ({ id, productName })),
     [
-      { id: "cake", groupId: "sweet", productName: "Bánh tiramisu chanh" },
-      { id: "bouquet", groupId: "bloom", productName: "Bó hồng kem và hồng phấn" },
+      { id: "cake", productName: "Bánh tiramisu chanh" },
+      { id: "bouquet", productName: "Bó hồng kem và hồng phấn" },
     ],
   );
+  for (const gift of SEPTEMBER_GIFTS) {
+    assert.equal("groupId" in gift, false);
+    assert.equal("groupLabel" in gift, false);
+    assert.equal("clue" in gift, false);
+    assert.equal("reason" in gift, false);
+    assert.equal("personalMessage" in gift, false);
+  }
   assert.deepEqual(validateSeptemberContent(SEPTEMBER_GIFTS), []);
 });
 
@@ -97,13 +100,11 @@ test("each disclosed demo gift joins its verified source JPEG and provenance", (
   );
 });
 
-test("preview UI copy is derived only from fixture flags", () => {
+test("preview badge is derived only from fixture flags", () => {
   assert.equal(previewBadgeForGift(SEPTEMBER_GIFTS[0]), "Bản xem thử · ảnh minh họa");
-  assert.equal(introNoteForGifts(SEPTEMBER_GIFTS, "Minh"), "Bản xem thử · ảnh minh họa · Dành cho Minh");
 
   const approvedGifts = productionGifts();
   assert.equal(previewBadgeForGift(approvedGifts[0]), null);
-  assert.equal(introNoteForGifts(approvedGifts, "Minh"), "Dành cho Minh");
 });
 
 test("content requires a non-empty product asset ID", () => {
@@ -159,7 +160,7 @@ test("release requires an explicit fixture:false flag", () => {
 
 test("release rejects residual preview wording even when flags are approved", () => {
   const gifts = productionGifts();
-  gifts[0].media.alt = "Bánh tiramisu chanh · bản xem thử";
+  gifts[0].message = "Bánh tiramisu chanh · bản xem thử";
 
   assert.ok(
     validateSeptemberContent(gifts, { release: true }).some((error) =>

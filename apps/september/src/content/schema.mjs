@@ -1,23 +1,14 @@
 export const EXPECTED_GIFT_IDS = Object.freeze(["cake", "bouquet"]);
 
-export const EXPECTED_GROUP_IDS = Object.freeze(["sweet", "bloom"]);
-
-const EXPECTED_GIFT_GROUP_PAIRS = Object.freeze([
-  "bouquet:bloom",
-  "cake:sweet",
-]);
-
-const APPROVED_THEME_BY_GIFT = Object.freeze({
+const APPROVED_COPY_BY_GIFT = Object.freeze({
   cake: Object.freeze({
-    groupLabel: "Một chút ngọt",
-    clue: "Một vị ngọt có chút tươi",
-    personalMessage:
+    productName: "Bánh tiramisu chanh",
+    message:
       "Tiramisu chanh — ngọt vừa đủ, lại có một chút chua. Anh nghĩ em sẽ thích. Nhớ ăn lúc còn ngon nhé.",
   }),
   bouquet: Object.freeze({
-    groupLabel: "Một chút hoa",
-    clue: "Một bó dịu dàng ở lại",
-    personalMessage:
+    productName: "Bó hồng kem và hồng phấn",
+    message:
       "Anh không đợi một dịp đặc biệt mới tặng hoa. Chỉ là anh nghĩ bó hoa này sẽ rất đẹp khi ở cạnh em.",
   }),
 });
@@ -63,32 +54,26 @@ export function validateSeptemberContent(gifts, { release = false } = {}) {
   if (!Array.isArray(gifts)) {
     return ["September content must be an array."];
   }
-  if (gifts.length !== 2) {
+  if (gifts.length !== EXPECTED_GIFT_IDS.length) {
     return ["September content must contain exactly two gifts."];
   }
 
   const errors = [];
-  const actualPairs = gifts
-    .map((gift) => `${gift?.id}:${gift?.groupId}`)
-    .sort();
-  if (
-    actualPairs.some((pair, index) => pair !== EXPECTED_GIFT_GROUP_PAIRS[index])
-  ) {
-    errors.push(
-      "September content must preserve the exact gift-to-group mapping: cake/sweet, bouquet/bloom.",
-    );
+  const actualIds = gifts.map((gift) => gift?.id).sort();
+  if (actualIds.some((id, index) => id !== [...EXPECTED_GIFT_IDS].sort()[index])) {
+    errors.push("September content must contain cake and bouquet exactly once.");
   }
 
   for (const [index, gift] of gifts.entries()) {
-    const approvedTheme = APPROVED_THEME_BY_GIFT[gift?.id];
+    const approvedCopy = APPROVED_COPY_BY_GIFT[gift?.id];
     if (
-      !approvedTheme
-      || Object.entries(approvedTheme).some(
+      !approvedCopy
+      || Object.entries(approvedCopy).some(
         ([field, expected]) => gift?.[field] !== expected,
       )
     ) {
       errors.push(
-        `gifts[${index}] must use the approved thematic copy for its gift ID.`,
+        `gifts[${index}] must use the approved product copy for its gift ID.`,
       );
     }
 
@@ -96,11 +81,11 @@ export function validateSeptemberContent(gifts, { release = false } = {}) {
       !isNonEmptyString(gift?.productAssetId)
       || !isNonEmptyString(gift?.productName)
       || !isNonEmptyString(gift?.variant)
-      || !isNonEmptyString(gift?.reason)
+      || !isNonEmptyString(gift?.message)
       || !isNonEmptyString(gift?.media?.alt)
     ) {
       errors.push(
-        `gifts[${index}] must contain complete product content: productAssetId, productName, variant, reason, and media.alt.`,
+        `gifts[${index}] must contain complete product content: productAssetId, productName, variant, message, and media.alt.`,
       );
     }
 
@@ -138,12 +123,9 @@ export function validateSeptemberContent(gifts, { release = false } = {}) {
       }
       if (
         [
-          gift?.groupLabel,
-          gift?.clue,
           gift?.productName,
           gift?.variant,
-          gift?.reason,
-          gift?.personalMessage,
+          gift?.message,
           gift?.media?.alt,
         ].some(
           (value) =>

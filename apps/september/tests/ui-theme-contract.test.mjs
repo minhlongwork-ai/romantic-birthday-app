@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-test("September runtime UI contains no lunar or cosmetic references", async () => {
+test("September runtime UI contains only the paper-and-brass workshop vocabulary", async () => {
   const projectRoot = path.resolve(appRoot, "../..");
   const tracked = spawnSync(
     "git",
@@ -24,9 +24,8 @@ test("September runtime UI contains no lunar or cosmetic references", async () =
 
   assert.doesNotMatch(
     source,
-    /Ba Pha Trăng|\b(?:lunar|moon|nasa|orbit|phase)(?:[A-Z_-]|\b)|cleanser|moisturizer|lipstick/iu,
+    /(?:nfc-progress|parseNfc|nfc-dialog|puzzle|ribbon|lunar|moon|nasa|orbit|cosmetic)/iu,
   );
-  assert.match(source, /ribbon-puzzle/u);
-  assert.match(source, /fallback-silhouette-cake/u);
-  assert.match(source, /fallback-silhouette-bouquet/u);
+  assert.match(source, /workshop-stage/u);
+  assert.match(source, /paper-shadow/u);
 });

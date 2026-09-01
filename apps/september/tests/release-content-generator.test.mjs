@@ -35,9 +35,6 @@ function productionGifts() {
     variant: gift.id === "cake"
       ? "Bánh 18 cm · kem mascarpone chanh"
       : "Hồng kem và hồng phấn · giấy gói màu ngà",
-    reason: gift.id === "cake"
-      ? "Anh chọn vị chanh tươi để chiếc bánh ngọt vừa đủ."
-      : "Anh chọn những màu hoa dịu dàng mà em thích.",
   }));
 }
 
@@ -147,4 +144,17 @@ test("release generation rejects an omitted fixture flag instead of normalizing 
       return true;
     },
   );
+});
+
+test("release content contains only reveal fields and the camera manifest reference", async () => {
+  const generated = await releaseGenerator.buildArtifacts();
+  const content = JSON.parse(generated["release-content.json"]);
+
+  assert.deepEqual(
+    Object.keys(content.gifts[0]).sort(),
+    ["approved", "fixture", "id", "media", "message", "productName", "variant"],
+  );
+  assert.doesNotMatch(generated["release-content.json"], /groupId|groupLabel|clue|reason|personalMessage/u);
+  assert.equal(content.cameraAssets.manifestPath, "src/generated/hand-landmarker-manifest.json");
+  assert.match(content.cameraAssets.sha256, /^[a-f0-9]{64}$/u);
 });
