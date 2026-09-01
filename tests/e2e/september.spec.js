@@ -91,6 +91,8 @@ for (const side of ["left", "right"]) {
     await openEnvelope(page);
     await expect(productHeading(page, secondGift)).toBeVisible();
     await expect(page.locator("[data-product-card]")).toHaveCount(1);
+    await page.getByRole("button", { name: "Cho xưởng chạy tiếp" }).click();
+    await expect(page.locator("[data-workshop-phase='complete']")).toBeVisible();
     await page.getByRole("button", { name: "Mở lá thư" }).click();
     await expect(page.getByText("Anh không ở cạnh lúc em mở thiếp")).toBeVisible();
   });
@@ -224,7 +226,7 @@ test("camera failure, WebGL fallback, image error, and same-document offline kee
   await page.context().setOffline(true);
   try {
     await openEnvelope(page);
-    await expect(page.getByRole("status", { name: "Ảnh món quà chưa tải được" })).toBeVisible();
+    await expect(page.getByRole("status")).toContainText("Ảnh món quà chưa tải được");
     await expect(productHeading(page, "Bánh tiramisu chanh")).toBeVisible();
   } finally {
     await page.context().setOffline(false);

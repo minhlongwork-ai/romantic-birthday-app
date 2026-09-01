@@ -11,7 +11,7 @@ test("a loaded September workshop remains usable offline through its same-docume
     await page.getByRole("button", { name: "Chọn lối trái" }).click();
     await expect(page.getByRole("button", { name: "Mở phong bì" })).toBeEnabled({ timeout: 5_000 });
     await page.getByRole("button", { name: "Mở phong bì" }).click();
-    await expect(page.getByRole("heading", { name: "Bánh tiramisu chanh" })).toBeVisible();
+    await expect(page.locator("[data-product-card] h2", { hasText: "Bánh tiramisu chanh" })).toBeVisible();
   } finally {
     await context.setOffline(false);
   }

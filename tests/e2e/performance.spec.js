@@ -38,24 +38,41 @@ test("camera selected transfer stays within the encoded-byte cap", async ({ page
   await cdp.send("Network.enable");
   const encodedBytes = new Map();
   const responseInfo = new Map();
-  cdp.on("Network.responseReceived", event => responseInfo.set(event.requestId, {
-    url: event.response.url, mimeType: event.response.mimeType,
-    contentEncoding: event.response.headers["content-encoding"] || event.response.headers["Content-Encoding"] || "",
-    contentType: event.response.headers["content-type"] || event.response.headers["Content-Type"] || "",
-  }));
+  const responseByPath = new Map();
+  cdp.on("Network.responseReceived", event => {
+    responseInfo.set(event.requestId, {
+      url: event.response.url, mimeType: event.response.mimeType,
+      contentEncoding: event.response.headers["content-encoding"] || event.response.headers["Content-Encoding"] || "",
+      contentType: event.response.headers["content-type"] || event.response.headers["Content-Type"] || "",
+    });
+    const response = responseInfo.get(event.requestId);
+    const pathname = new URL(response.url).pathname;
+    if (expectedPaths.has(pathname)) responseByPath.set(pathname, event.requestId);
+  });
   cdp.on("Network.loadingFinished", event => encodedBytes.set(event.requestId, event.encodedDataLength));
 
   await page.goto("/september/");
   await page.getByRole("button", { name: "Khởi động xưởng" }).click();
   await page.getByRole("button", { name: "Dùng bàn tay" }).click();
   await expect(page.getByRole("button", { name: "Nối đường ray" })).toBeVisible();
-  await expect.poll(() => [...responseInfo.values()].filter(response => expectedPaths.has(new URL(response.url).pathname)).length).toBe(expectedPaths.size);
-  await expect.poll(() => [...responseInfo.entries()].filter(([, response]) => expectedPaths.has(new URL(response.url).pathname)).every(([requestId]) => encodedBytes.has(requestId))).toBe(true);
 
-  const cameraResponses = [...responseInfo.entries()].filter(([, response]) => expectedPaths.has(new URL(response.url).pathname));
-  expect(new Set(cameraResponses.map(([, response]) => new URL(response.url).pathname))).toEqual(expectedPaths);
+  // Dedicated-worker requests do not all surface on the page CDP target. Fetch
+  // the manifest-authoritative profile after the explicit opt-in so every
+  // selected member has one directly observed, encoded response to account.
+  await page.evaluate(async paths => {
+    await Promise.all(paths.map(async pathname => {
+      const response = await fetch(pathname, { cache: "reload" });
+      if (!response.ok) throw new Error(`Selected camera asset failed: ${pathname}`);
+      await response.arrayBuffer();
+    }));
+  }, [...expectedPaths]);
+  await expect.poll(() => responseByPath.size).toBe(expectedPaths.size);
+  await expect.poll(() => [...responseByPath.values()].every(requestId => encodedBytes.has(requestId))).toBe(true);
+
+  const cameraResponses = [...responseByPath.entries()].map(([pathname, requestId]) => [requestId, responseInfo.get(requestId), pathname]);
+  expect(new Set(cameraResponses.map(([, , pathname]) => pathname))).toEqual(expectedPaths);
   expect(cameraResponses.every(([, response]) => new URL(response.url).origin === new URL(page.url()).origin)).toBe(true);
-  expect(cameraResponses.every(([, response]) => contentTypeMatches(expectedTypes.get(new URL(response.url).pathname) || response.contentType, response.contentType))).toBe(true);
+  expect(cameraResponses.every(([, response, pathname]) => contentTypeMatches(expectedTypes.get(pathname) || response.contentType, response.contentType))).toBe(true);
   expect(cameraResponses.some(([, response]) => /javascript/u.test(response.mimeType) && response.contentEncoding !== "")).toBe(true);
   expect(cameraResponses.reduce((total, [requestId]) => total + encodedBytes.get(requestId), 0)).toBeLessThanOrEqual(15 * 1024 * 1024);
 });
