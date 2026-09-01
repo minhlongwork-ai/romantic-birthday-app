@@ -22,6 +22,17 @@ test("the CLI validates two development gifts and reports every release fixture 
   });
   assert.equal(release.status, 1);
   assert.match(release.stderr, /September release validation failed with 6 error\(s\):/u);
+  const releaseErrors = release.stderr
+    .split("\n")
+    .filter((line) => line.startsWith("- "));
+  assert.deepEqual(releaseErrors, [
+    "- cake: fixture:true is a development fixture and cannot ship.",
+    "- cake: approved:false must set approved:true for release.",
+    "- cake: demo media contains placeholder product content and cannot ship.",
+    "- bouquet: fixture:true is a development fixture and cannot ship.",
+    "- bouquet: approved:false must set approved:true for release.",
+    "- bouquet: demo media contains placeholder product content and cannot ship.",
+  ]);
   assert.equal((release.stderr.match(/must set approved:true for release\./gu) ?? []).length, 2);
   assert.equal((release.stderr.match(/is a development fixture and cannot ship\./gu) ?? []).length, 2);
   assert.equal((release.stderr.match(/contains placeholder product content and cannot ship\./gu) ?? []).length, 2);

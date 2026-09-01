@@ -20,6 +20,7 @@ const outputNames = [
   "release-content.json",
   "media-manifest.json",
   "font-manifest.json",
+  "hand-landmarker-manifest.json",
 ];
 const artifacts = Object.fromEntries(
   outputNames.map((name) => [name, `new:${name}\n`]),

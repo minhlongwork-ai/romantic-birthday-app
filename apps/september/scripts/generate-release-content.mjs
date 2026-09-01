@@ -15,11 +15,16 @@ const scriptPath = fileURLToPath(import.meta.url);
 const appRoot = path.resolve(path.dirname(scriptPath), "..");
 const publicDir = path.join(appRoot, "public");
 const generatedDir = path.join(appRoot, "src", "generated");
+const handLandmarkerManifestPath = path.join(
+  generatedDir,
+  "hand-landmarker-manifest.json",
+);
 const outputNames = Object.freeze([
   "runtime-media.mjs",
   "release-content.json",
   "media-manifest.json",
   "font-manifest.json",
+  "hand-landmarker-manifest.json",
 ]);
 const defaultFileSystem = Object.freeze({ mkdir, rename, rm, writeFile });
 
@@ -43,6 +48,19 @@ async function fileDigest(filePath) {
   return { bytes: metadata.size, sha256: sha256(bytes) };
 }
 
+async function handLandmarkerReference() {
+  const bytes = await readFile(handLandmarkerManifestPath);
+  const manifest = JSON.parse(bytes.toString("utf8"));
+  if (manifest?.schemaVersion !== 1 || typeof manifest?.model?.sha256 !== "string") {
+    throw new Error("Hand Landmarker provenance manifest is malformed.");
+  }
+  return {
+    manifestPath: "src/generated/hand-landmarker-manifest.json",
+    sha256: sha256(bytes),
+    bytes,
+  };
+}
+
 async function outputRecord(gift, format, url, publicDirectory) {
   const filePath = path.join(publicDirectory, url.replace(/^\.\/images\//u, "images/"));
   const digest = await fileDigest(filePath);
@@ -63,6 +81,7 @@ async function buildArtifacts({
   publicDirectory = publicDir,
 } = {}) {
   assertSeptemberContent(sourceGifts, { release });
+  const { bytes: handLandmarkerManifest, ...cameraAssets } = await handLandmarkerReference();
   const gifts = [];
   const mediaAssets = [];
 
@@ -129,6 +148,7 @@ async function buildArtifacts({
   return {
     "runtime-media.mjs": `export const SEPTEMBER_RUNTIME_MEDIA = Object.freeze(${JSON.stringify(sortObject(Object.fromEntries(mediaAssets.map((asset) => [asset.assetId, { alt: asset.alt, outputs: asset.outputs.map(({ url, width, height, mediaQuery }) => ({ url, width, height, mediaQuery })) }]))))});\n`,
     "release-content.json": canonicalJson({
+      cameraAssets,
       schemaVersion: 2,
       copyVersion: 3,
       fixtureMode: sourceGifts.some((gift) => gift.fixture === true),
@@ -136,6 +156,7 @@ async function buildArtifacts({
     }),
     "media-manifest.json": canonicalJson({ schemaVersion: 1, assets: mediaAssets }),
     "font-manifest.json": canonicalJson({ schemaVersion: 1, assets: fonts }),
+    "hand-landmarker-manifest.json": handLandmarkerManifest.toString("utf8"),
   };
 }
 
