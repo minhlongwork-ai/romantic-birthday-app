@@ -13,5 +13,14 @@ export default defineConfig({
   plugins: [createSiteMetadataPlugin(site, "september")],
   build: {
     target: "es2022",
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules/three")) return "september-workshop";
+          if (id.endsWith("/src/core/camera-session.mjs")) return "september-camera";
+          return undefined;
+        },
+      },
+    },
   },
 });
