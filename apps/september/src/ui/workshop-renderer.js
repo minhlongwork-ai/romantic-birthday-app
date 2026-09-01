@@ -57,6 +57,10 @@ function setVisualPhase(stage, phase) {
   stage.classList?.remove?.("is-delivering", "is-delivery-ready");
 }
 
+function applyStyles(element, styles) {
+  Object.assign(element.style, styles);
+}
+
 function createPaperDomWorkshop(options) {
   const { container } = options;
   const stage = elementFor(container, "div");
@@ -85,6 +89,100 @@ function createPaperDomWorkshop(options) {
   envelope.classList?.add?.("workshop-paper-envelope");
   lamp.classList?.add?.("workshop-lamp");
   shadow.classList?.add?.("workshop-paper-shadow");
+  applyStyles(stage, {
+    position: "relative",
+    display: "block",
+    minHeight: "22rem",
+    overflow: "hidden",
+    isolation: "isolate",
+    borderRadius: "1.5rem",
+    background:
+      "radial-gradient(circle at 24% 16%, rgba(255, 218, 149, 0.28), transparent 32%), linear-gradient(145deg, #211711, #4a3225 55%, #1c1512)",
+    boxShadow: "inset 0 0 0 1px rgba(255, 242, 213, 0.1), 0 1.2rem 3.4rem rgba(49, 29, 18, 0.24)",
+  });
+  applyStyles(track, {
+    position: "absolute",
+    left: "8%",
+    top: "58%",
+    width: "82%",
+    height: "0.35rem",
+    borderRadius: "999px",
+    background: "#efe0bf",
+    boxShadow: "0 0.24rem 0 rgba(71, 46, 30, 0.5)",
+  });
+  applyStyles(bridge, {
+    position: "absolute",
+    left: "43%",
+    top: "55.5%",
+    width: "14%",
+    height: "0.85rem",
+    transform: "rotate(-2deg)",
+    background: "linear-gradient(110deg, #f7edd9, #ddcaa7)",
+    boxShadow: "0 0.24rem 0 rgba(71, 46, 30, 0.42)",
+  });
+  applyStyles(branch, {
+    position: "absolute",
+    right: "9%",
+    top: "49%",
+    width: "27%",
+    height: "0.35rem",
+    transform: "rotate(-20deg)",
+    transformOrigin: "left center",
+    background: "#efe0bf",
+    boxShadow: "0 0.24rem 0 rgba(71, 46, 30, 0.5)",
+  });
+  applyStyles(brassBall, {
+    position: "absolute",
+    left: "18%",
+    top: "52%",
+    width: "1.15rem",
+    height: "1.15rem",
+    borderRadius: "50%",
+    background: "radial-gradient(circle at 30% 28%, #fff0bb, #c38b43 48%, #6b3d1e)",
+    boxShadow: "0 0.28rem 0.48rem rgba(21, 12, 8, 0.52)",
+  });
+  applyStyles(lever, {
+    position: "absolute",
+    left: "67%",
+    top: "40%",
+    width: "0.28rem",
+    height: "3.4rem",
+    borderRadius: "999px",
+    transform: "rotate(-26deg)",
+    background: "linear-gradient(90deg, #7b4a26, #e5bb70, #7b4a26)",
+  });
+  applyStyles(envelope, {
+    position: "absolute",
+    left: "55%",
+    top: "66%",
+    width: "7.25rem",
+    height: "4.55rem",
+    transform: "translateX(130%) rotate(-2deg)",
+    borderRadius: "0.3rem",
+    background: "linear-gradient(145deg, #fbf0d8 0 49%, #e4cfaa 50% 100%)",
+    boxShadow: "0 0.6rem 1.1rem rgba(23, 12, 7, 0.4)",
+  });
+  applyStyles(lamp, {
+    position: "absolute",
+    left: "14%",
+    top: "10%",
+    width: "9rem",
+    height: "9rem",
+    borderRadius: "50%",
+    background: "radial-gradient(circle, rgba(255, 213, 129, 0.25), transparent 68%)",
+  });
+  applyStyles(shadow, {
+    position: "absolute",
+    left: "var(--workshop-shadow-x, 50%)",
+    top: "var(--workshop-shadow-y, 50%)",
+    width: "5rem",
+    height: "3.5rem",
+    borderRadius: "50%",
+    transform: "translate(-50%, -50%) skewX(-12deg)",
+    opacity: "var(--workshop-shadow-opacity, 0)",
+    background: "rgba(34, 22, 16, 0.42)",
+    filter: "blur(0.5rem)",
+  });
   stage.append(track, bridge, branch, brassBall, lever, envelope, lamp, shadow);
   container.append(stage);
   setVisualPhase(stage, "sleeping");
@@ -106,14 +204,23 @@ function createPaperDomWorkshop(options) {
       if (disposed) throw abortError();
       stage.classList?.add?.("is-delivering");
       envelope.dataset.deliveryIndex = String(index);
-      await waitForDelivery({
-        signal,
-        duration: isReducedMotion(options.reducedMotion) ? 0 : DELIVERY_MS,
-        pending,
-      });
-      if (disposed || signal?.aborted) throw abortError();
+      try {
+        await waitForDelivery({
+          signal,
+          duration: isReducedMotion(options.reducedMotion) ? 0 : DELIVERY_MS,
+          pending,
+        });
+      } catch (error) {
+        stage.classList?.remove?.("is-delivering", "is-delivery-ready");
+        throw error;
+      }
+      if (disposed || signal?.aborted) {
+        stage.classList?.remove?.("is-delivering", "is-delivery-ready");
+        throw abortError();
+      }
       stage.classList?.remove?.("is-delivering");
       stage.classList?.add?.("is-delivery-ready");
+      envelope.style.transform = "translateX(-10%) rotate(-2deg)";
       return { kind: "delivery-ready", index };
     },
     dispose() {
@@ -257,6 +364,19 @@ function createThreeWorkshop(THREE, options) {
       }) ?? null;
     }
   };
+  const resetDelivery = () => {
+    deliveryStart = null;
+    if (animationFrame !== null) {
+      globalThis.cancelAnimationFrame?.(animationFrame);
+      animationFrame = null;
+    }
+    ball.position.set(-2.65, 0.47, 0);
+    lever.rotation.set(0, 0, 0);
+    envelope.position.set(3.7, 0.35, 0);
+    envelope.visible = false;
+    stage.classList?.remove?.("is-delivering", "is-delivery-ready");
+    if (!disposed) draw();
+  };
 
   resize();
   globalThis.addEventListener?.("resize", resize);
@@ -292,12 +412,20 @@ function createThreeWorkshop(THREE, options) {
       } else if (animationFrame === null) {
         scheduleRender();
       }
-      await waitForDelivery({
-        signal,
-        duration: isReducedMotion(options.reducedMotion) ? 0 : DELIVERY_MS,
-        pending,
-      });
-      if (disposed || signal?.aborted) throw abortError();
+      try {
+        await waitForDelivery({
+          signal,
+          duration: isReducedMotion(options.reducedMotion) ? 0 : DELIVERY_MS,
+          pending,
+        });
+      } catch (error) {
+        resetDelivery();
+        throw error;
+      }
+      if (disposed || signal?.aborted) {
+        resetDelivery();
+        throw abortError();
+      }
       deliveryStart = null;
       envelope.visible = true;
       envelope.position.x = 0.5;
@@ -309,10 +437,10 @@ function createThreeWorkshop(THREE, options) {
     },
     dispose() {
       if (disposed) return;
+      resetDelivery();
       disposed = true;
       pending.forEach((cancel) => cancel());
       pending.clear();
-      if (animationFrame !== null) globalThis.cancelAnimationFrame?.(animationFrame);
       globalThis.removeEventListener?.("resize", resize);
       scene.traverse((node) => {
         node.geometry?.dispose?.();
