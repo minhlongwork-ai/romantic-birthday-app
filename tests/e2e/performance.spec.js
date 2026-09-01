@@ -29,14 +29,13 @@ test("the median of five cold workshop intro LCP samples stays within the mobile
   expect(samples[4], `cold LCP samples: ${samples.join(", ")}`).toBeLessThanOrEqual(3_000);
 });
 
-test("camera selected transfer stays within the encoded-byte cap", async ({ page, browser }, testInfo) => {
+test("camera selected transfer stays within the encoded-byte cap", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop-chrome-https", "CDP network bytes are Chromium-only.");
   test.setTimeout(45_000);
   const manifest = JSON.parse(await readFile("dist/build-manifest.json", "utf8"));
   const expectedPaths = new Set(manifest.runtimeProfilesByRoute.september.camera);
   const expectedTypes = new Map(manifest.assets.map(asset => [asset.url, asset.contentType]));
   const pageCdp = await page.context().newCDPSession(page);
-  const browserCdp = await browser.newBrowserCDPSession();
   await pageCdp.send("Network.enable");
   const encodedBytes = new Map();
   const responseInfo = new Map();
@@ -59,28 +58,30 @@ test("camera selected transfer stays within the encoded-byte cap", async ({ page
   pageCdp.on("Network.responseReceived", event => recordResponse("page", event));
   pageCdp.on("Network.loadingFinished", event => recordFinished("page", event));
 
-  const sendToWorker = (sessionId, method, params = {}) => browserCdp.send("Target.sendMessageToTarget", {
+  const sendToTarget = (sessionId, method, params = {}) => pageCdp.send("Target.sendMessageToTarget", {
     sessionId,
     message: JSON.stringify({ id: ++commandId, method, params }),
   });
-  const configuredWorkers = new Set();
-  const attachWorker = async targetInfo => {
-    if (!/worker/u.test(targetInfo.type) || configuredWorkers.has(targetInfo.targetId)) return;
-    configuredWorkers.add(targetInfo.targetId);
+  const configuredTargets = new Set();
+  const configureTarget = ({ sessionId, targetInfo }) => {
+    if (!/worker/u.test(targetInfo.type) || configuredTargets.has(sessionId)) return;
+    configuredTargets.add(sessionId);
     void (async () => {
       try {
-        const { sessionId } = await browserCdp.send("Target.attachToTarget", {
-          targetId: targetInfo.targetId,
+        await sendToTarget(sessionId, "Network.enable");
+        // Attach recursively so a worker-created target is also accounted for.
+        await sendToTarget(sessionId, "Target.setAutoAttach", {
+          autoAttach: true,
+          waitForDebuggerOnStart: false,
           flatten: false,
         });
-        await sendToWorker(sessionId, "Network.enable");
       } catch (error) {
         workerSetupErrors.push(error instanceof Error ? error.message : String(error));
       }
     })();
   };
-  browserCdp.on("Target.targetCreated", ({ targetInfo }) => { void attachWorker(targetInfo); });
-  browserCdp.on("Target.receivedMessageFromTarget", event => {
+  pageCdp.on("Target.attachedToTarget", configureTarget);
+  pageCdp.on("Target.receivedMessageFromTarget", event => {
     let message;
     try {
       message = JSON.parse(event.message);
@@ -89,29 +90,28 @@ test("camera selected transfer stays within the encoded-byte cap", async ({ page
     }
     if (message.method === "Network.responseReceived") recordResponse(event.sessionId, message.params);
     if (message.method === "Network.loadingFinished") recordFinished(event.sessionId, message.params);
+    if (message.method === "Target.attachedToTarget") configureTarget(message.params);
   });
-  await browserCdp.send("Target.setDiscoverTargets", { discover: true });
-  const { targetInfos } = await browserCdp.send("Target.getTargets");
-  await Promise.all(targetInfos.map(attachWorker));
+  await pageCdp.send("Target.setAutoAttach", {
+    autoAttach: true,
+    waitForDebuggerOnStart: false,
+    flatten: false,
+  });
 
-  try {
-    await page.goto("/september/");
-    await page.getByRole("button", { name: "Khởi động xưởng" }).click();
-    await page.getByRole("button", { name: "Dùng bàn tay" }).click();
-    await expect(page.getByRole("button", { name: "Nối đường ray" })).toBeVisible();
-    await expect.poll(() => {
-      if (workerSetupErrors.length > 0) throw new Error(workerSetupErrors.join("\\n"));
-      return responseByPath.size;
-    }, { timeout: 30_000 }).toBe(expectedPaths.size);
-    await expect.poll(() => [...responseByPath.values()].every(requestId => encodedBytes.has(requestId))).toBe(true);
+  await page.goto("/september/");
+  await page.getByRole("button", { name: "Khởi động xưởng" }).click();
+  await page.getByRole("button", { name: "Dùng bàn tay" }).click();
+  await expect(page.getByRole("button", { name: "Nối đường ray" })).toBeVisible();
+  await expect.poll(() => {
+    if (workerSetupErrors.length > 0) throw new Error(workerSetupErrors.join("\\n"));
+    return responseByPath.size;
+  }, { timeout: 30_000 }).toBe(expectedPaths.size);
+  await expect.poll(() => [...responseByPath.values()].every(requestId => encodedBytes.has(requestId))).toBe(true);
 
-    const cameraResponses = [...responseByPath.entries()].map(([pathname, requestId]) => [requestId, responseInfo.get(requestId), pathname]);
-    expect(new Set(cameraResponses.map(([, , pathname]) => pathname))).toEqual(expectedPaths);
-    expect(cameraResponses.every(([, response]) => new URL(response.url).origin === new URL(page.url()).origin)).toBe(true);
-    expect(cameraResponses.every(([, response, pathname]) => contentTypeMatches(expectedTypes.get(pathname) || response.contentType, response.contentType))).toBe(true);
-    expect(cameraResponses.some(([, response]) => /javascript/u.test(response.mimeType) && response.contentEncoding !== "")).toBe(true);
-    expect(cameraResponses.reduce((total, [requestId]) => total + encodedBytes.get(requestId), 0)).toBeLessThanOrEqual(15 * 1024 * 1024);
-  } finally {
-    await browserCdp.detach();
-  }
+  const cameraResponses = [...responseByPath.entries()].map(([pathname, requestId]) => [requestId, responseInfo.get(requestId), pathname]);
+  expect(new Set(cameraResponses.map(([, , pathname]) => pathname))).toEqual(expectedPaths);
+  expect(cameraResponses.every(([, response]) => new URL(response.url).origin === new URL(page.url()).origin)).toBe(true);
+  expect(cameraResponses.every(([, response, pathname]) => contentTypeMatches(expectedTypes.get(pathname) || response.contentType, response.contentType))).toBe(true);
+  expect(cameraResponses.some(([, response]) => /javascript/u.test(response.mimeType) && response.contentEncoding !== "")).toBe(true);
+  expect(cameraResponses.reduce((total, [requestId]) => total + encodedBytes.get(requestId), 0)).toBeLessThanOrEqual(15 * 1024 * 1024);
 });
