@@ -79,7 +79,7 @@
     "month": 9,
     "kind": "Hộp quà hai món",
     "title": "Một chút ngọt, một chút hoa",
-    "description": "Chạm vào bánh và hoa theo thứ tự em chọn, rồi thắt chiếc nơ cuối cùng.",
+    "description": "Một hộp quà nhỏ với hai bất ngờ — em chọn món mình muốn mở trước.",
     "route": "/september/",
     "status": "draft",
     "actionLabel": "Mở hộp quà tháng Chín",
@@ -92,9 +92,9 @@
     },
     "metadata": {
       "title": "Một chút ngọt, một chút hoa",
-      "description": "Hai món quà nhỏ — bánh tiramisu chanh và một bó hoa — được chuẩn bị riêng cho em.",
+      "description": "Một hộp quà nhỏ với hai bất ngờ, được chuẩn bị riêng cho em.",
       "ogTitle": "Một chút ngọt, một chút hoa",
-      "ogDescription": "Chạm vào hai món quà theo thứ tự em chọn và thắt chiếc nơ cuối cùng.",
+      "ogDescription": "Mở hộp theo thứ tự em chọn và khám phá điều anh gửi gắm.",
       "ogImage": "/september/images/preview.webp"
     },
     "build": {
