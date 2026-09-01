@@ -11,9 +11,7 @@ async function loadMainRuntime() {
   let source = await readFile(mainPath, "utf8");
   source = source.replace(/^import "@fontsource\/[^"]+";\n/gmu, "");
   for (const relativePath of [
-    "./core/puzzle.mjs",
     "./core/personalization.mjs",
-    "./core/nfc-progress.mjs",
     "./core/session.mjs",
     "./ui/scenes.js",
     "./ui/dom.js",
@@ -21,10 +19,63 @@ async function loadMainRuntime() {
     const absoluteUrl = pathToFileURL(path.join(appRoot, "src", relativePath.slice(2))).href;
     source = source.replaceAll(`"${relativePath}"`, JSON.stringify(absoluteUrl));
   }
-  if (!source.includes("export function createSeptemberExperienceApp")) {
-    source = source.replace(/const root = document\.querySelector\("#september-app"\);[\s\S]*$/u, "");
-  }
   return import(`data:text/javascript,${encodeURIComponent(source)}`);
+}
+
+function createRoot() {
+  const root = {
+    children: [],
+    dataset: {},
+    replaceChildren(...nextChildren) {
+      for (const child of root.children) {
+        child.isConnected = false;
+        child.parentNode = null;
+      }
+      root.children = nextChildren.filter(Boolean);
+      for (const child of root.children) {
+        child.isConnected = true;
+        child.parentNode = root;
+      }
+    },
+    querySelectorAll(selector) {
+      if (selector !== "[data-product-card]") return [];
+      const cards = [];
+      const visit = (node) => {
+        if (node?.dataset?.productCard === "") cards.push(node);
+        for (const child of node?.children ?? []) visit(child);
+      };
+      root.children.forEach(visit);
+      return cards;
+    },
+  };
+  return root;
+}
+
+function createSceneNode(name) {
+  return { children: [], dataset: { scene: name }, isConnected: false, parentNode: null };
+}
+
+function createProductCard() {
+  return {
+    children: [],
+    dataset: { productCard: "" },
+    isConnected: false,
+    parentNode: null,
+    querySelector() {
+      return null;
+    },
+  };
+}
+
+function mountScene(root, name, disposals) {
+  const node = createSceneNode(name);
+  root.replaceChildren(node);
+  return {
+    dispose() {
+      disposals.push(name);
+      if (node.parentNode === root) root.replaceChildren();
+    },
+  };
 }
 
 function readyWorkshop(app) {
@@ -37,90 +88,97 @@ function readyWorkshop(app) {
 function createHarness({ revealMount } = {}) {
   const pushes = [];
   const replaces = [];
-  const root = {
-    dataset: {},
-    replaceChildren() {},
-    querySelectorAll(selector) {
-      return selector === "[data-product-card]" ? [] : [];
-    },
-  };
-  const history = {
-    pushState(entry) {
-      pushes.push(entry);
-    },
-    replaceState(entry) {
-      replaces.push(entry);
-    },
-  };
+  const root = createRoot();
   const workshopDisposals = [];
   const revealDisposals = [];
   const mounts = {
-    intro: () => ({ dispose() {} }),
-    workshop: () => ({ dispose() { workshopDisposals.push("workshop"); } }),
-    reveal: revealMount ?? (() => ({
-      card: { isConnected: true, querySelector() { return null; } },
-      dispose() { revealDisposals.push("reveal"); },
-    })),
-    ending: () => ({ dispose() {} }),
+    intro: (mountRoot) => mountScene(mountRoot, "intro", []),
+    workshop: (mountRoot) => mountScene(mountRoot, "workshop", workshopDisposals),
+    reveal: revealMount ?? ((mountRoot) => {
+      const card = createProductCard();
+      mountRoot.replaceChildren(card);
+      return {
+        card,
+        dispose() {
+          revealDisposals.push("reveal");
+          if (card.parentNode === root) root.replaceChildren();
+        },
+      };
+    }),
+    ending: (mountRoot) => mountScene(mountRoot, "ending", []),
+  };
+  const history = {
+    pushState(entry, unused, url) {
+      pushes.push({ entry, unused, url });
+    },
+    replaceState(entry, unused, url) {
+      replaces.push({ entry, unused, url });
+    },
   };
   return { root, history, pushes, replaces, mounts, workshopDisposals, revealDisposals };
 }
 
-test("a stale reveal mount cannot commit, push history, or attach a product card", async () => {
-  const { createSeptemberExperienceApp } = await loadMainRuntime();
-  const harness = createHarness({
-    revealMount: () => ({ card: { isConnected: false }, dispose() {} }),
-  });
-  const app = createSeptemberExperienceApp({
+function createApp(runtime, harness, token) {
+  return runtime.createSeptemberExperienceApp({
     ...harness,
     location: { pathname: "/september/", search: "" },
-    tokenFactory: () => "session-a",
+    tokenFactory: () => token,
     focusHeading() {},
   });
+}
+
+test("a stale reveal mount cannot commit, push history, or leave a product card", async () => {
+  const runtime = await loadMainRuntime();
+  let finishMount;
+  const harness = createHarness({
+    revealMount: (mountRoot) => new Promise((resolve) => {
+      finishMount = () => {
+        const card = createProductCard();
+        mountRoot.replaceChildren(card);
+        resolve({ card, dispose() {} });
+      };
+    }),
+  });
+  const app = createApp(runtime, harness, "session-a");
   readyWorkshop(app);
   harness.pushes.length = 0;
 
-  const result = await app.requestGiftReveal({ giftId: "cake", transaction: 4 });
+  const request = app.requestGiftReveal({ giftId: "cake", transaction: 4 });
+  app.navigate("intro");
+  finishMount();
 
-  assert.equal(result, false);
+  assert.equal(await request, false);
   assert.deepEqual(app.state.openOrder, []);
-  assert.equal(harness.pushes.length, 0);
+  assert.equal(harness.pushes.length, 1, "only the explicit intro navigation may push");
   assert.equal(harness.root.querySelectorAll("[data-product-card]").length, 0);
+  assert.equal(app.activeScene.kind, "intro");
 });
 
 test("the reveal handoff owns cleanup once and restores a stable workshop after Back", async () => {
-  const { createSeptemberExperienceApp } = await loadMainRuntime();
+  const runtime = await loadMainRuntime();
   const harness = createHarness();
-  const app = createSeptemberExperienceApp({
-    ...harness,
-    location: { pathname: "/september/", search: "" },
-    tokenFactory: () => "session-b",
-    focusHeading() {},
-  });
+  const app = createApp(runtime, harness, "session-b");
   readyWorkshop(app);
   harness.pushes.length = 0;
 
   assert.equal(await app.requestGiftReveal({ giftId: "cake", transaction: 5 }), true);
   assert.deepEqual(app.state.openOrder, ["cake"]);
   assert.equal(harness.pushes.length, 1);
+  assert.equal(harness.root.querySelectorAll("[data-product-card]").length, 1);
   assert.equal(harness.workshopDisposals.length, 1);
   assert.equal(harness.revealDisposals.length, 0);
 
   app.navigate("workshop");
   assert.equal(harness.revealDisposals.length, 1);
+  assert.equal(harness.root.querySelectorAll("[data-product-card]").length, 0);
   app.restart();
   assert.equal(harness.revealDisposals.length, 1);
 });
 
 test("a failed reveal installs one replacement workshop cleanup owner", async () => {
-  const { createSeptemberExperienceApp } = await loadMainRuntime();
+  const runtime = await loadMainRuntime();
   const harness = createHarness({ revealMount: () => { throw new Error("mount failed"); } });
-  const app = createSeptemberExperienceApp({
-    ...harness,
-    location: { pathname: "/september/", search: "" },
-    tokenFactory: () => "session-c",
-    focusHeading() {},
-  });
+  const app = createApp(runtime, harness, "session-c");
   readyWorkshop(app);
 
   await app.requestGiftReveal({ giftId: "cake", transaction: 6 });
@@ -129,27 +187,128 @@ test("a failed reveal installs one replacement workshop cleanup owner", async ()
   assert.equal(harness.workshopDisposals.length, 2);
 });
 
-test("a stale reveal completion cannot overtake a restart", async () => {
-  const { createSeptemberExperienceApp } = await loadMainRuntime();
+test("a late reveal completion after dispose cannot commit or attach a card", async () => {
+  const runtime = await loadMainRuntime();
   let finishMount;
   const harness = createHarness({
-    revealMount: () => new Promise((resolve) => {
-      finishMount = resolve;
+    revealMount: (mountRoot) => new Promise((resolve) => {
+      finishMount = () => {
+        const card = createProductCard();
+        mountRoot.replaceChildren(card);
+        resolve({ card, dispose() {} });
+      };
     }),
   });
-  const app = createSeptemberExperienceApp({
-    ...harness,
-    location: { pathname: "/september/", search: "" },
-    tokenFactory: () => "session-d",
-    focusHeading() {},
-  });
+  const app = createApp(runtime, harness, "session-d");
   readyWorkshop(app);
+  harness.pushes.length = 0;
 
   const request = app.requestGiftReveal({ giftId: "cake", transaction: 7 });
+  app.dispose();
+  finishMount();
+
+  assert.equal(await request, false);
+  assert.deepEqual(app.state.openOrder, []);
+  assert.equal(harness.pushes.length, 0);
+  assert.equal(harness.root.querySelectorAll("[data-product-card]").length, 0);
+});
+
+test("a late reveal completion after Back cannot overtake the restored workshop", async () => {
+  const runtime = await loadMainRuntime();
+  let finishMount;
+  const harness = createHarness({
+    revealMount: (mountRoot) => new Promise((resolve) => {
+      finishMount = () => {
+        const card = createProductCard();
+        mountRoot.replaceChildren(card);
+        resolve({ card, dispose() {} });
+      };
+    }),
+  });
+  const app = createApp(runtime, harness, "session-back");
+  readyWorkshop(app);
+  harness.pushes.length = 0;
+
+  const request = app.requestGiftReveal({ giftId: "cake", transaction: 71 });
+  app.handlePopState({ state: { v: 2, sessionToken: "session-back", scene: "workshop" } });
+  finishMount();
+
+  assert.equal(await request, false);
+  assert.equal(app.activeScene.kind, "workshop");
+  assert.deepEqual(app.state.openOrder, []);
+  assert.equal(harness.pushes.length, 0);
+  assert.equal(harness.root.querySelectorAll("[data-product-card]").length, 0);
+});
+
+test("valid Back to intro preserves in-memory progress for Forward to a committed reveal", async () => {
+  const runtime = await loadMainRuntime();
+  const harness = createHarness();
+  const app = createApp(runtime, harness, "session-e");
+  readyWorkshop(app);
+  assert.equal(await app.requestGiftReveal({ giftId: "cake", transaction: 8 }), true);
+  const revealEntry = app.historyEntry();
+
+  app.handlePopState({ state: { v: 2, sessionToken: "session-e", scene: "intro" } });
+  assert.equal(app.activeScene.kind, "intro");
+  assert.deepEqual(app.state.openOrder, ["cake"]);
+  assert.equal(harness.root.querySelectorAll("[data-product-card]").length, 0);
+
+  app.handlePopState({ state: revealEntry });
+  assert.equal(app.activeScene.kind, "reveal");
+  assert.deepEqual(app.state.openOrder, ["cake"]);
+  assert.equal(harness.root.querySelectorAll("[data-product-card]").length, 1);
+});
+
+test("a stale reveal completion cannot overtake a restart", async () => {
+  const runtime = await loadMainRuntime();
+  let finishMount;
+  const harness = createHarness({
+    revealMount: (mountRoot) => new Promise((resolve) => {
+      finishMount = () => {
+        const card = createProductCard();
+        mountRoot.replaceChildren(card);
+        resolve({ card, dispose() {} });
+      };
+    }),
+  });
+  const app = createApp(runtime, harness, "session-f");
+  readyWorkshop(app);
+
+  const request = app.requestGiftReveal({ giftId: "cake", transaction: 9 });
   app.restart();
-  finishMount({ card: { isConnected: true }, dispose() {} });
+  finishMount();
 
   assert.equal(await request, false);
   assert.equal(app.activeScene.kind, "intro");
   assert.deepEqual(app.state.openOrder, []);
+  assert.equal(harness.root.querySelectorAll("[data-product-card]").length, 0);
+});
+
+test("a duplicate activation keeps one reveal mount, card, commit, and history entry", async () => {
+  const runtime = await loadMainRuntime();
+  let finishMount;
+  let revealMounts = 0;
+  const harness = createHarness({
+    revealMount: (mountRoot) => new Promise((resolve) => {
+      revealMounts += 1;
+      finishMount = () => {
+        const card = createProductCard();
+        mountRoot.replaceChildren(card);
+        resolve({ card, dispose() {} });
+      };
+    }),
+  });
+  const app = createApp(runtime, harness, "session-duplicate");
+  readyWorkshop(app);
+  harness.pushes.length = 0;
+
+  const first = app.requestGiftReveal({ giftId: "cake", transaction: 10 });
+  assert.equal(await app.requestGiftReveal({ giftId: "cake", transaction: 10 }), false);
+  finishMount();
+
+  assert.equal(await first, true);
+  assert.equal(revealMounts, 1);
+  assert.deepEqual(app.state.openOrder, ["cake"]);
+  assert.equal(harness.pushes.length, 1);
+  assert.equal(harness.root.querySelectorAll("[data-product-card]").length, 1);
 });

@@ -123,7 +123,41 @@ export function createSeptemberExperienceApp(options = {}) {
     return mount(root, sceneContext(extra));
   }
 
+  function ownsRevealTransition(attempt) {
+    return Boolean(
+      attempt
+        && pendingReveal === attempt
+        && activeScene.kind === "transition"
+        && activeScene.attempt === attempt,
+    );
+  }
+
+  function invalidatePendingReveal() {
+    pendingReveal = null;
+  }
+
+  function createRevealMountRoot(attempt) {
+    return Object.freeze({
+      get dataset() {
+        return root.dataset;
+      },
+      get ownerDocument() {
+        return root.ownerDocument;
+      },
+      replaceChildren(...children) {
+        if (ownsRevealTransition(attempt)) root.replaceChildren(...children);
+      },
+      querySelector(...args) {
+        return root.querySelector?.(...args) ?? null;
+      },
+      querySelectorAll(...args) {
+        return root.querySelectorAll?.(...args) ?? [];
+      },
+    });
+  }
+
   function installScene(kind, mount) {
+    invalidatePendingReveal();
     const previousCleanup = cleanupScene;
     cleanupScene = noOp;
     previousCleanup();
@@ -146,17 +180,17 @@ export function createSeptemberExperienceApp(options = {}) {
     return mounted;
   }
 
-  function isCurrentReadyEnvelope({ giftId, transaction }, { transition = false } = {}) {
+  function isCurrentReadyEnvelope({ giftId, transaction, attempt = null }, { transition = false } = {}) {
     const expectedGiftId = state.deliveryOrder?.[state.deliveredCount - 1];
     const inCurrentScene = transition
-      ? activeScene.kind === "transition" && pendingReveal === transaction
-      : activeScene.kind === "workshop";
+      ? ownsRevealTransition(attempt)
+      : activeScene.kind === "workshop" && pendingReveal === null;
     return Boolean(
       inCurrentScene
         && state.scene === "workshop"
         && Number.isInteger(transaction)
         && transaction > 0
-        && pendingReveal === (transition ? transaction : null)
+        && (transition ? pendingReveal === attempt : pendingReveal === null)
         && expectedGiftId === giftId
         && !state.openedGiftIds.has(giftId)
         && ["first-envelope-ready", "second-envelope-ready"].includes(
@@ -165,39 +199,35 @@ export function createSeptemberExperienceApp(options = {}) {
     );
   }
 
-  function abandonRevealMount(mounted, transaction) {
+  function abandonRevealMount(mounted, attempt) {
     try {
       mounted?.dispose?.();
     } catch {}
-    const ownsTransition = activeScene.kind === "transition"
-      && activeScene.transaction === transaction
-      && pendingReveal === transaction;
-    if (!ownsTransition) return false;
-    pendingReveal = null;
+    if (!ownsRevealTransition(attempt)) return false;
+    invalidatePendingReveal();
     state = { ...state, scene: "workshop", activeGiftId: null };
     installStableScene("workshop");
     return false;
   }
 
-  function commitMountedGift({ giftId, transaction, mounted }) {
+  function commitMountedGift({ giftId, transaction, mounted, attempt = pendingReveal }) {
     if (
       !mounted?.card?.isConnected
-      || pendingReveal !== transaction
-      || !isCurrentReadyEnvelope({ giftId, transaction }, { transition: true })
+      || !isCurrentReadyEnvelope({ giftId, transaction, attempt }, { transition: true })
     ) {
-      return abandonRevealMount(mounted, transaction);
+      return abandonRevealMount(mounted, attempt);
     }
 
     try {
       state = commitOpenedGift({ ...state, activeGiftId: giftId }, giftId);
     } catch {
-      return abandonRevealMount(mounted, transaction);
+      return abandonRevealMount(mounted, attempt);
     }
     state = { ...state, scene: "reveal", activeGiftId: giftId };
     pushHistory("reveal");
     cleanupScene = once(mounted.dispose);
     activeScene = { kind: "reveal", giftId };
-    pendingReveal = null;
+    invalidatePendingReveal();
     focus(mounted.card);
     updateTitle();
     return true;
@@ -206,32 +236,37 @@ export function createSeptemberExperienceApp(options = {}) {
   async function requestGiftReveal({ giftId, transaction, mount } = {}) {
     if (!isCurrentReadyEnvelope({ giftId, transaction }) || pendingReveal !== null) return false;
 
-    pendingReveal = transaction;
+    const attempt = Object.freeze({ transaction });
+    pendingReveal = attempt;
     const previousCleanup = cleanupScene;
     cleanupScene = noOp;
-    activeScene = { kind: "transition", transaction };
+    activeScene = { kind: "transition", transaction, attempt };
     previousCleanup();
 
     let mounted = null;
     try {
       const revealMount = mount ?? mounts.reveal;
-      mounted = await revealMount(root, sceneContext({ giftId, transaction }));
+      mounted = await revealMount(
+        createRevealMountRoot(attempt),
+        sceneContext({ giftId, transaction }),
+      );
     } catch {
-      return abandonRevealMount(null, transaction);
+      return abandonRevealMount(null, attempt);
     }
     if (
       !validSceneMount(mounted, { reveal: true })
-      || !isCurrentReadyEnvelope({ giftId, transaction }, { transition: true })
+      || !isCurrentReadyEnvelope({ giftId, transaction, attempt }, { transition: true })
     ) {
-      return abandonRevealMount(mounted, transaction);
+      return abandonRevealMount(mounted, attempt);
     }
-    return commitMountedGift({ giftId, transaction, mounted });
+    return commitMountedGift({ giftId, transaction, mounted, attempt });
   }
 
   function navigate(scene, { replace = false, restoreFocusGiftId = null } = {}) {
     if (!mounts[scene]) return false;
     if (scene === "reveal" && !state.activeGiftId) return false;
     if (scene === "ending" && deriveWorkshopPhase(state) !== "complete") return false;
+    invalidatePendingReveal();
     state = {
       ...state,
       scene,
@@ -265,10 +300,10 @@ export function createSeptemberExperienceApp(options = {}) {
   }
 
   function restart() {
+    invalidatePendingReveal();
     const previousCleanup = cleanupScene;
     cleanupScene = noOp;
     previousCleanup();
-    pendingReveal = null;
     focusGiftId = null;
     sessionToken = tokenFactory();
     state = createExperienceState();
@@ -280,9 +315,10 @@ export function createSeptemberExperienceApp(options = {}) {
   }
 
   function handlePopState(event) {
+    invalidatePendingReveal();
     const previousGiftId = state.activeGiftId;
     const target = resolveHistoryTarget(event?.state, { sessionToken, state });
-    if (target.scene === "intro") {
+    if (target.scene === "intro" && target.replace) {
       state = createExperienceState();
     } else {
       state = {
@@ -303,9 +339,11 @@ export function createSeptemberExperienceApp(options = {}) {
   }
 
   function dispose() {
+    invalidatePendingReveal();
     const previousCleanup = cleanupScene;
     cleanupScene = noOp;
     previousCleanup();
+    activeScene = { kind: "disposed" };
     windowTarget?.clearTimeout?.(liveTimer);
     windowTarget?.removeEventListener?.("popstate", handlePopState);
     motionQuery.removeEventListener?.("change", handleMotionChange);

@@ -26,6 +26,10 @@ test("September runtime UI contains only the paper-and-brass workshop vocabulary
     source,
     /(?:nfc-progress|parseNfc|nfc-dialog|puzzle|ribbon|lunar|moon|nasa|orbit|cosmetic)/iu,
   );
+  assert.doesNotMatch(
+    source,
+    /(?:\.blind-box|\.game-entry-wrap|\.reveal-sequence|\.gift-messages|\.gift-message|\.bow-flourish)/u,
+  );
   assert.match(source, /workshop-stage/u);
   assert.match(source, /paper-shadow/u);
 });
