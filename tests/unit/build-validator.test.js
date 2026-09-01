@@ -150,6 +150,15 @@ function validManifest() {
       august: ['/august/assets/index-Abcdef12.js'],
       september: ['/september/assets/index-Abcdef12.js'],
     },
+    lazyAssetUrlsByRoute: {
+      chooser: [],
+      birthday: [],
+      august: [],
+      september: [],
+    },
+    runtimeProfilesByRoute: {
+      september: { workshop: [], camera: [] },
+    },
     externalRuntimeUrls: [],
   };
 }
@@ -161,6 +170,43 @@ function validProductionManifest() {
   manifest.assets = manifest.assets.filter(({ route, url }) =>
     route !== 'september' && !url.startsWith('/september/'));
   delete manifest.initialAssetUrlsByRoute.september;
+  delete manifest.lazyAssetUrlsByRoute.september;
+  delete manifest.runtimeProfilesByRoute.september;
+  return manifest;
+}
+
+function validManifestWithBirthdayAndSeptemberMediaPipe() {
+  const manifest = validManifest();
+  const mediaAsset = (route, url, bytes, contentType) => ({
+    route,
+    url,
+    sha256: url.includes('birthday') ? '1'.repeat(64) : '2'.repeat(64),
+    bytes,
+    contentType,
+    critical: false,
+  });
+  manifest.assets.push(
+    mediaAsset('birthday', '/birthday/vendor/mediapipe/hands/hands_solution_wasm_bin.wasm', 9 * 1024 * 1024, 'application/wasm'),
+    mediaAsset('birthday', '/birthday/vendor/mediapipe/hands/hands_solution_simd_wasm_bin.wasm', 9 * 1024 * 1024, 'application/wasm'),
+    mediaAsset('september', '/september/assets/september-camera-Abcdef12.js', 512, 'text/javascript'),
+    mediaAsset('september', '/september/assets/hand-landmarker.worker-Bbcdef12.js', 512, 'text/javascript'),
+    mediaAsset('september', '/september/models/hand-landmarker-float16-v1.task', 8 * 1024 * 1024, 'application/octet-stream'),
+    mediaAsset('september', '/september/vendor/mediapipe/vision_bundle.mjs', 256 * 1024, 'text/javascript'),
+    mediaAsset('september', '/september/vendor/mediapipe/vision_wasm_internal.js', 512 * 1024, 'text/javascript'),
+    mediaAsset('september', '/september/vendor/mediapipe/vision_wasm_internal.wasm', 12 * 1024 * 1024, 'application/wasm'),
+  );
+  manifest.lazyAssetUrlsByRoute.september = [
+    '/september/assets/hand-landmarker.worker-Bbcdef12.js',
+    '/september/assets/september-camera-Abcdef12.js',
+  ];
+  manifest.runtimeProfilesByRoute.september.camera = [
+    '/september/assets/hand-landmarker.worker-Bbcdef12.js',
+    '/september/assets/september-camera-Abcdef12.js',
+    '/september/models/hand-landmarker-float16-v1.task',
+    '/september/vendor/mediapipe/vision_bundle.mjs',
+    '/september/vendor/mediapipe/vision_wasm_internal.js',
+    '/september/vendor/mediapipe/vision_wasm_internal.wasm',
+  ];
   return manifest;
 }
 
@@ -217,6 +263,67 @@ test('built-artifact analysis derives the September initial dependency closure',
   );
 });
 
+test('dynamic workshop and camera imports stay out of the September initial closure', () => {
+  const artifacts = [
+    {
+      url: '/september/index.html',
+      contentType: 'text/html',
+      source: '<script type="module" src="./assets/index-Abcdef12.js"></script>',
+    },
+    {
+      url: '/september/assets/index-Abcdef12.js',
+      contentType: 'text/javascript',
+      source: [
+        'import("./september-workshop-A.js");',
+        'import("./september-camera-A.js");',
+      ].join('\n'),
+    },
+    {
+      url: '/september/assets/september-workshop-A.js',
+      contentType: 'text/javascript',
+      source: 'export const workshop = true;',
+    },
+    {
+      url: '/september/assets/september-camera-A.js',
+      contentType: 'text/javascript',
+      source: 'new Worker(new URL("./hand-landmarker.worker-B.js", import.meta.url), { type: "module" });',
+    },
+    {
+      url: '/september/assets/hand-landmarker.worker-B.js',
+      contentType: 'text/javascript',
+      source: 'export const worker = true;',
+    },
+    { url: '/september/models/hand-landmarker-float16-v1.task', contentType: 'application/octet-stream' },
+    { url: '/september/vendor/mediapipe/vision_bundle.mjs', contentType: 'text/javascript' },
+    { url: '/september/vendor/mediapipe/vision_wasm_internal.js', contentType: 'text/javascript' },
+    { url: '/september/vendor/mediapipe/vision_wasm_internal.wasm', contentType: 'application/wasm' },
+  ];
+
+  const result = analyzeRuntimeArtifacts({
+    artifacts,
+    routes: validManifest().routes.filter(({ id }) => id === 'september'),
+    siteOrigin: site.origin,
+  });
+
+  assert.equal(
+    result.initialAssetUrlsByRoute.september.includes('/september/assets/september-camera-A.js'),
+    false,
+  );
+  assert.deepEqual(result.lazyAssetUrlsByRoute.september, [
+    '/september/assets/hand-landmarker.worker-B.js',
+    '/september/assets/september-camera-A.js',
+    '/september/assets/september-workshop-A.js',
+  ]);
+  assert.deepEqual(result.runtimeProfilesByRoute.september.camera, [
+    '/september/assets/hand-landmarker.worker-B.js',
+    '/september/assets/september-camera-A.js',
+    '/september/models/hand-landmarker-float16-v1.task',
+    '/september/vendor/mediapipe/vision_bundle.mjs',
+    '/september/vendor/mediapipe/vision_wasm_internal.js',
+    '/september/vendor/mediapipe/vision_wasm_internal.wasm',
+  ]);
+});
+
 test('built-artifact analysis detects injected third-party HTML, CSS, and JS URLs', () => {
   const artifacts = [
     {
@@ -256,6 +363,40 @@ test('build manifest contract accepts clean canonical route assets', () => {
 test('production manifest accepts a non-built draft while retaining its chooser preview', () => {
   assert.deepEqual(
     validateBuildManifest(validProductionManifest(), site, { environment: 'production' }),
+    [],
+  );
+});
+
+test('September camera profile stays empty until its dynamic root is emitted', () => {
+  const artifacts = [
+    {
+      url: '/september/index.html',
+      contentType: 'text/html',
+      source: '<script type="module" src="./assets/index-Abcdef12.js"></script>',
+    },
+    {
+      url: '/september/assets/index-Abcdef12.js',
+      contentType: 'text/javascript',
+      source: 'console.log("legacy scene");',
+    },
+    { url: '/september/models/hand-landmarker-float16-v1.task', contentType: 'application/octet-stream' },
+    { url: '/september/vendor/mediapipe/vision_bundle.mjs', contentType: 'text/javascript' },
+    { url: '/september/vendor/mediapipe/vision_wasm_internal.js', contentType: 'text/javascript' },
+    { url: '/september/vendor/mediapipe/vision_wasm_internal.wasm', contentType: 'application/wasm' },
+  ];
+
+  const result = analyzeRuntimeArtifacts({
+    artifacts,
+    routes: validManifest().routes.filter(({ id }) => id === 'september'),
+    siteOrigin: site.origin,
+  });
+
+  assert.deepEqual(result.runtimeProfilesByRoute.september.camera, []);
+});
+
+test('September camera profile budget is isolated from Birthday MediaPipe assets', () => {
+  assert.deepEqual(
+    validateBuildManifest(validManifestWithBirthdayAndSeptemberMediaPipe(), site),
     [],
   );
 });
@@ -384,6 +525,40 @@ test('build manifest requires September critical flags to match its dependency c
 
   const errors = validateBuildManifest(manifest, site).join('\n');
   assert.match(errors, /September initial dependency closure/i);
+});
+
+test('build manifest rejects duplicate camera profile assets', () => {
+  const manifest = validManifest();
+  manifest.runtimeProfilesByRoute.september.camera = [
+    '/september/assets/index-Abcdef12.js',
+    '/september/assets/index-Abcdef12.js',
+  ];
+
+  assert.match(
+    validateBuildManifest(manifest, site).join('\n'),
+    /september camera profile contains duplicates/i,
+  );
+});
+
+test('build manifest rejects an oversized individual camera artifact', () => {
+  const manifest = validManifestWithBirthdayAndSeptemberMediaPipe();
+  manifest.assets.find(({ url }) => url.endsWith('vision_wasm_internal.wasm')).bytes = 18 * 1024 * 1024 + 1;
+
+  assert.match(
+    validateBuildManifest(manifest, site).join('\n'),
+    /individual MediaPipe file limit is 18 MiB/i,
+  );
+});
+
+test('build manifest requires the selected camera public runtime with its camera root', () => {
+  const manifest = validManifestWithBirthdayAndSeptemberMediaPipe();
+  manifest.runtimeProfilesByRoute.september.camera = manifest.runtimeProfilesByRoute.september.camera
+    .filter(url => !url.endsWith('vision_wasm_internal.wasm'));
+
+  assert.match(
+    validateBuildManifest(manifest, site).join('\n'),
+    /September camera profile is missing selected runtime .*vision_wasm_internal\.wasm/i,
+  );
 });
 
 test('build manifest keeps September assets inside the September namespace', () => {

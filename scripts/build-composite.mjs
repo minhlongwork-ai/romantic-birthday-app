@@ -110,6 +110,7 @@ function contentTypeFor(pathname) {
   const types = new Map([
     ['.html', 'text/html'],
     ['.js', 'text/javascript'],
+    ['.mjs', 'text/javascript'],
     ['.css', 'text/css'],
     ['.json', 'application/json'],
     ['.webmanifest', 'application/manifest+json'],
@@ -124,6 +125,7 @@ function contentTypeFor(pathname) {
     ['.txt', 'text/plain'],
     ['.wasm', 'application/wasm'],
     ['.tflite', 'application/octet-stream'],
+    ['.task', 'application/octet-stream'],
     ['.data', 'application/octet-stream'],
   ]);
   return types.get(extname(pathname).toLowerCase()) || 'application/octet-stream';
@@ -310,6 +312,8 @@ const buildManifest = {
   assets,
   externalRuntimeUrls: runtimeAnalysis.externalRuntimeUrls,
   initialAssetUrlsByRoute: runtimeAnalysis.initialAssetUrlsByRoute,
+  lazyAssetUrlsByRoute: runtimeAnalysis.lazyAssetUrlsByRoute,
+  runtimeProfilesByRoute: runtimeAnalysis.runtimeProfilesByRoute,
 };
 await writeFile(
   resolve(distDir, 'build-manifest.json'),

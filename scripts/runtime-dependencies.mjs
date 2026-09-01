@@ -146,27 +146,37 @@ function cssRuntimeReferences(source, { modernFontFormats = true } = {}) {
 }
 
 function javascriptModuleReferences(source) {
-  const references = [];
-  for (const match of String(source ?? "").matchAll(
+  const text = String(source ?? "");
+  return {
+    eager: [...text.matchAll(
+      /\bimport\s+(?:[\s\S]*?\s+from\s+)?["']([^"']+)["']/gu,
+    )].map((match) => match[1]),
+    lazy: [...text.matchAll(
     /\bimport\s*\(\s*["']([^"']+)["']/gu,
-  )) {
-    references.push(match[1]);
-  }
-  for (const match of String(source ?? "").matchAll(
-    /\bimport\s+["']([^"']+)["']/gu,
-  )) {
-    references.push(match[1]);
-  }
-  for (const match of String(source ?? "").matchAll(
+    )].map((match) => match[1]),
+  };
+}
+
+function javascriptWorkerReferences(source) {
+  return [...String(source ?? "").matchAll(
+    /new\s+(?:Worker|SharedWorker)\s*\(\s*new\s+URL\(\s*["']([^"']+)["']\s*,\s*import\.meta\.url/gu,
+  )].map((match) => match[1]);
+}
+
+function javascriptLiteralUrlReferences(source) {
+  return [...String(source ?? "").matchAll(
     /new\s+URL\(\s*["']([^"']+)["']\s*,\s*import\.meta\.url/gu,
-  )) {
-    references.push(match[1]);
-  }
-  return references;
+  )].map((match) => match[1]);
 }
 
 function javascriptRuntimeReferences(source) {
-  const references = javascriptModuleReferences(source);
+  const modules = javascriptModuleReferences(source);
+  const references = [
+    ...modules.eager,
+    ...modules.lazy,
+    ...javascriptWorkerReferences(source),
+    ...javascriptLiteralUrlReferences(source),
+  ];
   for (const match of String(source ?? "").matchAll(
     /(?:fetch|importScripts|WebSocket|EventSource|Worker|SharedWorker)\(\s*["']([^"']+)["']/gu,
   )) {
@@ -212,9 +222,72 @@ function dependencyReferences(artifact, viewportWidth) {
     );
   }
   if (JAVASCRIPT_CONTENT_TYPES.has(artifact.contentType)) {
-    return javascriptRuntimeReferences(artifact.source);
+    return javascriptModuleReferences(artifact.source).eager;
   }
   return [];
+}
+
+function sortedUrls(urls) {
+  return [...urls].sort();
+}
+
+function createClosureResolver({
+  artifactMap,
+  siteOrigin,
+  viewportWidth,
+  externalRuntimeUrls,
+  missingRuntimeUrls,
+}) {
+  function resolveLocalReference(reference, parentUrl) {
+    const resolved = resolveReference(reference, parentUrl, siteOrigin);
+    if (resolved?.external) externalRuntimeUrls.add(resolved.external);
+    return resolved?.local ?? null;
+  }
+
+  function trace(roots, { includeWorkers = false, collectDynamicRoots = false } = {}) {
+    const urls = new Set();
+    const dynamicRoots = new Set();
+    const pending = [...roots];
+    while (pending.length > 0) {
+      const currentUrl = pending.shift();
+      if (urls.has(currentUrl)) continue;
+      urls.add(currentUrl);
+      const artifact = artifactMap.get(currentUrl);
+      if (!artifact) {
+        missingRuntimeUrls.add(currentUrl);
+        continue;
+      }
+      for (const reference of dependencyReferences(artifact, viewportWidth)) {
+        const local = resolveLocalReference(reference, currentUrl);
+        if (local && !urls.has(local)) pending.push(local);
+      }
+      if (!JAVASCRIPT_CONTENT_TYPES.has(artifact.contentType)) continue;
+      const modules = javascriptModuleReferences(artifact.source);
+      if (collectDynamicRoots) {
+        for (const reference of modules.lazy) {
+          const local = resolveLocalReference(reference, currentUrl);
+          if (local) dynamicRoots.add(local);
+        }
+      }
+      if (includeWorkers) {
+        for (const reference of javascriptWorkerReferences(artifact.source)) {
+          const local = resolveLocalReference(reference, currentUrl);
+          if (local && !urls.has(local)) pending.push(local);
+        }
+      }
+    }
+    return { urls, dynamicRoots };
+  }
+
+  function chunkRoots(chunkName) {
+    return [...artifactMap.keys()].filter(url =>
+      url.includes(`/${chunkName}-`) && JAVASCRIPT_CONTENT_TYPES.has(artifactMap.get(url)?.contentType));
+  }
+
+  return {
+    trace,
+    chunkRoots,
+  };
 }
 
 export function analyzeRuntimeArtifacts({
@@ -248,34 +321,69 @@ export function analyzeRuntimeArtifacts({
     }
   }
 
-  const initialAssetUrlsByRoute = {};
   const missingRuntimeUrls = new Set();
+  const closureResolver = createClosureResolver({
+    artifactMap,
+    siteOrigin,
+    viewportWidth,
+    externalRuntimeUrls,
+    missingRuntimeUrls,
+  });
+  const initialAssetUrlsByRoute = {};
+  const lazyAssetUrlsByRoute = {};
+  const runtimeProfilesByRoute = {};
   for (const route of Array.isArray(routes) ? routes : []) {
-    const initial = new Set();
-    const pending = [route.index];
-    while (pending.length > 0) {
-      const currentUrl = pending.shift();
-      if (initial.has(currentUrl)) continue;
-      initial.add(currentUrl);
-      const artifact = artifactMap.get(currentUrl);
-      if (!artifact) {
-        missingRuntimeUrls.add(currentUrl);
-        continue;
-      }
-      for (const reference of dependencyReferences(artifact, viewportWidth)) {
-        const resolved = resolveReference(reference, currentUrl, siteOrigin);
-        if (resolved?.external) externalRuntimeUrls.add(resolved.external);
-        else if (resolved?.local && !initial.has(resolved.local)) {
-          pending.push(resolved.local);
-        }
+    const initial = closureResolver.trace([route.index], {
+      collectDynamicRoots: true,
+    });
+    initialAssetUrlsByRoute[route.id] = sortedUrls(initial.urls);
+
+    const lazy = new Set();
+    const pendingLazyRoots = [...initial.dynamicRoots];
+    const visitedLazyRoots = new Set();
+    while (pendingLazyRoots.length > 0) {
+      const root = pendingLazyRoots.shift();
+      if (visitedLazyRoots.has(root)) continue;
+      visitedLazyRoots.add(root);
+      const closure = closureResolver.trace([root], {
+        includeWorkers: true,
+        collectDynamicRoots: true,
+      });
+      for (const url of closure.urls) lazy.add(url);
+      for (const nestedRoot of closure.dynamicRoots) {
+        if (!visitedLazyRoots.has(nestedRoot)) pendingLazyRoots.push(nestedRoot);
       }
     }
-    initialAssetUrlsByRoute[route.id] = [...initial].sort();
+    lazyAssetUrlsByRoute[route.id] = sortedUrls(lazy);
+
+    if (route.id !== "september") continue;
+    const workshop = closureResolver.trace(
+      closureResolver.chunkRoots("september-workshop"),
+    ).urls;
+    const cameraRoots = closureResolver.chunkRoots("september-camera");
+    const camera = closureResolver.trace(cameraRoots, { includeWorkers: true }).urls;
+    if (cameraRoots.length > 0) {
+      for (const url of [
+        "/september/models/hand-landmarker-float16-v1.task",
+        "/september/vendor/mediapipe/vision_bundle.mjs",
+        "/september/vendor/mediapipe/vision_wasm_internal.js",
+        "/september/vendor/mediapipe/vision_wasm_internal.wasm",
+      ]) {
+        if (artifactMap.has(url)) camera.add(url);
+        else missingRuntimeUrls.add(url);
+      }
+    }
+    runtimeProfilesByRoute.september = {
+      workshop: sortedUrls(workshop),
+      camera: sortedUrls(camera),
+    };
   }
 
   return {
     externalRuntimeUrls: [...externalRuntimeUrls].sort(),
     initialAssetUrlsByRoute,
+    lazyAssetUrlsByRoute,
+    runtimeProfilesByRoute,
     missingRuntimeUrls: [...missingRuntimeUrls].sort(),
   };
 }

@@ -27,6 +27,14 @@ const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const HASHED_APPLICATION_ASSET = /\/assets\/[^/]+-[A-Za-z0-9_-]{8,}\.(?:css|js)$/;
 const SHA256 = /^[a-f0-9]{64}$/;
 const BUILD_SHA = /^[a-f0-9]{7,40}$|^local-[a-f0-9]{12}$/;
+const SEPTEMBER_INITIAL_LIMIT = 491_520;
+const MEDIAPIPE_FILE_LIMIT = 18 * 1024 * 1024;
+const SEPTEMBER_CAMERA_PUBLIC_RUNTIME = [
+  '/september/models/hand-landmarker-float16-v1.task',
+  '/september/vendor/mediapipe/vision_bundle.mjs',
+  '/september/vendor/mediapipe/vision_wasm_internal.js',
+  '/september/vendor/mediapipe/vision_wasm_internal.wasm',
+];
 const FORBIDDEN_RUNTIME_ASSET = /(?:hand_landmark_full\.tflite|(?:^|[/_.-])(?:rain|moon)(?:[/_.-]|$))/i;
 const FORBIDDEN_MANIFEST_FIELDS = new Set([
   'age',
@@ -91,6 +99,77 @@ function isSameOriginPath(value) {
     && !value.startsWith('//')
     && !value.includes('\\')
     && !value.split('/').includes('..');
+}
+
+function arrayIsSorted(values) {
+  return JSON.stringify(values) === JSON.stringify([...values].sort());
+}
+
+function validateAssetClosure({
+  label,
+  urls,
+  assets,
+  errors,
+  routeId,
+}) {
+  if (!Array.isArray(urls)) {
+    errors.push(`${label} is missing.`);
+    return;
+  }
+  if (new Set(urls).size !== urls.length) {
+    errors.push(`${label} contains duplicates.`);
+  }
+  if (!arrayIsSorted(urls)) {
+    errors.push(`${label} must be sorted.`);
+  }
+  for (const url of urls) {
+    if (!isSameOriginPath(url)) {
+      errors.push(`${label} contains a non-same-origin path ${url}.`);
+      continue;
+    }
+    const asset = assets.find(candidate => candidate.url === url);
+    if (!asset) {
+      errors.push(`${label} references missing asset ${url}.`);
+    } else if (routeId && asset.route !== routeId) {
+      errors.push(`${label} asset ${url} must belong to ${routeId}.`);
+    }
+  }
+}
+
+function expectedCameraContentType(url) {
+  if (/\.(?:js|mjs)$/iu.test(url)) return 'text/javascript';
+  if (/\.wasm$/iu.test(url)) return 'application/wasm';
+  if (/\.task$/iu.test(url)) return 'application/octet-stream';
+  return null;
+}
+
+function validateCameraProfile({ urls, assets, errors }) {
+  if (!Array.isArray(urls)) return;
+  const hasCameraRoot = urls.some(url =>
+    /\/september\/assets\/september-camera-[A-Za-z0-9_-]+\.js$/u.test(url));
+  if (hasCameraRoot) {
+    if (!urls.some(url => /\/september\/assets\/hand-landmarker\.worker-[A-Za-z0-9_-]+\.js$/u.test(url))) {
+      errors.push('September camera profile is missing its emitted module worker.');
+    }
+    for (const url of SEPTEMBER_CAMERA_PUBLIC_RUNTIME) {
+      if (!urls.includes(url)) {
+        errors.push(`September camera profile is missing selected runtime ${url}.`);
+      }
+    }
+  }
+  for (const url of urls) {
+    const asset = assets.find(candidate => candidate.url === url);
+    if (!asset) continue;
+    const expectedType = expectedCameraContentType(url);
+    if (!expectedType) {
+      errors.push(`${url} is not an allowed September camera profile artifact.`);
+    } else if (!contentTypeMatches(expectedType, asset.contentType)) {
+      errors.push(`${url} has ${asset.contentType}; September camera profile expects ${expectedType}.`);
+    }
+    if (Number.isSafeInteger(asset.bytes) && asset.bytes > MEDIAPIPE_FILE_LIMIT) {
+      errors.push(`${url} is ${(asset.bytes / 1024 / 1024).toFixed(2)} MiB; individual MediaPipe file limit is 18 MiB.`);
+    }
+  }
 }
 
 export function validateNotFoundDocument(html) {
@@ -232,23 +311,63 @@ export function validateBuildManifest(manifest, site, {
   }
   for (const route of buildRoutes) {
     const initialUrls = initialAssetUrlsByRoute?.[route.id];
-    if (!Array.isArray(initialUrls)) {
-      errors.push(`${route.id} initial dependency closure is missing.`);
-      continue;
-    }
-    if (new Set(initialUrls).size !== initialUrls.length) {
-      errors.push(`${route.id} initial dependency closure contains duplicates.`);
-    }
-    for (const url of initialUrls) {
-      if (!assets.some(asset => asset.url === url)) {
-        errors.push(`${route.id} initial dependency closure references missing asset ${url}.`);
-      }
-    }
+    validateAssetClosure({
+      label: `${route.id} initial dependency closure`,
+      urls: initialUrls,
+      assets,
+      errors,
+    });
   }
   for (const record of catalog.filter(record => !expectedBuiltIds.has(record.id))) {
     if (Object.hasOwn(initialAssetUrlsByRoute || {}, record.id)) {
       errors.push(`Non-built experience ${record.id} has an initial dependency closure.`);
     }
+  }
+  const lazyAssetUrlsByRoute = manifest.lazyAssetUrlsByRoute;
+  if (!lazyAssetUrlsByRoute || typeof lazyAssetUrlsByRoute !== 'object') {
+    errors.push('Manifest lazy dependency closures are missing.');
+  }
+  for (const route of buildRoutes) {
+    validateAssetClosure({
+      label: `${route.id} lazy dependency closure`,
+      urls: lazyAssetUrlsByRoute?.[route.id],
+      assets,
+      errors,
+    });
+  }
+  for (const record of catalog.filter(record => !expectedBuiltIds.has(record.id))) {
+    if (Object.hasOwn(lazyAssetUrlsByRoute || {}, record.id)) {
+      errors.push(`Non-built experience ${record.id} has a lazy dependency closure.`);
+    }
+  }
+  const runtimeProfilesByRoute = manifest.runtimeProfilesByRoute;
+  if (!runtimeProfilesByRoute || typeof runtimeProfilesByRoute !== 'object') {
+    errors.push('Manifest runtime profiles are missing.');
+  }
+  for (const [routeId, profiles] of Object.entries(runtimeProfilesByRoute || {})) {
+    if (!builtIds.has(routeId)) {
+      errors.push(`Non-built experience ${routeId} has runtime profiles.`);
+      continue;
+    }
+    if (routeId !== 'september') {
+      errors.push(`${routeId} cannot declare September runtime profiles.`);
+      continue;
+    }
+    validateAssetClosure({
+      label: 'September workshop profile',
+      urls: profiles?.workshop,
+      assets,
+      errors,
+      routeId,
+    });
+    validateAssetClosure({
+      label: 'September camera profile',
+      urls: profiles?.camera,
+      assets,
+      errors,
+      routeId,
+    });
+    validateCameraProfile({ urls: profiles?.camera, assets, errors });
   }
   if (builtIds.has('september')) {
     const septemberInitialUrls = [...(initialAssetUrlsByRoute?.september || [])].sort();
@@ -262,8 +381,11 @@ export function validateBuildManifest(manifest, site, {
     const septemberInitialBytes = assets
       .filter(asset => septemberInitialUrls.includes(asset?.url))
       .reduce((total, asset) => total + (Number.isSafeInteger(asset.bytes) ? asset.bytes : 0), 0);
-    if (septemberInitialBytes > 500 * 1024) {
-      errors.push(`September initial transfer is ${septemberInitialBytes} bytes; limit is 500 KB.`);
+    if (septemberInitialBytes > SEPTEMBER_INITIAL_LIMIT) {
+      errors.push(`September initial transfer is ${septemberInitialBytes} bytes; limit is 500 KB (480 KiB).`);
+    }
+    if (!Object.hasOwn(runtimeProfilesByRoute || {}, 'september')) {
+      errors.push('September runtime profiles are missing.');
     }
   }
   return errors;
@@ -279,7 +401,9 @@ export async function validateBuildOutput({
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
   const errors = validateBuildManifest(manifest, resolvedSite, { environment });
   const buildRoutes = expectedRoutes(resolvedSite, environment);
-  let mediaPipeBytes = 0;
+  const septemberCameraUrls = new Set(
+    manifest.runtimeProfilesByRoute?.september?.camera ?? [],
+  );
   const runtimeArtifacts = [];
 
   for (const asset of manifest.assets || []) {
@@ -292,7 +416,17 @@ export async function validateBuildOutput({
       if (fileStat.size !== asset.bytes) errors.push(`${asset.url} byte size does not match disk.`);
       if (digest !== asset.sha256) errors.push(`${asset.url} digest does not match disk.`);
       if (asset.url.endsWith('.map')) errors.push(`${asset.url} is a published source map.`);
-      if (asset.url.includes('/vendor/mediapipe/')) mediaPipeBytes += fileStat.size;
+      if (septemberCameraUrls.has(asset.url)) {
+        const expectedType = expectedCameraContentType(asset.url);
+        if (!expectedType) {
+          errors.push(`${asset.url} is not an allowed September camera profile artifact.`);
+        } else if (!contentTypeMatches(expectedType, asset.contentType)) {
+          errors.push(`${asset.url} has ${asset.contentType}; September camera profile expects ${expectedType}.`);
+        }
+        if (fileStat.size > MEDIAPIPE_FILE_LIMIT) {
+          errors.push(`${asset.url} is ${(fileStat.size / 1024 / 1024).toFixed(2)} MiB; individual MediaPipe file limit is 18 MiB.`);
+        }
+      }
       runtimeArtifacts.push({
         url: asset.url,
         contentType: asset.contentType,
@@ -316,10 +450,6 @@ export async function validateBuildOutput({
       }
     }
   }
-  if (mediaPipeBytes > 18 * 1024 * 1024) {
-    errors.push(`MediaPipe runtime is ${(mediaPipeBytes / 1024 / 1024).toFixed(2)} MiB; limit is 18 MiB.`);
-  }
-
   const runtimeAnalysis = analyzeRuntimeArtifacts({
     artifacts: runtimeArtifacts,
     routes: buildRoutes,
@@ -336,6 +466,18 @@ export async function validateBuildOutput({
       !== JSON.stringify(manifest.initialAssetUrlsByRoute)
   ) {
     errors.push('Manifest initial dependency closures do not match the built artifacts.');
+  }
+  if (
+    JSON.stringify(runtimeAnalysis.lazyAssetUrlsByRoute)
+      !== JSON.stringify(manifest.lazyAssetUrlsByRoute)
+  ) {
+    errors.push('Manifest lazy dependency closures do not match the built artifacts.');
+  }
+  if (
+    JSON.stringify(runtimeAnalysis.runtimeProfilesByRoute)
+      !== JSON.stringify(manifest.runtimeProfilesByRoute)
+  ) {
+    errors.push('Manifest runtime profiles do not match the built artifacts.');
   }
   if (runtimeAnalysis.missingRuntimeUrls.length > 0) {
     errors.push(

@@ -32,14 +32,28 @@ test("Vercel and release scripts invoke the cross-platform build gate", async ()
   );
   assert.equal(
     septemberPackage.scripts["generate:manifests"],
-    "node scripts/generate-media-manifest.mjs && node scripts/generate-release-content.mjs",
+    "node scripts/generate-media-manifest.mjs && node scripts/generate-hand-landmarker-assets.mjs && node scripts/generate-release-content.mjs",
   );
   assert.equal(
     septemberPackage.scripts["check:manifests"],
-    "node scripts/generate-media-manifest.mjs --check && node scripts/generate-release-content.mjs --check",
+    "node scripts/generate-media-manifest.mjs --check && node scripts/generate-hand-landmarker-assets.mjs --check && node scripts/generate-release-content.mjs --check",
   );
   assert.match(packageJson.scripts.test, /npm run test:september/u);
   assert.equal(JSON.parse(vercelJson).buildCommand, "npm run build:vercel");
+});
+
+test("September responses have same-origin camera privacy headers", async () => {
+  const config = JSON.parse(
+    await readFile(new URL("../../vercel.json", import.meta.url), "utf8"),
+  );
+  const septemberHeaders = config.headers.find(({ source }) => source === "/september/(.*)");
+  assert.ok(septemberHeaders);
+  const byKey = new Map(septemberHeaders.headers.map(({ key, value }) => [key, value]));
+  assert.equal(byKey.get("Referrer-Policy"), "no-referrer");
+  assert.match(byKey.get("Content-Security-Policy") ?? "", /connect-src 'self'/u);
+  assert.match(byKey.get("Content-Security-Policy") ?? "", /worker-src 'self' blob:/u);
+  assert.match(byKey.get("Content-Security-Policy") ?? "", /img-src 'self' data: blob:/u);
+  assert.match(byKey.get("Content-Security-Policy") ?? "", /media-src 'self' blob:/u);
 });
 
 test("September gate and composite entry have all clean-checkout dependencies tracked", () => {

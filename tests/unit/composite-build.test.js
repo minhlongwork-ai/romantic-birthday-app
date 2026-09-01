@@ -104,6 +104,19 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
   assert.ok(septemberInitialUrls.some(url => /\/september\/assets\/.*\.woff2$/u.test(url)));
   assert.ok(septemberInitialUrls.includes('/september/images/background-desktop.jpg'));
   assert.equal(septemberInitialUrls.includes('/september/images/preview.webp'), false);
+  assert.equal(
+    septemberInitialUrls.some(url => /\/september-camera-[A-Za-z0-9_-]+\.js$/u.test(url)),
+    false,
+  );
+  const septemberLazyUrls = manifest.lazyAssetUrlsByRoute?.september;
+  assert.ok(Array.isArray(septemberLazyUrls));
+  assert.deepEqual(septemberLazyUrls, [...septemberLazyUrls].sort());
+  const septemberProfiles = manifest.runtimeProfilesByRoute?.september;
+  assert.ok(Array.isArray(septemberProfiles?.workshop));
+  assert.ok(Array.isArray(septemberProfiles?.camera));
+  assert.deepEqual(septemberProfiles.workshop, [...septemberProfiles.workshop].sort());
+  assert.deepEqual(septemberProfiles.camera, [...septemberProfiles.camera].sort());
+  assert.ok(septemberProfiles.camera.every(url => url.startsWith('/september/')));
   assert.deepEqual(
     manifest.assets
       .filter(asset => asset.route === 'september' && asset.critical)

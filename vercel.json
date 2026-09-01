@@ -4,6 +4,19 @@
   "outputDirectory": "dist",
   "headers": [
     {
+      "source": "/september/(.*)",
+      "headers": [
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; connect-src 'self'; worker-src 'self' blob:; img-src 'self' data: blob:; media-src 'self' blob:; script-src 'self'; style-src 'self'"
+        }
+      ]
+    },
+    {
       "source": "/service-worker.js",
       "headers": [
         {
