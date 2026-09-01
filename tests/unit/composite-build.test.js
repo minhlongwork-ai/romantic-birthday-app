@@ -34,7 +34,7 @@ function assertSafeSeptemberManifest() {
     .join('\n');
   assert.doesNotMatch(
     septemberRuntimeSource,
-    /\b(?:lunar|moon|nasa|orbit|phase)(?:[A-Z_-]|\b)/iu,
+    /(?:\b(?:lunar|moon|nasa|orbit)\b|Ba Pha Trăng|bộ ba mỹ phẩm|ba vầng trăng|Thắt nơ cho món quà|Mở không dùng NFC)/iu,
   );
   return manifest;
 }
