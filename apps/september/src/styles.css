@@ -1,5 +1,10 @@
 :root {
   color-scheme: dark;
+  --ink-brown: #211713;
+  --cocoa: #4a3028;
+  --warm-taupe: #b88a70;
+  --ivory: #f8f0e8;
+  --dusty-rose: #b56f75;
   --ink-950: #211713;
   --ink-900: #2b1b17;
   --ink-800: #4a3028;
@@ -1331,5 +1336,246 @@ a:focus-visible {
 
   .bow-flourish {
     display: none;
+  }
+}
+
+/* The workshop remains self-contained until its scene map is installed. */
+.scene-workshop {
+  --workshop-paper: #f8f0e8;
+  --workshop-walnut: #211713;
+  --workshop-brass: #d8b989;
+  --workshop-rose: #b56f75;
+}
+
+.scene-workshop .scene-copy {
+  padding-block: max(1rem, env(safe-area-inset-top)) 1rem;
+}
+
+.scene-workshop .scene-title {
+  scroll-margin-block-start: calc(env(safe-area-inset-top, 0px) + 1rem);
+}
+
+.workshop-stage {
+  position: relative;
+  display: grid;
+  min-block-size: min(34rem, 68svh);
+  padding:
+    max(0.8rem, env(safe-area-inset-top))
+    max(0.8rem, env(safe-area-inset-right))
+    max(0.8rem, env(safe-area-inset-bottom))
+    max(0.8rem, env(safe-area-inset-left));
+  overflow: hidden;
+  border: 1px solid rgb(248 240 232 / 0.22);
+  border-radius: 1.6rem 2.4rem 1.8rem 2.2rem;
+  background:
+    radial-gradient(circle at 24% 14%, rgb(255 220 154 / 0.2), transparent 28%),
+    linear-gradient(145deg, #2b1b17, var(--workshop-walnut));
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.13), 0 1.5rem 3.5rem rgb(20 11 7 / 0.26);
+  isolation: isolate;
+}
+
+.workshop-render-host {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.workshop-render-host.paper-shadow::after {
+  content: "";
+  position: absolute;
+  inset: auto 9% 9% auto;
+  width: 44%;
+  aspect-ratio: 1.7;
+  border-radius: 48%;
+  background: rgb(33 23 19 / 0.22);
+  filter: blur(0.8rem);
+  transform: rotate(-8deg);
+}
+
+.workshop-paper-surface {
+  position: relative;
+  z-index: 1;
+  align-self: end;
+  max-inline-size: 30rem;
+  margin: auto;
+  padding: clamp(1rem, 4vw, 1.55rem);
+  border: 1px solid rgb(74 48 40 / 0.22);
+  border-radius: 0.7rem 1.25rem 0.8rem 1.15rem;
+  background:
+    linear-gradient(118deg, rgb(255 255 255 / 0.42), transparent 31%),
+    linear-gradient(145deg, #fff9ee, var(--workshop-paper));
+  color: var(--workshop-walnut);
+  box-shadow: 0 1rem 2.1rem rgb(18 10 6 / 0.27);
+}
+
+.workshop-paper-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0.5rem;
+  border: 1px solid rgb(184 138 112 / 0.26);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.workshop-title {
+  position: relative;
+  margin: 0;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: clamp(1.55rem, 6vw, 2.25rem);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.workshop-note {
+  position: relative;
+  max-inline-size: 38ch;
+  margin: 0.75rem 0 0;
+  color: var(--cocoa);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.workshop-actions {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-block-start: 1rem;
+}
+
+.workshop-action {
+  min-inline-size: 45px;
+  min-block-size: 45px;
+  padding: 0.72rem 1rem;
+  border: 1px solid rgb(74 48 40 / 0.34);
+  border-radius: 0.55rem 0.9rem 0.65rem 0.8rem;
+  background: linear-gradient(145deg, #fffaf0, #eadac1);
+  color: var(--workshop-walnut);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.15;
+  box-shadow: 0 0.35rem 0 rgb(74 48 40 / 0.18);
+  cursor: pointer;
+  transition: transform 180ms var(--ease-out), background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.workshop-action:hover,
+.workshop-action.is-primary {
+  border-color: rgb(117 77 49 / 0.58);
+  background: linear-gradient(145deg, #fff6dc, #d8b989);
+  box-shadow: 0 0.42rem 0 rgb(74 48 40 / 0.24);
+}
+
+.workshop-action:active,
+.workshop-action.is-opening {
+  transform: translateY(0.2rem);
+  box-shadow: 0 0.15rem 0 rgb(74 48 40 / 0.2);
+}
+
+.workshop-control-group,
+.workshop-envelope-controls {
+  position: relative;
+  margin-block-start: 1rem;
+}
+
+.workshop-branch-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.workshop-branch {
+  inline-size: 100%;
+}
+
+.workshop-envelope-controls {
+  display: grid;
+  place-items: center;
+  min-block-size: 8rem;
+  padding: 1rem;
+  border-radius: 0.45rem;
+  background: linear-gradient(135deg, rgb(74 48 40 / 0.08), transparent 55%);
+}
+
+.workshop-envelope {
+  position: relative;
+  min-inline-size: min(15rem, 100%);
+  min-block-size: 5.4rem;
+  border-color: rgb(92 56 46 / 0.42);
+  border-radius: 0.3rem 0.45rem 0.35rem 0.5rem;
+  background:
+    linear-gradient(35deg, transparent 49%, rgb(160 111 95 / 0.24) 50% 51%, transparent 52%),
+    linear-gradient(145deg, #fff8e8, #e6c9b4);
+}
+
+.workshop-envelope::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  inline-size: 0.82rem;
+  block-size: 0.82rem;
+  border-radius: 50%;
+  background: var(--workshop-rose);
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.34), 0 1px 2px rgb(33 23 19 / 0.26);
+  transform: translate(-50%, -50%);
+}
+
+.workshop-envelope.is-opening::after {
+  transform: translate(-50%, -50%) scale(0.82);
+}
+
+.workshop-action:disabled {
+  cursor: default;
+  opacity: 0.62;
+}
+
+@media (max-width: 700px) {
+  .scene-workshop {
+    grid-template-columns: 1fr;
+    align-content: start;
+    min-block-size: 100svh;
+    gap: 0.9rem;
+  }
+
+  .scene-workshop .scene-copy {
+    max-inline-size: 30rem;
+  }
+
+  .scene-workshop .scene-title {
+    max-inline-size: 14ch;
+    font-size: clamp(2.25rem, 11vw, 3.35rem);
+  }
+
+  .workshop-stage {
+    min-block-size: min(25rem, 58svh);
+  }
+}
+
+@media (max-width: 370px) {
+  .scene-workshop .scene-copy {
+    padding-block: 0.6rem;
+  }
+
+  .scene-workshop .scene-body {
+    margin-block-start: 0.6rem;
+    line-height: 1.42;
+  }
+
+  .workshop-stage {
+    min-block-size: min(21rem, 55svh);
+    padding: 0.65rem;
+  }
+
+  .workshop-paper-surface {
+    padding: 0.85rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workshop-render-host.paper-shadow::after,
+  .workshop-action,
+  .workshop-envelope::after {
+    transition: opacity 150ms ease !important;
   }
 }
