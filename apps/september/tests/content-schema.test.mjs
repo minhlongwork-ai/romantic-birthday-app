@@ -4,7 +4,10 @@ import test from "node:test";
 import {
   introNoteForGifts,
   previewBadgeForGift,
+  SEPTEMBER_FINAL_LETTER,
 } from "../src/content/copy.mjs";
+import { SEPTEMBER_ASSET_SOURCES } from "../src/content/assets.mjs";
+import { SEPTEMBER_GIFT_DEFINITIONS } from "../src/content/gift-definitions.mjs";
 import { SEPTEMBER_GIFTS } from "../src/content/gifts.mjs";
 import { validateSeptemberContent } from "../src/content/schema.mjs";
 
@@ -33,9 +36,70 @@ test("development content contains the exact Sweet & Bloom gifts", () => {
   assert.deepEqual(validateSeptemberContent(SEPTEMBER_GIFTS), []);
 });
 
+test("the approved final letter is never personalized", () => {
+  assert.equal(
+    SEPTEMBER_FINAL_LETTER,
+    "Anh không ở cạnh lúc em mở thiếp, nên gửi một xưởng nhỏ thay anh chuẩn bị mọi thứ. Bánh để em có một chút ngọt, hoa để ngày của em đẹp hơn. Còn anh chỉ muốn em biết: dù không ở đây, anh vẫn muốn có mặt trong ngày của em theo một cách nhỏ thôi.",
+  );
+  assert.doesNotMatch(SEPTEMBER_FINAL_LETTER, /\{\{(?:recipient|sender)\}\}/u);
+});
+
+test("each disclosed demo gift joins its verified source JPEG and provenance", () => {
+  assert.deepEqual(
+    SEPTEMBER_GIFT_DEFINITIONS.map((gift) => ({
+      id: gift.id,
+      productAssetId: gift.productAssetId,
+      productName: gift.productName,
+      variant: gift.variant,
+      alt: gift.alt,
+      fixture: gift.fixture,
+      approved: gift.approved,
+      source: SEPTEMBER_ASSET_SOURCES.products[gift.id],
+    })),
+    [
+      {
+        id: "cake",
+        productAssetId: "product-cake",
+        productName: "Bánh tiramisu chanh",
+        variant: "Ảnh Pexels · bản xem thử",
+        alt: "Bánh kem chanh nhiều lớp với kem tươi và lát chanh",
+        fixture: true,
+        approved: false,
+        source: {
+          assetId: "product-cake",
+          sourcePath: "src/assets/source/product-cake.jpeg",
+          pageUrl: "https://www.pexels.com/photo/a-person-is-cutting-up-a-cake-with-cream-27971019/",
+          sourceUrl: "https://images.pexels.com/photos/27971019/pexels-photo-27971019.jpeg",
+          creator: "Beyza",
+          licenseUrl: "https://www.pexels.com/license/",
+          license: "Pexels license",
+        },
+      },
+      {
+        id: "bouquet",
+        productAssetId: "product-bouquet",
+        productName: "Bó hồng kem và hồng phấn",
+        variant: "Ảnh Pexels · bản xem thử",
+        alt: "Bó hồng màu kem và hồng phấn trong ánh sáng mềm",
+        fixture: true,
+        approved: false,
+        source: {
+          assetId: "product-bouquet",
+          sourcePath: "src/assets/source/product-bouquet.jpeg",
+          pageUrl: "https://www.pexels.com/photo/elegant-bouquets-of-blush-pink-and-cream-roses-34735100/",
+          sourceUrl: "https://images.pexels.com/photos/34735100/pexels-photo-34735100.jpeg",
+          creator: "Lara",
+          licenseUrl: "https://www.pexels.com/license/",
+          license: "Pexels license",
+        },
+      },
+    ],
+  );
+});
+
 test("preview UI copy is derived only from fixture flags", () => {
-  assert.equal(previewBadgeForGift(SEPTEMBER_GIFTS[0]), "Bản xem thử");
-  assert.equal(introNoteForGifts(SEPTEMBER_GIFTS, "Minh"), "Bản xem thử · Dành cho Minh");
+  assert.equal(previewBadgeForGift(SEPTEMBER_GIFTS[0]), "Bản xem thử · ảnh minh họa");
+  assert.equal(introNoteForGifts(SEPTEMBER_GIFTS, "Minh"), "Bản xem thử · ảnh minh họa · Dành cho Minh");
 
   const approvedGifts = productionGifts();
   assert.equal(previewBadgeForGift(approvedGifts[0]), null);

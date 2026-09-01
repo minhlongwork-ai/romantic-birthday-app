@@ -1,4 +1,8 @@
-import { SEPTEMBER_COPY, SEPTEMBER_ENDING_TEMPLATE } from "./copy.mjs";
+import {
+  SEPTEMBER_COPY,
+  SEPTEMBER_ENDING_TEMPLATE,
+  SEPTEMBER_FINAL_LETTER,
+} from "./copy.mjs";
 import { SEPTEMBER_GIFT_DEFINITIONS } from "./gift-definitions.mjs";
 
 const mediaFor = (id, alt) => Object.freeze({
@@ -27,4 +31,4 @@ export const SEPTEMBER_GIFTS = Object.freeze(
   ),
 );
 
-export { SEPTEMBER_COPY, SEPTEMBER_ENDING_TEMPLATE };
+export { SEPTEMBER_COPY, SEPTEMBER_ENDING_TEMPLATE, SEPTEMBER_FINAL_LETTER };

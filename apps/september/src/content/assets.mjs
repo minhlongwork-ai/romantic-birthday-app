@@ -17,6 +17,7 @@ export const SEPTEMBER_ASSET_SOURCES = Object.freeze({
       sourceUrl: "https://images.pexels.com/photos/27971019/pexels-photo-27971019.jpeg",
       creator: "Beyza",
       licenseUrl: "https://www.pexels.com/license/",
+      license: "Pexels license",
     }),
     bouquet: Object.freeze({
       assetId: "product-bouquet",
@@ -25,6 +26,7 @@ export const SEPTEMBER_ASSET_SOURCES = Object.freeze({
       sourceUrl: "https://images.pexels.com/photos/34735100/pexels-photo-34735100.jpeg",
       creator: "Lara",
       licenseUrl: "https://www.pexels.com/license/",
+      license: "Pexels license",
     }),
   }),
 });
