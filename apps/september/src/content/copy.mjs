@@ -23,7 +23,7 @@ export const SEPTEMBER_COPY = Object.freeze({
   endingReplay: "Mở lại từ đầu",
   demoBadge: "Bản xem thử",
   wishes: Object.freeze({
-    cake: "Anh chọn bánh tiramisu chanh vì vị vừa ngọt vừa tươi. Nhớ ăn khi còn mát nhé.",
+    cake: "Tiramisu chanh — ngọt vừa đủ, lại có một chút chua. Anh nghĩ em sẽ thích. Nhớ ăn lúc còn ngon nhé.",
     bouquet: "Không cần đợi một dịp đặc biệt — chỉ cần hôm nay em xứng đáng nhận một điều thật đẹp.",
   }),
   groupClues: Object.freeze({

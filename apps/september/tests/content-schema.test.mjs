@@ -41,6 +41,22 @@ test("the approved final letter is rendered verbatim", () => {
   );
 });
 
+test("the approved cake and bouquet wishes reach the reveal cards verbatim", () => {
+  assert.deepEqual(
+    SEPTEMBER_GIFTS.map(({ id, personalMessage }) => ({ id, personalMessage })),
+    [
+      {
+        id: "cake",
+        personalMessage: "Tiramisu chanh — ngọt vừa đủ, lại có một chút chua. Anh nghĩ em sẽ thích. Nhớ ăn lúc còn ngon nhé.",
+      },
+      {
+        id: "bouquet",
+        personalMessage: "Không cần đợi một dịp đặc biệt — chỉ cần hôm nay em xứng đáng nhận một điều thật đẹp.",
+      },
+    ],
+  );
+});
+
 test("preview UI copy is derived only from fixture flags", () => {
   assert.equal(previewBadgeForGift(SEPTEMBER_GIFTS[0]), "Bản xem thử");
   assert.equal(introNoteForGifts(SEPTEMBER_GIFTS, "Minh"), "Bản xem thử · Dành cho Minh");

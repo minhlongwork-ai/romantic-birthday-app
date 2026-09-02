@@ -12,7 +12,7 @@ const APPROVED_THEME_BY_GIFT = Object.freeze({
     groupLabel: "Một chút ngọt",
     clue: "Một vị ngọt có chút tươi",
     personalMessage:
-      "Anh chọn bánh tiramisu chanh vì vị vừa ngọt vừa tươi. Nhớ ăn khi còn mát nhé.",
+      "Tiramisu chanh — ngọt vừa đủ, lại có một chút chua. Anh nghĩ em sẽ thích. Nhớ ăn lúc còn ngon nhé.",
   }),
   bouquet: Object.freeze({
     groupLabel: "Một chút hoa",
