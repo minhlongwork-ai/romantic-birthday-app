@@ -21,7 +21,7 @@ export const SEPTEMBER_COPY = Object.freeze({
   demoBadge: "Bản xem thử · ảnh minh họa",
   wishes: Object.freeze({
     cake: "Tiramisu chanh — ngọt vừa đủ, lại có một chút chua. Anh nghĩ em sẽ thích. Nhớ ăn lúc còn ngon nhé.",
-    bouquet: "Anh không đợi một dịp đặc biệt mới tặng hoa. Chỉ là anh nghĩ bó hoa này sẽ rất đẹp khi ở cạnh em.",
+    bouquet: "Không cần đợi một dịp đặc biệt — chỉ cần hôm nay em xứng đáng nhận một điều thật đẹp.",
   }),
 });
 

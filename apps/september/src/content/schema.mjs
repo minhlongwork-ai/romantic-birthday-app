@@ -9,7 +9,7 @@ const APPROVED_COPY_BY_GIFT = Object.freeze({
   bouquet: Object.freeze({
     productName: "Bó hồng kem và hồng phấn",
     message:
-      "Anh không đợi một dịp đặc biệt mới tặng hoa. Chỉ là anh nghĩ bó hoa này sẽ rất đẹp khi ở cạnh em.",
+      "Không cần đợi một dịp đặc biệt — chỉ cần hôm nay em xứng đáng nhận một điều thật đẹp.",
   }),
 });
 
