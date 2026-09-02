@@ -39,7 +39,7 @@ test('share QR generation only uses the clean Birthday target from site.json', (
     );
     assert.equal(safeRun.status, 0, `${safeRun.stdout}\n${safeRun.stderr}`);
     const svg = readFileSync(outputPath, 'utf8');
-    const publicUrl = 'https://romantic-birthday-app.vercel.app/birthday/';
+    const publicUrl = 'https://thiep-cho-em.vercel.app/birthday/';
     const digest = createHash('sha256').update(publicUrl).digest('hex');
     assert.match(svg, /<svg/);
     assert.match(svg, new RegExp(`gift-public-url-sha256:${digest}`));

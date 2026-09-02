@@ -10,18 +10,18 @@ import {
 test('metadata values resolve from registry-derived site config without route-specific URL literals', async () => {
   const site = await loadSiteConfig();
   const values = createMetadataValues(site, 'birthday');
-  assert.equal(values.canonicalUrl, 'https://romantic-birthday-app.vercel.app/birthday/');
-  assert.equal(values.ogImageUrl, 'https://romantic-birthday-app.vercel.app/birthday/og-preview.jpg');
+  assert.equal(values.canonicalUrl, 'https://thiep-cho-em.vercel.app/birthday/');
+  assert.equal(values.ogImageUrl, 'https://thiep-cho-em.vercel.app/birthday/og-preview.jpg');
   assert.equal(values.title, 'Một cuốn album dành cho em');
 
   const september = createMetadataValues(site, 'september');
   assert.equal(
     september.canonicalUrl,
-    'https://romantic-birthday-app.vercel.app/september/',
+    'https://thiep-cho-em.vercel.app/september/',
   );
   assert.equal(
     september.ogImageUrl,
-    'https://romantic-birthday-app.vercel.app/september/images/preview.webp',
+    'https://thiep-cho-em.vercel.app/september/images/preview.webp',
   );
   assert.equal(september.title, 'Một chút ngọt, một chút hoa');
   assert.equal(
@@ -31,7 +31,7 @@ test('metadata values resolve from registry-derived site config without route-sp
   assert.equal(september.ogTitle, 'Một chút ngọt, một chút hoa');
   assert.equal(
     september.ogDescription,
-    'Chạm vào hai món quà theo thứ tự em chọn và thắt chiếc nơ cuối cùng.',
+    'Một lá thư nhỏ, bánh tiramisu chanh và một bó hoa dành cho em.',
   );
 });
 

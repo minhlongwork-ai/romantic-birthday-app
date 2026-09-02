@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test';
 
 import { contentTypeMatches } from '../../scripts/validate-build.mjs';
 
-const productionOrigin = 'https://romantic-birthday-app.vercel.app';
+const productionOrigin = 'https://thiep-cho-em.vercel.app';
 const [catalog, siteShell] = await Promise.all([
   readFile(new URL('../../src/content/experiences.json', import.meta.url), 'utf8').then(JSON.parse),
   readFile(new URL('../../src/content/site.json', import.meta.url), 'utf8').then(JSON.parse),
