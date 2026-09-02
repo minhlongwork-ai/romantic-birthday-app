@@ -28,7 +28,7 @@ test("development content contains the exact Sweet & Bloom gifts", () => {
     SEPTEMBER_GIFTS.map(({ id, groupId, productName }) => ({ id, groupId, productName })),
     [
       { id: "cake", groupId: "sweet", productName: "Bánh tiramisu chanh" },
-      { id: "bouquet", groupId: "bloom", productName: "Bó hồng kem và hồng phấn" },
+      { id: "bouquet", groupId: "bloom", productName: "Bó hoa hồng phấn và hoa trắng" },
     ],
   );
   assert.deepEqual(validateSeptemberContent(SEPTEMBER_GIFTS), []);
@@ -57,9 +57,9 @@ test("the approved cake and bouquet wishes reach the letter verbatim", () => {
   );
 });
 
-test("preview UI copy is derived only from fixture flags", () => {
-  assert.equal(previewBadgeForGift(SEPTEMBER_GIFTS[0]), "Bản xem thử");
-  assert.equal(introNoteForGifts(SEPTEMBER_GIFTS, "Minh"), "Bản xem thử · Dành cho Minh");
+test("release content has no preview UI copy", () => {
+  assert.equal(previewBadgeForGift(SEPTEMBER_GIFTS[0]), null);
+  assert.equal(introNoteForGifts(SEPTEMBER_GIFTS, "Minh"), "Dành cho Minh");
 
   const approvedGifts = productionGifts();
   assert.equal(previewBadgeForGift(approvedGifts[0]), null);
@@ -93,10 +93,21 @@ test("development content rejects omitted and non-boolean fixture flags", () => 
 });
 
 test("release rejects both demo fixtures", () => {
-  const errors = validateSeptemberContent(SEPTEMBER_GIFTS, { release: true });
+  const demoGifts = structuredClone(SEPTEMBER_GIFTS).map((gift) => ({
+    ...gift,
+    approved: false,
+    fixture: true,
+    variant: "Ảnh Pexels · bản xem thử",
+    reason: "Ảnh và quà trong bản xem thử chỉ để minh họa.",
+  }));
+  const errors = validateSeptemberContent(demoGifts, { release: true });
   assert.equal(errors.filter((error) => /approved:true/u.test(error)).length, 2);
   assert.equal(errors.filter((error) => /development fixture/u.test(error)).length, 2);
   assert.equal(errors.filter((error) => /placeholder product content/u.test(error)).length, 2);
+});
+
+test("committed gifts satisfy the production release gate", () => {
+  assert.deepEqual(validateSeptemberContent(SEPTEMBER_GIFTS, { release: true }), []);
 });
 
 test("release accepts fully approved non-fixture gifts with no preview copy", () => {

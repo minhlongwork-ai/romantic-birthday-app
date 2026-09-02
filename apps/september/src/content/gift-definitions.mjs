@@ -1,8 +1,5 @@
 import { SEPTEMBER_COPY } from "./copy.mjs";
 
-const reason =
-  "Ảnh và quà trong bản xem thử chỉ để minh họa; người tặng sẽ thay bằng món quà thật trước khi phát hành.";
-
 export const SEPTEMBER_GIFT_DEFINITIONS = Object.freeze([
   Object.freeze({
     id: "cake",
@@ -11,12 +8,12 @@ export const SEPTEMBER_GIFT_DEFINITIONS = Object.freeze([
     clue: SEPTEMBER_COPY.groupClues.sweet,
     productAssetId: "product-cake",
     productName: "Bánh tiramisu chanh",
-    variant: "Ảnh Pexels · bản xem thử",
+    variant: "Tiramisu chanh",
     alt: "Miếng tiramisu chanh trên đĩa sứ, cạnh những lát chanh vàng",
-    reason,
+    reason: "Một chút chua dịu, một chút ngọt vừa đủ cho những ngày em cần một niềm vui nhỏ.",
     personalMessageKey: "cake",
-    fixture: true,
-    approved: false,
+    fixture: false,
+    approved: true,
   }),
   Object.freeze({
     id: "bouquet",
@@ -24,12 +21,12 @@ export const SEPTEMBER_GIFT_DEFINITIONS = Object.freeze([
     groupLabel: "Một chút hoa",
     clue: SEPTEMBER_COPY.groupClues.bloom,
     productAssetId: "product-bouquet",
-    productName: "Bó hồng kem và hồng phấn",
-    variant: "Ảnh Pexels · bản xem thử",
+    productName: "Bó hoa hồng phấn và hoa trắng",
+    variant: "Hoa tươi gói giấy kraft",
     alt: "Bó hoa hồng phấn và hoa trắng nhỏ được gói bằng giấy kraft",
-    reason,
+    reason: "Một bó hoa nhỏ để giữa những ngày bình thường, em vẫn có một điều mềm mại và đẹp đẽ.",
     personalMessageKey: "bouquet",
-    fixture: true,
-    approved: false,
+    fixture: false,
+    approved: true,
   }),
 ]);
