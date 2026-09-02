@@ -8,18 +8,18 @@
       "files": {
         "avif": {
           "path": "./images/cake.avif",
-          "sha256": "389cc3be45e8c0a82fe56868a0dce9165bd4e9db9133740fadf08f6f27647a22",
-          "bytes": 33424
+          "sha256": "4cc1d497870afdaae42009d4138ceaa2ecfe22bf54eb891db8fcfcd99a754eff",
+          "bytes": 31512
         },
         "webp": {
           "path": "./images/cake.webp",
-          "sha256": "d52fbcd314a94d6afdd4547e0ba7ad1c948c547c3d325b13cd38e880bd3c0f17",
-          "bytes": 50282
+          "sha256": "58ad9b2fc0cdfd8fc6f6aa06950f19e14150f72f1b2774d60c40f84eaf9c795a",
+          "bytes": 53940
         },
         "jpeg": {
           "path": "./images/cake.jpg",
-          "sha256": "1df88f7fc9e12523939ab6cc8138d6d52b02d2bf9af3cb6588c8682fa8fd1146",
-          "bytes": 100552
+          "sha256": "5879b217dd18b8e43e21a52869e8418ed0127b68c379d8e55181cf9dd8da4f0e",
+          "bytes": 99104
         }
       }
     },
@@ -30,18 +30,18 @@
       "files": {
         "avif": {
           "path": "./images/bouquet.avif",
-          "sha256": "afa9362c24a252256a80aa47c7f633363bb20ca280e636f99fe14e29fe964e24",
-          "bytes": 21717
+          "sha256": "b962aa208d3fef71f9c7964bf819440c40d04ea3b886070d149bb329b77948a5",
+          "bytes": 24342
         },
         "webp": {
           "path": "./images/bouquet.webp",
-          "sha256": "b3be19db9a362f7234646540c046ed12d019fe4a8b9baf6f628e0132745dc4ec",
-          "bytes": 37622
+          "sha256": "abe5219acd7f2be7eadc5af49415f4d5d9f2ffae4287691823c4d7030f481d05",
+          "bytes": 39714
         },
         "jpeg": {
           "path": "./images/bouquet.jpg",
-          "sha256": "20c609b11410c354adee15434ccc891803a4c632d28db88a1b8d5d8e26aeed3f",
-          "bytes": 79191
+          "sha256": "5fbb0e2a6630aa2f373e09b1f92644fb3ab785e93a1276651faa4e3658d0247d",
+          "bytes": 79313
         }
       }
     }

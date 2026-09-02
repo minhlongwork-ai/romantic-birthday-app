@@ -2,11 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  introNoteForGifts,
   previewBadgeForGift,
   SEPTEMBER_FINAL_LETTER,
 } from "../src/content/copy.mjs";
-import { SEPTEMBER_ASSET_SOURCES } from "../src/content/assets.mjs";
-import { SEPTEMBER_GIFT_DEFINITIONS } from "../src/content/gift-definitions.mjs";
 import { SEPTEMBER_GIFTS } from "../src/content/gifts.mjs";
 import { validateSeptemberContent } from "../src/content/schema.mjs";
 
@@ -18,93 +17,53 @@ function productionGifts() {
     variant: gift.id === "cake"
       ? "Bánh 18 cm · kem mascarpone chanh"
       : "Hồng kem và hồng phấn · giấy gói màu ngà",
+    reason: gift.id === "cake"
+      ? "Anh chọn vị chanh tươi để chiếc bánh ngọt vừa đủ."
+      : "Anh chọn những màu hoa dịu dàng mà em thích.",
   }));
 }
 
-test("development content contains only the two sealed workshop gift records", () => {
+test("development content contains the exact Sweet & Bloom gifts", () => {
   assert.deepEqual(
-    SEPTEMBER_GIFTS.map(({ id, productName }) => ({ id, productName })),
+    SEPTEMBER_GIFTS.map(({ id, groupId, productName }) => ({ id, groupId, productName })),
     [
-      { id: "cake", productName: "Bánh tiramisu chanh" },
-      { id: "bouquet", productName: "Bó hồng kem và hồng phấn" },
+      { id: "cake", groupId: "sweet", productName: "Bánh tiramisu chanh" },
+      { id: "bouquet", groupId: "bloom", productName: "Bó hồng kem và hồng phấn" },
     ],
   );
-  for (const gift of SEPTEMBER_GIFTS) {
-    assert.equal("groupId" in gift, false);
-    assert.equal("groupLabel" in gift, false);
-    assert.equal("clue" in gift, false);
-    assert.equal("reason" in gift, false);
-    assert.equal("personalMessage" in gift, false);
-  }
   assert.deepEqual(validateSeptemberContent(SEPTEMBER_GIFTS), []);
 });
 
-test("the approved final letter is never personalized", () => {
+test("the approved final letter is rendered verbatim", () => {
   assert.equal(
     SEPTEMBER_FINAL_LETTER,
-    "Anh không ở cạnh lúc em mở thiếp, nên gửi một xưởng nhỏ thay anh chuẩn bị mọi thứ. Bánh để em có một chút ngọt, hoa để ngày của em đẹp hơn. Còn anh chỉ muốn em biết: dù không ở đây, anh vẫn muốn có mặt trong ngày của em theo một cách nhỏ thôi.",
+    "Bánh để em có một chút ngọt, hoa để ngày của em đẹp hơn. Còn anh chỉ muốn em biết: dù không ở đây, anh vẫn mong những ngày của em, dù rực rỡ hay bình thường, vẫn luôn có đủ những điều dịu dàng để em mỉm cười.",
   );
-  assert.doesNotMatch(SEPTEMBER_FINAL_LETTER, /\{\{(?:recipient|sender)\}\}/u);
 });
 
-test("each disclosed demo gift joins its verified source JPEG and provenance", () => {
+test("the approved cake and bouquet wishes reach the letter verbatim", () => {
   assert.deepEqual(
-    SEPTEMBER_GIFT_DEFINITIONS.map((gift) => ({
-      id: gift.id,
-      productAssetId: gift.productAssetId,
-      productName: gift.productName,
-      variant: gift.variant,
-      alt: gift.alt,
-      fixture: gift.fixture,
-      approved: gift.approved,
-      source: SEPTEMBER_ASSET_SOURCES.products[gift.id],
-    })),
+    SEPTEMBER_GIFTS.map(({ id, personalMessage }) => ({ id, personalMessage })),
     [
       {
         id: "cake",
-        productAssetId: "product-cake",
-        productName: "Bánh tiramisu chanh",
-        variant: "Ảnh Pexels · bản xem thử",
-        alt: "Bánh kem chanh nhiều lớp với kem tươi và lát chanh",
-        fixture: true,
-        approved: false,
-        source: {
-          assetId: "product-cake",
-          sourcePath: "src/assets/source/product-cake.jpeg",
-          pageUrl: "https://www.pexels.com/photo/a-person-is-cutting-up-a-cake-with-cream-27971019/",
-          sourceUrl: "https://images.pexels.com/photos/27971019/pexels-photo-27971019.jpeg",
-          creator: "Beyza",
-          licenseUrl: "https://www.pexels.com/license/",
-          license: "Pexels license",
-        },
+        personalMessage: "Có một chút chua dịu, một chút ngọt vừa đủ. Anh nghĩ những điều nhỏ như vậy cũng có thể làm một ngày của em dễ chịu hơn.",
       },
       {
         id: "bouquet",
-        productAssetId: "product-bouquet",
-        productName: "Bó hồng kem và hồng phấn",
-        variant: "Ảnh Pexels · bản xem thử",
-        alt: "Bó hồng màu kem và hồng phấn trong ánh sáng mềm",
-        fixture: true,
-        approved: false,
-        source: {
-          assetId: "product-bouquet",
-          sourcePath: "src/assets/source/product-bouquet.jpeg",
-          pageUrl: "https://www.pexels.com/photo/elegant-bouquets-of-blush-pink-and-cream-roses-34735100/",
-          sourceUrl: "https://images.pexels.com/photos/34735100/pexels-photo-34735100.jpeg",
-          creator: "Lara",
-          licenseUrl: "https://www.pexels.com/license/",
-          license: "Pexels license",
-        },
+        personalMessage: "Bó hoa này không cần một dịp để được gửi đi. Anh chỉ nghĩ, giữa một ngày rất bình thường, em cũng xứng đáng có một điều mềm mại và đẹp đẽ.",
       },
     ],
   );
 });
 
-test("preview badge is derived only from fixture flags", () => {
-  assert.equal(previewBadgeForGift(SEPTEMBER_GIFTS[0]), "Bản xem thử · ảnh minh họa");
+test("preview UI copy is derived only from fixture flags", () => {
+  assert.equal(previewBadgeForGift(SEPTEMBER_GIFTS[0]), "Bản xem thử");
+  assert.equal(introNoteForGifts(SEPTEMBER_GIFTS, "Minh"), "Bản xem thử · Dành cho Minh");
 
   const approvedGifts = productionGifts();
   assert.equal(previewBadgeForGift(approvedGifts[0]), null);
+  assert.equal(introNoteForGifts(approvedGifts, "Minh"), "Dành cho Minh");
 });
 
 test("content requires a non-empty product asset ID", () => {
@@ -160,7 +119,7 @@ test("release requires an explicit fixture:false flag", () => {
 
 test("release rejects residual preview wording even when flags are approved", () => {
   const gifts = productionGifts();
-  gifts[0].message = "Bánh tiramisu chanh · bản xem thử";
+  gifts[0].media.alt = "Bánh tiramisu chanh · bản xem thử";
 
   assert.ok(
     validateSeptemberContent(gifts, { release: true }).some((error) =>

@@ -32,17 +32,17 @@ test("Vercel and release scripts invoke the cross-platform build gate", async ()
   );
   assert.equal(
     septemberPackage.scripts["generate:manifests"],
-    "node scripts/generate-media-manifest.mjs && node scripts/generate-hand-landmarker-assets.mjs && node scripts/generate-release-content.mjs",
+    "node scripts/generate-media-manifest.mjs && node scripts/generate-release-content.mjs",
   );
   assert.equal(
     septemberPackage.scripts["check:manifests"],
-    "node scripts/generate-media-manifest.mjs --check && node scripts/generate-hand-landmarker-assets.mjs --check && node scripts/generate-release-content.mjs --check",
+    "node scripts/generate-media-manifest.mjs --check && node scripts/generate-release-content.mjs --check",
   );
   assert.match(packageJson.scripts.test, /npm run test:september/u);
   assert.equal(JSON.parse(vercelJson).buildCommand, "npm run build:vercel");
 });
 
-test("September responses have same-origin camera privacy headers", async () => {
+test("September responses keep same-origin privacy headers", async () => {
   const config = JSON.parse(
     await readFile(new URL("../../vercel.json", import.meta.url), "utf8"),
   );

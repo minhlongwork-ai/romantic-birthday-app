@@ -25,7 +25,7 @@ test('site routes and metadata are derived from the registry', async () => {
 
 test('site config preserves the canonical Vercel origin for every public route', async () => {
   const site = await loadSiteConfig();
-  assert.equal(site.origin, 'https://romantic-birthday-app.vercel.app');
+  assert.equal(site.origin, 'https://thiep-cho-em.vercel.app');
   assert.equal(buildCanonicalUrl(site, 'chooser'), site.origin + '/');
   assert.equal(
     buildCanonicalUrl(site, 'birthday'),

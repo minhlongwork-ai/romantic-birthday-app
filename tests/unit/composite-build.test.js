@@ -34,7 +34,7 @@ function assertSafeSeptemberManifest() {
     .join('\n');
   assert.doesNotMatch(
     septemberRuntimeSource,
-    /(?:\b(?:lunar|moon|nasa|orbit)\b|Ba Pha Trăng|bộ ba mỹ phẩm|ba vầng trăng|Thắt nơ cho món quà|Mở không dùng NFC)/iu,
+    /(?:\b(?:lunar|moon|nasa|orbit)\b|Ba Pha Trăng|bộ ba mỹ phẩm|ba vầng trăng)/iu,
   );
   return manifest;
 }
@@ -107,9 +107,6 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
   );
   assert.ok(septemberInitialUrls.includes('/september/images/background-desktop.jpg'));
   assert.equal(septemberInitialUrls.includes('/september/images/preview.webp'), false);
-  // The lightweight camera adapter may be module-preloaded by Vite; the
-  // privacy/budget boundary is that MediaPipe worker, model, and WASM assets
-  // stay out of the initial transfer until the user opts into camera mode.
   assert.equal(
     septemberInitialUrls.some(url =>
       /\/september\/(?:models|vendor\/mediapipe)\//u.test(url)),
@@ -118,12 +115,6 @@ test('composite build emits hashed route bundles and a verifiable manifest', () 
   const septemberLazyUrls = manifest.lazyAssetUrlsByRoute?.september;
   assert.ok(Array.isArray(septemberLazyUrls));
   assert.deepEqual(septemberLazyUrls, [...septemberLazyUrls].sort());
-  const septemberProfiles = manifest.runtimeProfilesByRoute?.september;
-  assert.ok(Array.isArray(septemberProfiles?.workshop));
-  assert.ok(Array.isArray(septemberProfiles?.camera));
-  assert.deepEqual(septemberProfiles.workshop, [...septemberProfiles.workshop].sort());
-  assert.deepEqual(septemberProfiles.camera, [...septemberProfiles.camera].sort());
-  assert.ok(septemberProfiles.camera.every(url => url.startsWith('/september/')));
   assert.deepEqual(
     manifest.assets
       .filter(asset => asset.route === 'september' && asset.critical)

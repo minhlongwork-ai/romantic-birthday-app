@@ -77,24 +77,24 @@
     "id": "september",
     "year": 2026,
     "month": 9,
-    "kind": "Hộp quà hai món",
+    "kind": "Thư tháng Chín",
     "title": "Một chút ngọt, một chút hoa",
-    "description": "Một hộp quà nhỏ với hai bất ngờ — em chọn món mình muốn mở trước.",
+    "description": "Một lá thư nhỏ, bánh tiramisu chanh và một bó hoa dành cho em.",
     "route": "/september/",
-    "status": "draft",
-    "actionLabel": "Mở hộp quà tháng Chín",
+    "status": "published",
+    "actionLabel": "Xem thiệp tháng Chín",
     "preview": {
       "source": "apps/september/public/images/preview.webp",
       "publicPath": "/experience-previews/september.webp",
-      "alt": "Một phong bì giấy đóng kín trên bàn gỗ trong một xưởng nhỏ ánh đèn ấm",
+      "alt": "Bánh kem chanh và bó hồng kem hồng phấn trên nền lụa nâu ấm",
       "width": 1200,
       "height": 630
     },
     "metadata": {
       "title": "Một chút ngọt, một chút hoa",
-      "description": "Một hộp quà nhỏ với hai bất ngờ, được chuẩn bị riêng cho em.",
+      "description": "Hai món quà nhỏ — bánh tiramisu chanh và một bó hoa — được chuẩn bị riêng cho em.",
       "ogTitle": "Một chút ngọt, một chút hoa",
-      "ogDescription": "Mở hộp theo thứ tự em chọn và khám phá điều anh gửi gắm.",
+      "ogDescription": "Một lá thư nhỏ, bánh tiramisu chanh và một bó hoa dành cho em.",
       "ogImage": "/september/images/preview.webp"
     },
     "build": {

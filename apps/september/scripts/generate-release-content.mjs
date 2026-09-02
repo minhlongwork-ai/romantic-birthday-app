@@ -15,16 +15,11 @@ const scriptPath = fileURLToPath(import.meta.url);
 const appRoot = path.resolve(path.dirname(scriptPath), "..");
 const publicDir = path.join(appRoot, "public");
 const generatedDir = path.join(appRoot, "src", "generated");
-const handLandmarkerManifestPath = path.join(
-  generatedDir,
-  "hand-landmarker-manifest.json",
-);
 const outputNames = Object.freeze([
   "runtime-media.mjs",
   "release-content.json",
   "media-manifest.json",
   "font-manifest.json",
-  "hand-landmarker-manifest.json",
 ]);
 const defaultFileSystem = Object.freeze({ mkdir, rename, rm, writeFile });
 
@@ -48,19 +43,6 @@ async function fileDigest(filePath) {
   return { bytes: metadata.size, sha256: sha256(bytes) };
 }
 
-async function handLandmarkerReference() {
-  const bytes = await readFile(handLandmarkerManifestPath);
-  const manifest = JSON.parse(bytes.toString("utf8"));
-  if (manifest?.schemaVersion !== 1 || typeof manifest?.model?.sha256 !== "string") {
-    throw new Error("Hand Landmarker provenance manifest is malformed.");
-  }
-  return {
-    manifestPath: "src/generated/hand-landmarker-manifest.json",
-    sha256: sha256(bytes),
-    bytes,
-  };
-}
-
 async function outputRecord(gift, format, url, publicDirectory) {
   const filePath = path.join(publicDirectory, url.replace(/^\.\/images\//u, "images/"));
   const digest = await fileDigest(filePath);
@@ -81,7 +63,6 @@ async function buildArtifacts({
   publicDirectory = publicDir,
 } = {}) {
   assertSeptemberContent(sourceGifts, { release });
-  const { bytes: handLandmarkerManifest, ...cameraAssets } = await handLandmarkerReference();
   const gifts = [];
   const mediaAssets = [];
 
@@ -93,9 +74,13 @@ async function buildArtifacts({
     ]);
     gifts.push({
       id: gift.id,
+      groupId: gift.groupId,
+      groupLabel: gift.groupLabel,
+      clue: gift.clue,
       productName: gift.productName,
       variant: gift.variant,
-      message: gift.message,
+      reason: gift.reason,
+      personalMessage: gift.personalMessage,
       approved: gift.approved,
       fixture: gift.fixture,
       media: {
@@ -111,7 +96,7 @@ async function buildArtifacts({
       kind: "product",
       sourcePath: SEPTEMBER_ASSET_SOURCES.products[gift.id].sourcePath,
       provenance: {
-        kind: "pexels",
+        kind: "sender-provided",
         creator: SEPTEMBER_ASSET_SOURCES.products[gift.id].creator,
         pageUrl: SEPTEMBER_ASSET_SOURCES.products[gift.id].pageUrl,
         sourceUrl: SEPTEMBER_ASSET_SOURCES.products[gift.id].sourceUrl,
@@ -123,28 +108,28 @@ async function buildArtifacts({
   }
 
   const fonts = [
-    ["playfair-display", "Playfair Display", 600],
-    ["playfair-display", "Playfair Display", 700],
-    ["be-vietnam-pro", "Be Vietnam Pro", 400],
-    ["be-vietnam-pro", "Be Vietnam Pro", 500],
-    ["be-vietnam-pro", "Be Vietnam Pro", 600],
-    ["be-vietnam-pro", "Be Vietnam Pro", 700],
-  ].map(([packageName, family, weight]) => ({
-    assetId: `${packageName}-${weight}`,
+    ["playfair-display", "Playfair Display", 600, "normal", "5.2.8"],
+    ["playfair-display", "Playfair Display", 700, "normal", "5.2.8"],
+    ["playfair-display", "Playfair Display", 600, "italic", "5.2.8"],
+    ["be-vietnam-pro", "Be Vietnam Pro", 400, "normal", "5.2.8"],
+    ["be-vietnam-pro", "Be Vietnam Pro", 500, "normal", "5.2.8"],
+    ["be-vietnam-pro", "Be Vietnam Pro", 600, "normal", "5.2.8"],
+    ["be-vietnam-pro", "Be Vietnam Pro", 700, "normal", "5.2.8"],
+  ].map(([packageName, family, weight, style, packageVersion]) => ({
+    assetId: `${packageName}-${weight}${style === "italic" ? "-italic" : ""}`,
     family,
-    style: "normal",
+    style,
     weight,
     packageName: `@fontsource/${packageName}`,
-    packageVersion: "5.2.8",
+    packageVersion,
     sourcePath: `node_modules/@fontsource/${packageName}`,
-    url: `/september/fonts/${packageName}-${weight}.woff2`,
+    url: `/september/fonts/${packageName}-${weight}${style === "italic" ? "-italic" : ""}.woff2`,
     license: "OFL-1.1",
   }));
 
   return {
     "runtime-media.mjs": `export const SEPTEMBER_RUNTIME_MEDIA = Object.freeze(${JSON.stringify(sortObject(Object.fromEntries(mediaAssets.map((asset) => [asset.assetId, { alt: asset.alt, outputs: asset.outputs.map(({ url, width, height, mediaQuery }) => ({ url, width, height, mediaQuery })) }]))))});\n`,
     "release-content.json": canonicalJson({
-      cameraAssets,
       schemaVersion: 2,
       copyVersion: 3,
       fixtureMode: sourceGifts.some((gift) => gift.fixture === true),
@@ -152,7 +137,6 @@ async function buildArtifacts({
     }),
     "media-manifest.json": canonicalJson({ schemaVersion: 1, assets: mediaAssets }),
     "font-manifest.json": canonicalJson({ schemaVersion: 1, assets: fonts }),
-    "hand-landmarker-manifest.json": handLandmarkerManifest.toString("utf8"),
   };
 }
 

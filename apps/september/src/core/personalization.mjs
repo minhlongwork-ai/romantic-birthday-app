@@ -26,8 +26,5 @@ export function parsePersonalization(search = "") {
   return {
     recipient: normalizePersonalization(params.get("to"), "em"),
     sender: normalizePersonalization(params.get("from"), "anh"),
-    // The chooser still receives this normalized value, but the experience
-    // must never render, persist, log, or put it in history.
-    age: normalizePersonalization(params.get("age"), ""),
   };
 }

@@ -13,6 +13,13 @@ const appRoot = path.resolve(path.dirname(scriptPath), "..");
 const sourceDir = path.join(appRoot, "src", "assets", "source");
 const publicImagesDir = path.join(appRoot, "public", "images");
 const productIds = Object.freeze(["cake", "bouquet"]);
+const gardenBloomSources = Object.freeze([
+  ["cream-rose", "product-bouquet.jpeg", "southwest"],
+  ["blush-rose", "product-bouquet.jpeg", "north"],
+  ["white-sprig", "product-bouquet.jpeg", "south"],
+  ["green-leaf", "garden-leaves.jpeg", "attention"],
+  ["champagne-bloom", "product-bouquet.jpeg", "center"],
+]);
 const outputNames = Object.freeze([
   ...productIds.flatMap((id) => [
     `${id}.avif`,
@@ -22,6 +29,19 @@ const outputNames = Object.freeze([
   "preview.avif",
   "preview.webp",
   "preview.jpg",
+  ...productIds.flatMap((id) => [
+    `seal-${id}.avif`,
+    `seal-${id}.webp`,
+    `seal-${id}.jpg`,
+  ]),
+  "garden-stage.avif",
+  "garden-stage.webp",
+  "garden-stage.jpg",
+  ...gardenBloomSources.flatMap(([id]) => [
+    `garden-bloom-${id}.avif`,
+    `garden-bloom-${id}.webp`,
+    `garden-bloom-${id}.jpg`,
+  ]),
 ]);
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
@@ -40,31 +60,33 @@ function productCrop(id, width, height) {
     .resize(width, height, { fit: "cover", position: "attention" });
 }
 
-function workshopPreviewOverlay() {
-  return Buffer.from(`
-    <svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
-      <rect width="1200" height="630" fill="#291c17" opacity="0.46"/>
-      <rect y="365" width="1200" height="265" fill="#5e3828" opacity="0.72"/>
-      <g stroke="#c5966f" stroke-width="3" opacity="0.2">
-        <path d="M0 410H1200M0 475H1200M0 545H1200M0 603H1200"/>
-      </g>
-      <ellipse cx="600" cy="501" rx="350" ry="55" fill="#1e130f" opacity="0.35"/>
-      <g transform="translate(355 145)">
-        <path d="M15 72 245 0l230 72v276H15Z" fill="#d8c1a0"/>
-        <path d="M15 72 245 248 475 72" fill="#f2dfbd"/>
-        <path d="m15 348 174-178 56 78 56-78 174 178" fill="#cba780"/>
-        <path d="m15 72 230 176L475 72" fill="none" stroke="#8c654c" stroke-width="7" stroke-linejoin="round"/>
-        <circle cx="245" cy="248" r="31" fill="#b5884b"/>
-        <circle cx="245" cy="248" r="19" fill="none" stroke="#f0d39b" stroke-width="4"/>
-      </g>
-      <g fill="#d7b57a" opacity="0.9">
-        <path d="M950 135h72l26 145h-124Z"/>
-        <path d="M984 95h7v42h-7z"/>
-      </g>
-      <circle cx="987" cy="125" r="73" fill="#efc77b" opacity="0.17"/>
-      <path d="M142 495c44-42 115-46 171-9l-29 44c-37-24-85-20-112 7Z" fill="#f2e4cc" opacity="0.72"/>
-    </svg>
-  `);
+async function roundedPhotoCard(input, width, height, radius = 34) {
+  const photograph = await sharp(input)
+    .resize(width, height, { fit: "cover", position: "attention" })
+    .png()
+    .toBuffer();
+  const mask = Buffer.from(
+    `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect width="${width}" height="${height}" rx="${radius}" fill="#fff"/></svg>`,
+  );
+  const clipped = await sharp(photograph)
+    .ensureAlpha()
+    .composite([{ input: mask, blend: "dest-in" }])
+    .png()
+    .toBuffer();
+  const frame = Buffer.from(
+    `<svg width="${width + 18}" height="${height + 18}" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="${width + 18}" height="${height + 18}" rx="${radius + 9}" fill="#f8f0e8"/></svg>`,
+  );
+  return sharp({
+    create: {
+      width: width + 18,
+      height: height + 18,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  })
+    .composite([{ input: frame }, { input: clipped, left: 9, top: 9 }])
+    .png()
+    .toBuffer();
 }
 
 async function generateOutputs(outputDir) {
@@ -72,13 +94,50 @@ async function generateOutputs(outputDir) {
   await Promise.all(
     productIds.map((id) => encodeAll(productCrop(id, 800, 800), outputDir, id)),
   );
+  await Promise.all(
+    productIds.map((id) =>
+      encodeAll(productCrop(id, 520, 520), outputDir, `seal-${id}`),
+    ),
+  );
 
+  const [cake, bouquet] = await Promise.all(
+    productIds.map((id) => productCrop(id, 430, 430).png().toBuffer()),
+  );
   const preview = sharp(path.join(sourceDir, "background-warm-silk.jpeg"))
     .rotate()
     .resize(1200, 630, { fit: "cover", position: "attention" })
-    .modulate({ brightness: 0.64, saturation: 0.7 })
-    .composite([{ input: workshopPreviewOverlay(), top: 0, left: 0 }]);
+    .modulate({ brightness: 0.58 })
+    .composite([
+      { input: cake, left: 95, top: 100 },
+      { input: bouquet, left: 675, top: 100 },
+    ]);
   await encodeAll(preview, outputDir, "preview");
+
+  const gardenCake = await roundedPhotoCard(
+    path.join(sourceDir, "product-cake.jpeg"),
+    400,
+    360,
+  );
+  const gardenStage = sharp(path.join(sourceDir, "product-bouquet.jpeg"))
+    .rotate()
+    .resize(1200, 900, { fit: "cover", position: "attention" })
+    .modulate({ brightness: 0.72, saturation: 0.78 })
+    .composite([
+      { input: gardenCake, left: 700, top: 445, blend: "over" },
+    ]);
+  await encodeAll(gardenStage, outputDir, "garden-stage");
+
+  await Promise.all(
+    gardenBloomSources.map(([id, sourceFile, position]) =>
+      encodeAll(
+        sharp(path.join(sourceDir, sourceFile))
+          .rotate()
+          .resize(360, 360, { fit: "cover", position }),
+        outputDir,
+        `garden-bloom-${id}`,
+      ),
+    ),
+  );
 }
 
 async function staleOutputs(generatedDir) {

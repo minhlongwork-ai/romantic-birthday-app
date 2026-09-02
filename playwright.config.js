@@ -3,14 +3,11 @@ import { defineConfig, devices } from '@playwright/test';
 const siteBasePath = process.env.E2E_BASE_PATH || '/';
 const appPath = process.env.E2E_APP_PATH || 'birthday/';
 const e2ePort = Number(process.env.E2E_PORT || 4183);
-const e2eHttpsPort = Number(process.env.E2E_HTTPS_PORT || 4184);
 const remoteURL = process.env.E2E_REMOTE_URL?.trim();
 const siteURL = remoteURL
   ? new URL(siteBasePath, new URL(remoteURL.endsWith('/') ? remoteURL : `${remoteURL}/`)).href
   : new URL(siteBasePath, `http://127.0.0.1:${e2ePort}/`).href;
 const baseURL = new URL(appPath, siteURL).href;
-const httpsSiteURL = new URL(siteBasePath, `https://127.0.0.1:${e2eHttpsPort}/`).href;
-const httpsBaseURL = new URL('september/', httpsSiteURL).href;
 const iphoneX = Object.fromEntries(
   Object.entries(devices['iPhone X']).filter(([key]) => key !== 'defaultBrowserType'),
 );
@@ -34,23 +31,6 @@ export default defineConfig({
       testIgnore: /iphone-x-layout\.spec\.js/,
       use: {
         ...devices['Desktop Chrome'],
-        permissions: ['camera'],
-        launchOptions: {
-          args: [
-            '--use-fake-device-for-media-stream',
-            '--use-fake-ui-for-media-stream',
-          ],
-        },
-      },
-    },
-    {
-      name: 'desktop-chrome-https',
-      testMatch: /performance\.spec\.js/,
-      testIgnore: remoteURL ? /performance\.spec\.js/ : undefined,
-      use: {
-        ...devices['Desktop Chrome'],
-        baseURL: httpsBaseURL,
-        ignoreHTTPSErrors: true,
         permissions: ['camera'],
         launchOptions: {
           args: [
@@ -98,17 +78,9 @@ export default defineConfig({
   ],
   webServer: remoteURL
     ? undefined
-    : [
-        {
-          command: 'npm run preview:e2e',
-          url: siteURL,
-          reuseExistingServer: !process.env.CI,
-        },
-        {
-          command: 'node scripts/serve-dist-https.mjs',
-          url: httpsSiteURL,
-          ignoreHTTPSErrors: true,
-          reuseExistingServer: !process.env.CI,
-        },
-      ],
+    : {
+        command: 'npm run preview:e2e',
+        url: siteURL,
+        reuseExistingServer: !process.env.CI,
+      },
 });

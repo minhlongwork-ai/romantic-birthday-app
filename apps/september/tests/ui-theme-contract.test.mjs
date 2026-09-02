@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
@@ -7,29 +6,39 @@ import { fileURLToPath } from "node:url";
 
 const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-test("September runtime UI contains only the paper-and-brass workshop vocabulary", async () => {
+test("September runtime UI is a direct letter with no gift-opening or game flow", async () => {
   const projectRoot = path.resolve(appRoot, "../..");
-  const tracked = spawnSync(
-    "git",
-    ["ls-files", "apps/september/index.html", "apps/september/src"],
-    { cwd: projectRoot, encoding: "utf8" },
-  );
-  assert.equal(tracked.status, 0, tracked.stderr);
-  const runtimeFiles = tracked.stdout.trim().split("\n").filter((file) =>
-    /\.(?:css|html|js|json|mjs)$/u.test(file),
-  );
+  const runtimeFiles = [
+    "apps/september/index.html",
+    "apps/september/src/main.js",
+    "apps/september/src/ui/scenes.js",
+    "apps/september/src/ui/dom.js",
+    "apps/september/src/content/copy.mjs",
+  ];
   const source = await Promise.all(
     runtimeFiles.map((file) => readFile(path.join(projectRoot, file), "utf8")),
   ).then((parts) => parts.join("\n"));
 
   assert.doesNotMatch(
     source,
-    /(?:nfc-progress|parseNfc|nfc-dialog|puzzle|ribbon|lunar|moon|nasa|orbit|cosmetic)/iu,
+    /Ba Pha Trăng|\b(?:lunar|moon|nasa|orbit|phase)(?:[A-Z_-]|\b)|cleanser|moisturizer|lipstick/iu,
   );
-  assert.doesNotMatch(
-    source,
-    /(?:\.blind-box|\.game-entry-wrap|\.reveal-sequence|\.gift-messages|\.gift-message|\.bow-flourish|\.gift-seal\.has-photo|\.compartment:hover|\.gift-silhouette|\.gift-teaser-image)/u,
-  );
-  assert.match(source, /workshop-stage/u);
-  assert.match(source, /paper-shadow/u);
+  assert.match(source, /scene-letter/u);
+  assert.match(source, /letter-gift/u);
+  assert.doesNotMatch(source, /garden-canvas|blind-box|nfc-progress|puzzle-controller|mountGame|mountReveal/u);
+  assert.match(source, /playfair-display/u);
+  assert.match(source, /be-vietnam-pro/u);
+  assert.match(source, /product-fallback-\$\{gift\.id\}/u);
+  assert.match(source, /fallback-silhouette-\$\{gift\.id\}/u);
+});
+
+test("September loads range-aware font stylesheets for mixed Vietnamese text", async () => {
+  const main = await readFile(path.join(appRoot, "src/main.js"), "utf8");
+
+  assert.match(main, /@fontsource\/playfair-display\/600\.css/u);
+  assert.match(main, /@fontsource\/playfair-display\/700\.css/u);
+  assert.match(main, /@fontsource\/playfair-display\/600-italic\.css/u);
+  assert.match(main, /@fontsource\/be-vietnam-pro\/400\.css/u);
+  assert.match(main, /@fontsource\/be-vietnam-pro\/700\.css/u);
+  assert.doesNotMatch(main, /@fontsource\/(?:playfair-display|be-vietnam-pro)\/vietnamese-/u);
 });

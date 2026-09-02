@@ -109,8 +109,8 @@ phải điều kiện để tiếp tục. Ghi hai thẻ NDEF tương thích NTAG
 URL HTTPS cố định sau:
 
 ```text
-https://romantic-birthday-app.vercel.app/september/#gift=sweet
-https://romantic-birthday-app.vercel.app/september/#gift=bloom
+https://thiep-cho-em.vercel.app/september/#gift=sweet
+https://thiep-cho-em.vercel.app/september/#gift=bloom
 ```
 
 URL thứ nhất dành cho bánh tiramisu chanh, URL thứ hai dành cho bó hồng kem và

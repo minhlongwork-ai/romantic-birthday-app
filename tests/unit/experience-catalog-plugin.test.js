@@ -16,8 +16,17 @@ test('catalog transform emits rendered published cards and removes the marker', 
   assert.doesNotMatch(output, /EXPERIENCE_CATALOG/);
   assert.match(output, /href="\/birthday\/"[\s\S]*?data-project-link/);
   assert.match(output, /href="\/august\/"[\s\S]*?data-project-link/);
-  assert.doesNotMatch(output, /href="\/september\/"[\s\S]*?data-project-link/);
+  assert.match(output, /href="\/september\/"[\s\S]*?data-project-link/);
   assert.match(output, /class="gift-card gift-card-birthday"/);
+});
+
+test('catalog transform keeps September openable without preview-only interaction', async () => {
+  const template = await readFile(new URL('../../portal/index.html', import.meta.url), 'utf8');
+  const records = await loadExperienceRegistry();
+  const output = applyExperienceCatalog(template, records, { allowDraftInteraction: true });
+
+  assert.match(output, /href="\/september\/"[\s\S]*?data-project-link/);
+  assert.match(output, /Xem thiệp tháng Chín/);
 });
 
 test('catalog transform rejects templates without exactly one marker', () => {
