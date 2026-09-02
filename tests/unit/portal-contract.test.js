@@ -22,12 +22,12 @@ test('chooser renders published links and a non-interactive September card with 
   assert.ok(portalHtml.indexOf('gift-card-august') < portalHtml.indexOf('gift-card-september'));
   assert.match(portalHtml, /src="\/experience-previews\/september\.webp"/);
   assert.match(portalHtml, /aria-describedby="september-description"/);
-  assert.match(portalHtml, /Một phong bì giấy đóng kín trên bàn gỗ trong một xưởng nhỏ ánh đèn ấm/);
+  assert.match(portalHtml, /Bánh kem chanh và bó hồng kem hồng phấn trên nền lụa nâu ấm/);
   assert.match(portalHtml, /Hộp quà hai món/);
   assert.match(portalHtml, />Một chút ngọt, một chút hoa</);
   assert.match(
     portalHtml,
-    /Một hộp quà nhỏ với hai bất ngờ — em chọn món mình muốn mở trước\./,
+    /Chạm vào bánh và hoa theo thứ tự em chọn, rồi thắt chiếc nơ cuối cùng\./,
   );
   assert.match(portalHtml, /<article class="gift-card gift-card-september" aria-disabled="true"/);
   assert.doesNotMatch(september, /href="\/september\/"|data-project-link|Mở hộp quà tháng Chín/);

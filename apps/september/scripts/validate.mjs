@@ -7,7 +7,6 @@ import { fileURLToPath } from "node:url";
 import { SEPTEMBER_GIFTS } from "../src/content/gifts.mjs";
 import { validateSeptemberContent } from "../src/content/schema.mjs";
 import { validateSeptemberMedia } from "./media-validator.mjs";
-import { checkHandLandmarkerArtifacts } from "./generate-hand-landmarker-assets.mjs";
 import { buildArtifacts } from "./generate-release-content.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
@@ -25,7 +24,6 @@ const generatedNames = [
   "release-content.json",
   "media-manifest.json",
   "font-manifest.json",
-  "hand-landmarker-manifest.json",
 ];
 
 async function loadManifest(manifestPath) {
@@ -59,51 +57,13 @@ async function validateGeneratedArtifacts() {
   return errors;
 }
 
-async function validateCameraAssets() {
-  try {
-    await checkHandLandmarkerArtifacts();
-    return [];
-  } catch (error) {
-    return [`Camera provenance is stale or missing: ${error.message}`];
-  }
-}
-
-function orderReleaseFixtureErrors(errors, gifts) {
-  const remaining = new Set(errors);
-  const ordered = [];
-  for (const id of ["cake", "bouquet"]) {
-    const index = gifts.findIndex((gift) => gift?.id === id);
-    if (index < 0) continue;
-    const expected = [
-      [
-        `gifts[${index}] is a development fixture and cannot ship.`,
-        `${id}: fixture:true is a development fixture and cannot ship.`,
-      ],
-      [
-        `gifts[${index}] must set approved:true for release.`,
-        `${id}: approved:false must set approved:true for release.`,
-      ],
-      [
-        `gifts[${index}] contains placeholder product content and cannot ship.`,
-        `${id}: demo media contains placeholder product content and cannot ship.`,
-      ],
-    ];
-    for (const [raw, normalized] of expected) {
-      if (remaining.delete(raw)) ordered.push(normalized);
-    }
-  }
-  return [...ordered, ...remaining];
-}
-
 export async function runSeptemberValidation({
   release = false,
   gifts = SEPTEMBER_GIFTS,
   publicDir = defaultPublicDir,
   manifestPath = defaultManifestPath,
 } = {}) {
-  const errors = release
-    ? orderReleaseFixtureErrors(validateSeptemberContent(gifts, { release }), gifts)
-    : validateSeptemberContent(gifts, { release });
+  const errors = validateSeptemberContent(gifts, { release });
   const loadedManifest = await loadManifest(manifestPath);
   errors.push(...loadedManifest.errors);
   if (loadedManifest.manifest) {
@@ -115,12 +75,7 @@ export async function runSeptemberValidation({
       }),
     );
   }
-  if (errors.length === 0) {
-    errors.push(...await validateCameraAssets());
-    if (!release && errors.length === 0) {
-      errors.push(...await validateGeneratedArtifacts());
-    }
-  }
+  if (!release && errors.length === 0) errors.push(...await validateGeneratedArtifacts());
   return [...new Set(errors)];
 }
 

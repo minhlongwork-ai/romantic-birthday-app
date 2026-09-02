@@ -27,6 +27,17 @@ test('draft content has no visible status or interaction', async () => {
   assert.doesNotMatch(september, /gift-action/);
 });
 
+test('preview mode exposes a draft card as an interactive preview', async () => {
+  const html = renderExperienceCatalog(await loadExperienceRegistry(), {
+    allowDraftInteraction: true,
+  });
+  const september = html.slice(html.indexOf('gift-card-september'));
+
+  assert.match(september, /href="\/september\/"[\s\S]*?data-project-link/);
+  assert.match(september, /Xem bản tương tác/);
+  assert.doesNotMatch(september, /aria-disabled="true"/);
+});
+
 test('the first published card keeps the above-fold image loading priority', async () => {
   const html = renderExperienceCatalog(await loadExperienceRegistry());
   const birthday = html.slice(html.indexOf('gift-card-birthday'), html.indexOf('gift-card-august'));

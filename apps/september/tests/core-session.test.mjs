@@ -4,153 +4,173 @@ import test from "node:test";
 import {
   commitOpenedGift,
   createExperienceState,
-  deriveWorkshopPhase,
-  markDeliveryReady,
   resolveHistoryTarget,
-  selectWorkshopBranch,
 } from "../src/core/session.mjs";
+import { INITIAL_DETENTS } from "../src/core/puzzle.mjs";
 
-test("the workshop locks a deterministic order and keeps a sealed first envelope secret", () => {
-  const selected = selectWorkshopBranch(createExperienceState(), "left");
-
-  assert.deepEqual(selected.deliveryOrder, ["cake", "bouquet"]);
-  assert.equal(selected.deliveredCount, 0);
-
-  const ready = markDeliveryReady(selected);
-  assert.equal(ready.workshopPhase, "first-envelope-ready");
-  assert.deepEqual(ready.openOrder, []);
-
-  const opened = commitOpenedGift(ready, "cake");
-  assert.deepEqual(opened.openOrder, ["cake"]);
-  assert.equal(deriveWorkshopPhase(opened), "between-gifts");
-});
-
-test("the alternate branch locks bouquet before cake", () => {
-  const selected = selectWorkshopBranch(createExperienceState(), "right");
-
-  assert.deepEqual(selected.deliveryOrder, ["bouquet", "cake"]);
-  assert.equal(selected.workshopPhase, "delivering-first");
-  assert.equal(selectWorkshopBranch(selected, "left"), selected);
-});
-
-test("fresh workshop state owns only the v2 delivery fields", () => {
-  const state = createExperienceState();
+test("hydrates a fresh in-memory experience from a validated NFC gift order", () => {
+  const state = createExperienceState({
+    openedGiftIds: ["cake", "bouquet", "cake", "unknown"],
+  });
 
   assert.deepEqual(state, {
     scene: "intro",
-    deliveryOrder: [],
-    deliveredCount: 0,
-    openedGiftIds: new Set(),
-    openOrder: [],
+    openedGiftIds: new Set(["cake", "bouquet"]),
+    openOrder: ["cake", "bouquet"],
     activeGiftId: null,
-    workshopPhase: "invitation",
+    puzzleDetents: { ...INITIAL_DETENTS },
+    completionMode: null,
+  });
+  assert.notEqual(state.puzzleDetents, INITIAL_DETENTS);
+});
+
+test("commits each gift exactly once while preserving the user's first-open order", () => {
+  const fresh = createExperienceState();
+  const first = commitOpenedGift(fresh, "bouquet");
+  const second = commitOpenedGift(first, "cake");
+  const repeated = commitOpenedGift(second, "bouquet");
+
+  assert.deepEqual(repeated.openOrder, ["bouquet", "cake"]);
+  assert.deepEqual(repeated.openedGiftIds, new Set(["bouquet", "cake"]));
+  assert.equal(repeated, second);
+  assert.deepEqual(fresh.openOrder, []);
+});
+
+test("preserves both possible first-open orders", () => {
+  const orders = [
+    ["cake", "bouquet"],
+    ["bouquet", "cake"],
+  ];
+
+  for (const order of orders) {
+    const finalState = order.reduce(commitOpenedGift, createExperienceState());
+    assert.deepEqual(finalState.openOrder, order);
+    assert.equal(finalState.openedGiftIds.size, 2);
+  }
+});
+
+test("refuses to commit an unknown gift identifier", () => {
+  assert.throws(
+    () => commitOpenedGift(createExperienceState(), "rare-prize"),
+    /Unknown September gift/,
+  );
+});
+
+test("restores the exact gift recorded by a valid reveal history entry", () => {
+  const target = resolveHistoryTarget(
+    { v: 1, sessionToken: "session-a", scene: "reveal", giftId: "bouquet" },
+    {
+      sessionToken: "session-a",
+      openedGiftIds: new Set(["cake"]),
+      completionMode: null,
+    },
+  );
+
+  assert.deepEqual(target, {
+    scene: "reveal",
+    giftId: "bouquet",
+    replace: false,
   });
 });
 
-test("cannot open a gift before its closed envelope is ready", () => {
-  const selected = selectWorkshopBranch(createExperienceState(), "left");
-
-  assert.throws(() => commitOpenedGift(selected, "cake"), /Gift is not ready/);
-  assert.throws(() => markDeliveryReady(createExperienceState()), /No pending delivery/);
-});
-
-test("does not deliver a second envelope while the first is sealed", () => {
-  const ready = markDeliveryReady(selectWorkshopBranch(createExperienceState(), "left"));
-
-  assert.throws(() => markDeliveryReady(ready), /still sealed/);
-});
-
-test("refuses to commit an unknown gift identifier without changing state", () => {
-  const ready = markDeliveryReady(selectWorkshopBranch(createExperienceState(), "left"));
-  assert.throws(
-    () => commitOpenedGift(ready, "rare-prize"),
-    /Unknown September gift/,
-  );
-  assert.deepEqual(ready.openOrder, []);
-});
-
-test("history rejects an unopened reveal and restores its sealed workshop state", () => {
-  const state = markDeliveryReady(selectWorkshopBranch(createExperienceState(), "left"));
-  const before = {
-    deliveredCount: state.deliveredCount,
-    openedGiftIds: new Set(state.openedGiftIds),
-    openOrder: [...state.openOrder],
-  };
+test("recovers an invalid reveal gift to the box with replaceState semantics", () => {
   const target = resolveHistoryTarget(
-    { v: 2, sessionToken: "session-a", scene: "reveal", giftId: "cake" },
-    { sessionToken: "session-a", state },
+    { v: 1, sessionToken: "session-a", scene: "reveal", giftId: "jackpot" },
+    {
+      sessionToken: "session-a",
+      openedGiftIds: new Set(),
+      completionMode: null,
+    },
   );
 
-  assert.deepEqual(target, { scene: "workshop", replace: true });
-  assert.equal(state.deliveredCount, before.deliveredCount);
-  assert.deepEqual(state.openedGiftIds, before.openedGiftIds);
-  assert.deepEqual(state.openOrder, before.openOrder);
+  assert.deepEqual(target, { scene: "box", replace: true });
 });
 
-test("v2 history restores only delivered and opened gifts", () => {
-  const opened = commitOpenedGift(
-    markDeliveryReady(selectWorkshopBranch(createExperienceState(), "left")),
-    "cake",
-  );
+test("accepts valid intro and box entries without creating replacement history", () => {
+  const context = {
+    sessionToken: "session-a",
+    openedGiftIds: new Set(),
+    completionMode: null,
+  };
 
   assert.deepEqual(
-    resolveHistoryTarget(
-      { v: 2, sessionToken: "session-a", scene: "reveal", giftId: "cake" },
-      { sessionToken: "session-a", state: opened },
-    ),
-    { scene: "reveal", giftId: "cake", replace: false },
-  );
-});
-
-test("v2 recovery rejects wrong tokens, versions, and early endings to safe scenes", () => {
-  const state = selectWorkshopBranch(createExperienceState(), "left");
-
-  assert.deepEqual(
-    resolveHistoryTarget({ v: 2, sessionToken: "other", scene: "workshop" }, {
-      sessionToken: "session-a",
-      state,
-    }),
-    { scene: "intro", replace: true },
+    resolveHistoryTarget({ v: 1, sessionToken: "session-a", scene: "intro" }, context),
+    { scene: "intro", replace: false },
   );
   assert.deepEqual(
-    resolveHistoryTarget({ v: 3, sessionToken: "session-a", scene: "workshop" }, {
-      sessionToken: "session-a",
-      state,
-    }),
-    { scene: "intro", replace: true },
-  );
-  assert.deepEqual(
-    resolveHistoryTarget({ v: 2, sessionToken: "session-a", scene: "ending" }, {
-      sessionToken: "session-a",
-      state,
-    }),
-    { scene: "workshop", replace: true },
+    resolveHistoryTarget({ v: 1, sessionToken: "session-a", scene: "box" }, context),
+    { scene: "box", replace: false },
   );
 });
 
-test("v2 accepts completion only after both deliveries and reveals", () => {
-  const first = commitOpenedGift(
-    markDeliveryReady(selectWorkshopBranch(createExperienceState(), "left")),
-    "cake",
-  );
-  const complete = commitOpenedGift(markDeliveryReady(first), "bouquet");
+test("allows game history only after both guaranteed gifts are open", () => {
+  const entry = { v: 1, sessionToken: "session-a", scene: "game" };
 
-  assert.equal(complete.workshopPhase, "complete");
   assert.deepEqual(
-    resolveHistoryTarget(
-      { v: 2, sessionToken: "session-a", scene: "ending" },
-      { sessionToken: "session-a", state: complete },
-    ),
-    { scene: "ending", replace: false },
+    resolveHistoryTarget(entry, {
+      sessionToken: "session-a",
+      openedGiftIds: new Set(["cake"]),
+      completionMode: null,
+    }),
+    { scene: "box", replace: true },
+  );
+  assert.deepEqual(
+    resolveHistoryTarget(entry, {
+      sessionToken: "session-a",
+      openedGiftIds: new Set(["bouquet", "cake"]),
+      completionMode: null,
+    }),
+    { scene: "game", replace: false },
   );
 });
 
-test("v1 history entries cannot revive removed NFC or puzzle scenes", () => {
+test("guards ending history with gift completion and an explicit valid mode", () => {
+  const allGifts = new Set(["cake", "bouquet"]);
+  const baseEntry = { v: 1, sessionToken: "session-a", scene: "ending" };
+
   assert.deepEqual(
-    resolveHistoryTarget({ v: 1, sessionToken: "session-a", scene: "reveal", giftId: "cake" }, {
+    resolveHistoryTarget({ ...baseEntry, completionMode: "solved" }, {
       sessionToken: "session-a",
-      state: createExperienceState(),
+      openedGiftIds: new Set(["cake"]),
+      completionMode: "solved",
     }),
-    { scene: "intro", replace: true },
+    { scene: "box", replace: true },
   );
+  assert.deepEqual(
+    resolveHistoryTarget(baseEntry, {
+      sessionToken: "session-a",
+      openedGiftIds: allGifts,
+      completionMode: "solved",
+    }),
+    { scene: "game", replace: true },
+  );
+  assert.deepEqual(
+    resolveHistoryTarget({ ...baseEntry, completionMode: "skipped" }, {
+      sessionToken: "session-a",
+      openedGiftIds: allGifts,
+      completionMode: null,
+    }),
+    { scene: "ending", completionMode: "skipped", replace: false },
+  );
+});
+
+test("recovers wrong version, token, or scene to intro", () => {
+  const context = {
+    sessionToken: "session-a",
+    openedGiftIds: new Set(["cake", "bouquet"]),
+    completionMode: "solved",
+  };
+  const invalidEntries = [
+    { v: 2, sessionToken: "session-a", scene: "box" },
+    { v: 1, sessionToken: "session-b", scene: "box" },
+    { v: 1, sessionToken: "session-a", scene: "secret" },
+    null,
+  ];
+
+  for (const entry of invalidEntries) {
+    assert.deepEqual(resolveHistoryTarget(entry, context), {
+      scene: "intro",
+      replace: true,
+    });
+  }
 });

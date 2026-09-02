@@ -29,7 +29,7 @@ export function formatVietnameseMonth(month) {
   return VIETNAMESE_MONTHS[month - 1] ?? `Tháng ${month}`;
 }
 
-function renderExperienceCard(record, { isPriority = false } = {}) {
+function renderExperienceCard(record, { isPriority = false, allowDraftInteraction = false } = {}) {
   const id = escapeHtml(record.id);
   const descriptionId = `${id}-description`;
   const cardClass = `gift-card gift-card-${id}`;
@@ -51,7 +51,10 @@ function renderExperienceCard(record, { isPriority = false } = {}) {
       <span class="gift-title" role="heading" aria-level="3">${escapeHtml(record.title)}</span>
       <span id="${descriptionId}" class="gift-description">${escapeHtml(record.description)}</span>`;
 
-  if (record.status === 'published') {
+  if (record.status === 'published' || allowDraftInteraction) {
+    const actionLabel = record.status === 'published'
+      ? record.actionLabel
+      : 'Xem bản tương tác';
     return `
       <a
         class="${cardClass}"
@@ -60,7 +63,7 @@ function renderExperienceCard(record, { isPriority = false } = {}) {
         aria-describedby="${descriptionId}"
       >${image}${copy}
         <span class="gift-action">
-          ${escapeHtml(record.actionLabel)}
+          ${escapeHtml(actionLabel)}
           <span class="gift-arrow" aria-hidden="true">&#8594;</span>
         </span>
       </span>
@@ -74,7 +77,7 @@ function renderExperienceCard(record, { isPriority = false } = {}) {
     </article>`;
 }
 
-export function renderExperienceCatalog(records) {
+export function renderExperienceCatalog(records, options = {}) {
   const experienceYears = groupExperiencesByYear(records);
   const priorityExperienceId = experienceYears
     .flatMap(({ experiences }) => experiences)
@@ -86,6 +89,7 @@ export function renderExperienceCatalog(records) {
       <div class="gift-options">
         ${experiences.map(record => renderExperienceCard(record, {
           isPriority: record.id === priorityExperienceId,
+          allowDraftInteraction: Boolean(options.allowDraftInteraction),
         })).join('')}
       </div>
     </section>

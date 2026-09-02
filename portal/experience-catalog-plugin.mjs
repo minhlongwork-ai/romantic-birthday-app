@@ -2,21 +2,21 @@ import { renderExperienceCatalog } from './experience-catalog.mjs';
 
 const CATALOG_MARKER = '<!-- EXPERIENCE_CATALOG -->';
 
-export function applyExperienceCatalog(html, records) {
+export function applyExperienceCatalog(html, records, options = {}) {
   if (html.split(CATALOG_MARKER).length !== 2) {
     throw new Error('portal/index.html must contain exactly one EXPERIENCE_CATALOG marker.');
   }
 
-  return html.replace(CATALOG_MARKER, renderExperienceCatalog(records));
+  return html.replace(CATALOG_MARKER, renderExperienceCatalog(records, options));
 }
 
-export function createExperienceCatalogPlugin(records) {
+export function createExperienceCatalogPlugin(records, options = {}) {
   return {
     name: 'experience-catalog',
     transformIndexHtml: {
       order: 'pre',
       handler(html) {
-        return applyExperienceCatalog(html, records);
+        return applyExperienceCatalog(html, records, options);
       },
     },
   };

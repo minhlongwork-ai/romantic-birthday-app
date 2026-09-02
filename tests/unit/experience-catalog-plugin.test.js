@@ -20,6 +20,15 @@ test('catalog transform emits rendered published cards and removes the marker', 
   assert.match(output, /class="gift-card gift-card-birthday"/);
 });
 
+test('catalog transform can expose draft interaction only when explicitly enabled', async () => {
+  const template = await readFile(new URL('../../portal/index.html', import.meta.url), 'utf8');
+  const records = await loadExperienceRegistry();
+  const output = applyExperienceCatalog(template, records, { allowDraftInteraction: true });
+
+  assert.match(output, /href="\/september\/"[\s\S]*?data-project-link/);
+  assert.match(output, /Xem bản tương tác/);
+});
+
 test('catalog transform rejects templates without exactly one marker', () => {
   const records = [];
 

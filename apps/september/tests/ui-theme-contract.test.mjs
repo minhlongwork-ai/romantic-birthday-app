@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-test("September runtime UI contains only the paper-and-brass workshop vocabulary", async () => {
+test("September runtime UI contains no lunar or cosmetic references", async () => {
   const projectRoot = path.resolve(appRoot, "../..");
   const tracked = spawnSync(
     "git",
@@ -24,12 +24,9 @@ test("September runtime UI contains only the paper-and-brass workshop vocabulary
 
   assert.doesNotMatch(
     source,
-    /(?:nfc-progress|parseNfc|nfc-dialog|puzzle|ribbon|lunar|moon|nasa|orbit|cosmetic)/iu,
+    /Ba Pha Trăng|\b(?:lunar|moon|nasa|orbit|phase)(?:[A-Z_-]|\b)|cleanser|moisturizer|lipstick/iu,
   );
-  assert.doesNotMatch(
-    source,
-    /(?:\.blind-box|\.game-entry-wrap|\.reveal-sequence|\.gift-messages|\.gift-message|\.bow-flourish|\.gift-seal\.has-photo|\.compartment:hover|\.gift-silhouette|\.gift-teaser-image)/u,
-  );
-  assert.match(source, /workshop-stage/u);
-  assert.match(source, /paper-shadow/u);
+  assert.match(source, /ribbon-puzzle/u);
+  assert.match(source, /fallback-silhouette-cake/u);
+  assert.match(source, /fallback-silhouette-bouquet/u);
 });
