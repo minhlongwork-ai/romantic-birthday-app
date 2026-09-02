@@ -16,7 +16,7 @@ export const SEPTEMBER_COPY = Object.freeze({
 });
 
 export const SEPTEMBER_FINAL_LETTER =
-  "Anh không ở cạnh lúc em mở thiếp, nên gửi một xưởng nhỏ thay anh chuẩn bị mọi thứ. Bánh để em có một chút ngọt, hoa để ngày của em đẹp hơn. Còn anh chỉ muốn em biết: dù không ở đây, anh vẫn muốn có mặt trong ngày của em theo một cách nhỏ thôi.";
+  "Bánh để em có một chút ngọt, hoa để ngày của em đẹp hơn. Còn anh chỉ muốn em biết: dù không ở đây, anh vẫn mong những ngày của em, dù rực rỡ hay bình thường, vẫn luôn có đủ những điều dịu dàng để em mỉm cười.";
 
 export const SEPTEMBER_ENDING_TEMPLATE = SEPTEMBER_FINAL_LETTER;
 

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const FINAL_LETTER = "Anh không ở cạnh lúc em mở thiếp, nên gửi một xưởng nhỏ thay anh chuẩn bị mọi thứ. Bánh để em có một chút ngọt, hoa để ngày của em đẹp hơn. Còn anh chỉ muốn em biết: dù không ở đây, anh vẫn muốn có mặt trong ngày của em theo một cách nhỏ thôi.";
+const FINAL_LETTER = "Bánh để em có một chút ngọt, hoa để ngày của em đẹp hơn. Còn anh chỉ muốn em biết: dù không ở đây, anh vẫn mong những ngày của em, dù rực rỡ hay bình thường, vẫn luôn có đủ những điều dịu dàng để em mỉm cười.";
 
 test("September opens as a direct letter with both wishes", async ({ page }) => {
   await page.goto("/september/?to=Minh&from=Long&age=29");
