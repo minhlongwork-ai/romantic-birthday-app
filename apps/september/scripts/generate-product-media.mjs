@@ -13,13 +13,6 @@ const appRoot = path.resolve(path.dirname(scriptPath), "..");
 const sourceDir = path.join(appRoot, "src", "assets", "source");
 const publicImagesDir = path.join(appRoot, "public", "images");
 const productIds = Object.freeze(["cake", "bouquet"]);
-const gardenBloomSources = Object.freeze([
-  ["cream-rose", "product-bouquet.jpeg", "southwest"],
-  ["blush-rose", "product-bouquet.jpeg", "north"],
-  ["white-sprig", "product-bouquet.jpeg", "south"],
-  ["green-leaf", "garden-leaves.jpeg", "attention"],
-  ["champagne-bloom", "product-bouquet.jpeg", "center"],
-]);
 const outputNames = Object.freeze([
   ...productIds.flatMap((id) => [
     `${id}.avif`,
@@ -29,19 +22,6 @@ const outputNames = Object.freeze([
   "preview.avif",
   "preview.webp",
   "preview.jpg",
-  ...productIds.flatMap((id) => [
-    `seal-${id}.avif`,
-    `seal-${id}.webp`,
-    `seal-${id}.jpg`,
-  ]),
-  "garden-stage.avif",
-  "garden-stage.webp",
-  "garden-stage.jpg",
-  ...gardenBloomSources.flatMap(([id]) => [
-    `garden-bloom-${id}.avif`,
-    `garden-bloom-${id}.webp`,
-    `garden-bloom-${id}.jpg`,
-  ]),
 ]);
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
@@ -60,46 +40,11 @@ function productCrop(id, width, height) {
     .resize(width, height, { fit: "cover", position: "attention" });
 }
 
-async function roundedPhotoCard(input, width, height, radius = 34) {
-  const photograph = await sharp(input)
-    .resize(width, height, { fit: "cover", position: "attention" })
-    .png()
-    .toBuffer();
-  const mask = Buffer.from(
-    `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect width="${width}" height="${height}" rx="${radius}" fill="#fff"/></svg>`,
-  );
-  const clipped = await sharp(photograph)
-    .ensureAlpha()
-    .composite([{ input: mask, blend: "dest-in" }])
-    .png()
-    .toBuffer();
-  const frame = Buffer.from(
-    `<svg width="${width + 18}" height="${height + 18}" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="${width + 18}" height="${height + 18}" rx="${radius + 9}" fill="#f8f0e8"/></svg>`,
-  );
-  return sharp({
-    create: {
-      width: width + 18,
-      height: height + 18,
-      channels: 4,
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    },
-  })
-    .composite([{ input: frame }, { input: clipped, left: 9, top: 9 }])
-    .png()
-    .toBuffer();
-}
-
 async function generateOutputs(outputDir) {
   await mkdir(outputDir, { recursive: true });
   await Promise.all(
     productIds.map((id) => encodeAll(productCrop(id, 800, 800), outputDir, id)),
   );
-  await Promise.all(
-    productIds.map((id) =>
-      encodeAll(productCrop(id, 520, 520), outputDir, `seal-${id}`),
-    ),
-  );
-
   const [cake, bouquet] = await Promise.all(
     productIds.map((id) => productCrop(id, 430, 430).png().toBuffer()),
   );
@@ -112,32 +57,6 @@ async function generateOutputs(outputDir) {
       { input: bouquet, left: 675, top: 100 },
     ]);
   await encodeAll(preview, outputDir, "preview");
-
-  const gardenCake = await roundedPhotoCard(
-    path.join(sourceDir, "product-cake.jpeg"),
-    400,
-    360,
-  );
-  const gardenStage = sharp(path.join(sourceDir, "product-bouquet.jpeg"))
-    .rotate()
-    .resize(1200, 900, { fit: "cover", position: "attention" })
-    .modulate({ brightness: 0.72, saturation: 0.78 })
-    .composite([
-      { input: gardenCake, left: 700, top: 445, blend: "over" },
-    ]);
-  await encodeAll(gardenStage, outputDir, "garden-stage");
-
-  await Promise.all(
-    gardenBloomSources.map(([id, sourceFile, position]) =>
-      encodeAll(
-        sharp(path.join(sourceDir, sourceFile))
-          .rotate()
-          .resize(360, 360, { fit: "cover", position }),
-        outputDir,
-        `garden-bloom-${id}`,
-      ),
-    ),
-  );
 }
 
 async function staleOutputs(generatedDir) {

@@ -27,14 +27,4 @@ export const SEPTEMBER_ASSET_SOURCES = Object.freeze({
       licenseUrl: null,
     }),
   }),
-  garden: Object.freeze({
-    leaf: Object.freeze({
-      assetId: "garden-leaves",
-      sourcePath: "src/assets/source/garden-leaves.jpeg",
-      pageUrl: "https://www.pexels.com/photo/green-leaves-in-close-up-photography-10867332/",
-      sourceUrl: "https://images.pexels.com/photos/10867332/pexels-photo-10867332.jpeg",
-      creator: "Bruno Abdiel",
-      licenseUrl: "https://www.pexels.com/license/",
-    }),
-  }),
 });
