@@ -16,25 +16,24 @@ test('catalog groups by year and keeps chronological month order', async () => {
   assert.equal((html.match(/<h2[^>]*>2026<\/h2>/g) || []).length, 1);
 });
 
-test('draft content has no visible status or interaction', async () => {
+test('September is visible as an openable card without a visible status label', async () => {
   const html = renderExperienceCatalog(await loadExperienceRegistry());
   const september = html.slice(html.indexOf('gift-card-september'));
 
-  assert.doesNotMatch(september, /href="\/september\/"|data-project-link/);
+  assert.match(september, /href="\/september\/"[\s\S]*?data-project-link/);
   assert.doesNotMatch(september, /draft|published|Đang hoàn thiện|trạng thái/ui);
-  assert.match(september, /aria-disabled="true"/);
-  assert.match(september, /class="sr-only"/);
-  assert.doesNotMatch(september, /gift-action/);
+  assert.doesNotMatch(september, /aria-disabled="true"|class="sr-only"|Xem bản tương tác/);
+  assert.match(september, /Xem thiệp tháng Chín/);
 });
 
-test('preview mode exposes a draft card as an interactive preview', async () => {
+test('September stays a normal published card when preview options are supplied', async () => {
   const html = renderExperienceCatalog(await loadExperienceRegistry(), {
     allowDraftInteraction: true,
   });
   const september = html.slice(html.indexOf('gift-card-september'));
 
   assert.match(september, /href="\/september\/"[\s\S]*?data-project-link/);
-  assert.match(september, /Xem bản tương tác/);
+  assert.match(september, /Xem thiệp tháng Chín/);
   assert.doesNotMatch(september, /aria-disabled="true"/);
 });
 

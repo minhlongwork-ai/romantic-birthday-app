@@ -10,15 +10,15 @@ const EXPECTED_GIFT_GROUP_PAIRS = Object.freeze([
 const APPROVED_THEME_BY_GIFT = Object.freeze({
   cake: Object.freeze({
     groupLabel: "Một chút ngọt",
-    clue: "Một vị ngọt có chút tươi",
+    clue: "Một miếng tươi sáng cho hôm nay",
     personalMessage:
-      "Tiramisu chanh — ngọt vừa đủ, lại có một chút chua. Anh nghĩ em sẽ thích. Nhớ ăn lúc còn ngon nhé.",
+      "Có một chút chua dịu, một chút ngọt vừa đủ. Anh nghĩ những điều nhỏ như vậy cũng có thể làm một ngày của em dễ chịu hơn.",
   }),
   bouquet: Object.freeze({
     groupLabel: "Một chút hoa",
-    clue: "Một bó dịu dàng ở lại",
+    clue: "Một điều đẹp được đặt vào tay em",
     personalMessage:
-      "Không cần đợi một dịp đặc biệt — chỉ cần hôm nay em xứng đáng nhận một điều thật đẹp.",
+      "Bó hoa này không cần một dịp để được gửi đi. Anh chỉ nghĩ, giữa một ngày rất bình thường, em cũng xứng đáng có một điều mềm mại và đẹp đẽ.",
   }),
 });
 

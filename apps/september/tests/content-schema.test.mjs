@@ -41,17 +41,17 @@ test("the approved final letter is rendered verbatim", () => {
   );
 });
 
-test("the approved cake and bouquet wishes reach the reveal cards verbatim", () => {
+test("the approved cake and bouquet wishes reach the letter verbatim", () => {
   assert.deepEqual(
     SEPTEMBER_GIFTS.map(({ id, personalMessage }) => ({ id, personalMessage })),
     [
       {
         id: "cake",
-        personalMessage: "Tiramisu chanh — ngọt vừa đủ, lại có một chút chua. Anh nghĩ em sẽ thích. Nhớ ăn lúc còn ngon nhé.",
+        personalMessage: "Có một chút chua dịu, một chút ngọt vừa đủ. Anh nghĩ những điều nhỏ như vậy cũng có thể làm một ngày của em dễ chịu hơn.",
       },
       {
         id: "bouquet",
-        personalMessage: "Không cần đợi một dịp đặc biệt — chỉ cần hôm nay em xứng đáng nhận một điều thật đẹp.",
+        personalMessage: "Bó hoa này không cần một dịp để được gửi đi. Anh chỉ nghĩ, giữa một ngày rất bình thường, em cũng xứng đáng có một điều mềm mại và đẹp đẽ.",
       },
     ],
   );

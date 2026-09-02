@@ -96,7 +96,7 @@ async function buildArtifacts({
       kind: "product",
       sourcePath: SEPTEMBER_ASSET_SOURCES.products[gift.id].sourcePath,
       provenance: {
-        kind: "pexels",
+        kind: "sender-provided",
         creator: SEPTEMBER_ASSET_SOURCES.products[gift.id].creator,
         pageUrl: SEPTEMBER_ASSET_SOURCES.products[gift.id].pageUrl,
         sourceUrl: SEPTEMBER_ASSET_SOURCES.products[gift.id].sourceUrl,
@@ -108,21 +108,22 @@ async function buildArtifacts({
   }
 
   const fonts = [
-    ["playfair-display", "Playfair Display", 600],
-    ["playfair-display", "Playfair Display", 700],
-    ["be-vietnam-pro", "Be Vietnam Pro", 400],
-    ["be-vietnam-pro", "Be Vietnam Pro", 500],
-    ["be-vietnam-pro", "Be Vietnam Pro", 600],
-    ["be-vietnam-pro", "Be Vietnam Pro", 700],
-  ].map(([packageName, family, weight]) => ({
-    assetId: `${packageName}-${weight}`,
+    ["playfair-display", "Playfair Display", 600, "normal", "5.2.8"],
+    ["playfair-display", "Playfair Display", 700, "normal", "5.2.8"],
+    ["playfair-display", "Playfair Display", 600, "italic", "5.2.8"],
+    ["be-vietnam-pro", "Be Vietnam Pro", 400, "normal", "5.2.8"],
+    ["be-vietnam-pro", "Be Vietnam Pro", 500, "normal", "5.2.8"],
+    ["be-vietnam-pro", "Be Vietnam Pro", 600, "normal", "5.2.8"],
+    ["be-vietnam-pro", "Be Vietnam Pro", 700, "normal", "5.2.8"],
+  ].map(([packageName, family, weight, style, packageVersion]) => ({
+    assetId: `${packageName}-${weight}${style === "italic" ? "-italic" : ""}`,
     family,
-    style: "normal",
+    style,
     weight,
     packageName: `@fontsource/${packageName}`,
-    packageVersion: "5.2.8",
+    packageVersion,
     sourcePath: `node_modules/@fontsource/${packageName}`,
-    url: `/september/fonts/${packageName}-${weight}.woff2`,
+    url: `/september/fonts/${packageName}-${weight}${style === "italic" ? "-italic" : ""}.woff2`,
     license: "OFL-1.1",
   }));
 
